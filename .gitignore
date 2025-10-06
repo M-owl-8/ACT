@@ -1,0 +1,19 @@
+﻿# Node / Expo
+node_modules/
+.expo/
+.expo-shared/
+dist/
+build/
+# Native build artifacts (we won't commit these)
+android/
+ios/
+# Editor
+.vscode/
+.idea/
+# Python
+__pycache__/
+*.pyc
+.venv/
+.env
+# OS
+.DS_Store
