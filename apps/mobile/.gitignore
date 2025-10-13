@@ -36,9 +36,8 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# generated native folders
+# generated native folders (iOS only - Android is now committed)
 /ios
-/android
 
 # EAS Build
 google-services.json
