@@ -1,0 +1,70 @@
+import * as fs from 'fs';
+import * as path from 'path';
+
+export default ({ config }) => {
+  // Check if google-services.json exists
+  const googleServicesPath = path.resolve(__dirname, 'google-services.json');
+  const hasGoogleServices = fs.existsSync(googleServicesPath);
+
+  const androidConfig = {
+    package: "com.act.app",
+    versionCode: 1,
+    adaptiveIcon: {
+      foregroundImage: "./assets/adaptive-icon.png",
+      backgroundColor: "#ffffff"
+    },
+    permissions: [
+      "INTERNET",
+      "ACCESS_NETWORK_STATE"
+    ],
+    edgeToEdgeEnabled: true,
+    predictiveBackGestureEnabled: false
+  };
+
+  // Only add googleServicesFile if the file exists
+  if (hasGoogleServices) {
+    androidConfig.googleServicesFile = "./google-services.json";
+  }
+
+  return {
+    ...config,
+    name: "ACT",
+    slug: "act-app",
+    version: "1.0.0",
+    orientation: "portrait",
+    icon: "./assets/icon.png",
+    userInterfaceStyle: "light",
+    newArchEnabled: true,
+    splash: {
+      image: "./assets/splash-icon.png",
+      resizeMode: "contain",
+      backgroundColor: "#ffffff"
+    },
+    ios: {
+      supportsTablet: true,
+      bundleIdentifier: "com.act.app"
+    },
+    android: androidConfig,
+    web: {
+      favicon: "./assets/favicon.png"
+    },
+    plugins: [
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          icon: "./assets/notification-icon.png",
+          color: "#ffffff",
+          sounds: []
+        }
+      ]
+    ],
+    extra: {
+      eas: {
+        projectId: process.env.EXPO_PROJECT_ID || "0d2ff065-1b12-4766-b547-3bdeea01cb0a"
+      },
+      apiUrl: process.env.API_URL || "http://localhost:8000"
+    },
+    owner: process.env.EXPO_OWNER || "owl_wilde"
+  };
+};
