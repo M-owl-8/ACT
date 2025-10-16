@@ -35,6 +35,7 @@ else:
     print("✓ Using default connection pool")
 
 # Async engine - with error handling
+engine = None
 try:
     engine = create_async_engine(
         settings.DATABASE_URL,
@@ -45,7 +46,24 @@ try:
     print("✓ Async engine created successfully")
 except Exception as e:
     print(f"❌ ERROR creating async engine: {str(e)}")
-    raise
+    print(f"❌ This will cause database operations to fail, but app will still start")
+    # Create a dummy engine that won't crash on import
+    import asyncio
+    from sqlalchemy.engine import Engine
+    
+    # Fallback: use in-memory SQLite if all else fails
+    try:
+        engine = create_async_engine(
+            "sqlite+aiosqlite:///:memory:",
+            echo=False,
+            future=True,
+            poolclass=NullPool,
+            connect_args={"check_same_thread": False}
+        )
+        print("✓ Using in-memory SQLite fallback")
+    except Exception as fallback_error:
+        print(f"❌ CRITICAL: Even fallback engine failed: {str(fallback_error)}")
+        raise
 
 # Session factory
 AsyncSessionLocal = sessionmaker(

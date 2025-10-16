@@ -1,4 +1,5 @@
-﻿from pydantic_settings import BaseSettings
+﻿import os
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     APP_NAME: str = "ACT Gen1 API"
@@ -18,14 +19,22 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
+# Debug: Log what DATABASE_URL we're using
+print(f"📊 Initial DATABASE_URL: {settings.DATABASE_URL[:60] if settings.DATABASE_URL else 'NOT SET'}...")
+print(f"📊 Environment DATABASE_URL exists: {'DATABASE_URL' in os.environ}")
+
 # Convert standard PostgreSQL URL to async format if needed
 if settings.DATABASE_URL.startswith("postgresql://"):
+    print("🔄 Converting postgresql:// to postgresql+asyncpg://")
     # Railway provides standard postgresql:// URL, convert to asyncpg format
     settings.DATABASE_URL = settings.DATABASE_URL.replace(
         "postgresql://", "postgresql+asyncpg://", 1
     )
 elif settings.DATABASE_URL.startswith("postgres://"):
+    print("🔄 Converting postgres:// to postgresql+asyncpg://")
     # Handle old postgres:// format as well
     settings.DATABASE_URL = settings.DATABASE_URL.replace(
         "postgres://", "postgresql+asyncpg://", 1
     )
+
+print(f"✓ Final DATABASE_URL: {settings.DATABASE_URL[:60]}...")
