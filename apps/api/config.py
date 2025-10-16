@@ -1,4 +1,5 @@
 ﻿from pydantic_settings import BaseSettings
+from typing import Optional
 
 class Settings(BaseSettings):
     APP_NAME: str = "ACT Gen1 API"
@@ -9,7 +10,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 14
 
-    # DB (SQLite for dev)
+    # DB - Read from environment variable, with SQLite default for local dev
+    # On Railway, this will be set to PostgreSQL connection string
     DATABASE_URL: str = "sqlite+aiosqlite:///./dev.db?check_same_thread=False"
 
     class Config:
