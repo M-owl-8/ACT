@@ -1,5 +1,4 @@
 ﻿from pydantic_settings import BaseSettings
-from typing import Optional
 
 class Settings(BaseSettings):
     APP_NAME: str = "ACT Gen1 API"
@@ -18,3 +17,15 @@ class Settings(BaseSettings):
         env_file = ".env"
 
 settings = Settings()
+
+# Convert standard PostgreSQL URL to async format if needed
+if settings.DATABASE_URL.startswith("postgresql://"):
+    # Railway provides standard postgresql:// URL, convert to asyncpg format
+    settings.DATABASE_URL = settings.DATABASE_URL.replace(
+        "postgresql://", "postgresql+asyncpg://", 1
+    )
+elif settings.DATABASE_URL.startswith("postgres://"):
+    # Handle old postgres:// format as well
+    settings.DATABASE_URL = settings.DATABASE_URL.replace(
+        "postgres://", "postgresql+asyncpg://", 1
+    )
