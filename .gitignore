@@ -43,3 +43,5 @@ build/
 dist/
 # Environment specific files
 .env.*.local
+
+apps/api/act-gen1-f9812-firebase-adminsdk-fbsvc-83acc8b162.json
