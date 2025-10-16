@@ -27,28 +27,36 @@ async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
     # Startup
     print("🚀 Starting ACT Gen-1 API...")
+    print(f"📊 Database: {settings.DATABASE_URL[:50]}...")
     
-    # Create tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    print("✓ Database tables ready")
+    backup_task = None
     
-    # Seed default data (categories and books)
-    async with AsyncSessionLocal() as session:
-        await seed_default_data(session)
-    print("✓ Default data seeded")
-    
-    # Start daily backup task
-    backup_task = asyncio.create_task(daily_backup_task())
-    print("✓ Daily backup task started")
-    
-    print("✅ ACT Gen-1 API is ready!\n")
+    try:
+        # Create tables
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        print("✓ Database tables ready")
+        
+        # Seed default data (categories and books)
+        async with AsyncSessionLocal() as session:
+            await seed_default_data(session)
+        print("✓ Default data seeded")
+        
+        # Start daily backup task
+        backup_task = asyncio.create_task(daily_backup_task())
+        print("✓ Daily backup task started")
+        
+        print("✅ ACT Gen-1 API is ready!\n")
+    except Exception as e:
+        print(f"⚠️ Database initialization error: {str(e)}")
+        print("⚠️ API will start in limited mode (no persistent data)")
     
     yield
     
     # Shutdown
     print("\n🛑 Shutting down ACT Gen-1 API...")
-    backup_task.cancel()
+    if backup_task:
+        backup_task.cancel()
     await engine.dispose()
     print("✓ Cleanup complete")
 
