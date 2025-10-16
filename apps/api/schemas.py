@@ -89,6 +89,19 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str = Field(min_length=8, max_length=100)
+
+
+class MessageResponse(BaseModel):
+    message: str
+
+
 # ===== CATEGORY SCHEMAS =====
 class CategoryCreate(BaseModel):
     name: str = Field(min_length=1, max_length=50)

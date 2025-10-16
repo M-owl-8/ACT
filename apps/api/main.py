@@ -16,6 +16,8 @@ from routers import export as export_router
 from routers import backup as backup_router
 from routers import reports as reports_router
 from routers import reminders as reminders_router
+from routers import password_reset as password_reset_router
+from routers import push_notifications as push_notifications_router
 from backup_service import daily_backup_task
 from seed_data import seed_default_data
 
@@ -85,6 +87,7 @@ async def health():
 
 # Include all routers
 app.include_router(auth_router.router, prefix="/auth", tags=["Authentication"])
+app.include_router(password_reset_router.router, prefix="/password-reset", tags=["Password Reset"])
 app.include_router(users_router.router, prefix="/users", tags=["Users"])
 app.include_router(categories_router.router, prefix="/categories", tags=["Categories"])
 app.include_router(entries_router.router, prefix="/entries", tags=["Entries"])
@@ -95,3 +98,4 @@ app.include_router(export_router.router, prefix="/export", tags=["Export"])
 app.include_router(backup_router.router, prefix="/backup", tags=["Backup"])
 app.include_router(reports_router.router, prefix="/reports", tags=["Reports"])
 app.include_router(reminders_router.router, prefix="/reminders", tags=["Reminders"])
+app.include_router(push_notifications_router.router)

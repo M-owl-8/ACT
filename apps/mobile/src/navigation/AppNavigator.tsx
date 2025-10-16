@@ -4,8 +4,9 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import LoginScreen from '../screens/LoginScreen';
-import RegisterScreen from '../screens/RegisterScreen';
+import JapaneseLoginScreen from '../screens/JapaneseLoginScreen';
+import JapaneseRegisterScreen from '../screens/JapaneseRegisterScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import IncomeScreen from '../screens/IncomeScreen';
 import AddIncomeScreen from '../screens/AddIncomeScreen';
@@ -17,6 +18,8 @@ import ReportsScreen from '../screens/ReportsScreen';
 import CalendarScreen from '../screens/CalendarScreen';
 import MotivationScreen from '../screens/MotivationScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import BooksScreen from '../screens/BooksScreen';
+import BookDetailScreen from '../screens/BookDetailScreen';
 import { useAuthStore } from '../store/auth';
 import { useTheme } from '../theme';
 
@@ -42,6 +45,8 @@ function MainTabs() {
             iconName = focused ? 'calendar' : 'calendar-outline';
           } else if (route.name === 'MotivationTab') {
             iconName = focused ? 'flame' : 'flame-outline';
+          } else if (route.name === 'BooksTab') {
+            iconName = focused ? 'book' : 'book-outline';
           } else if (route.name === 'ReportsTab') {
             iconName = focused ? 'stats-chart' : 'stats-chart-outline';
           } else if (route.name === 'SettingsTab') {
@@ -81,6 +86,11 @@ function MainTabs() {
         name="MotivationTab" 
         component={MotivationScreen}
         options={{ tabBarLabel: t('motivation') }}
+      />
+      <Tab.Screen 
+        name="BooksTab" 
+        component={BooksScreen}
+        options={{ tabBarLabel: t('books') }}
       />
       <Tab.Screen 
         name="ReportsTab" 
@@ -150,17 +160,29 @@ export default function AppNavigator() {
                 headerShown: false,
               }}
             />
+            <Stack.Screen 
+              name="BookDetail" 
+              component={BookDetailScreen}
+              options={{
+                presentation: 'modal',
+                headerShown: false,
+              }}
+            />
           </>
         ) : (
-          // Auth screens
+          // Auth screens - Japanese themed
           <>
             <Stack.Screen 
               name="Login" 
-              component={LoginScreen}
+              component={JapaneseLoginScreen}
             />
             <Stack.Screen 
               name="Register" 
-              component={RegisterScreen}
+              component={JapaneseRegisterScreen}
+            />
+            <Stack.Screen 
+              name="ForgotPassword" 
+              component={ForgotPasswordScreen}
             />
           </>
         )}

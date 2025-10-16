@@ -76,6 +76,7 @@ class User(Base):
     streak = relationship("Streak", back_populates="user", uselist=False, cascade="all, delete-orphan")
     book_progress = relationship("UserBookProgress", back_populates="user", cascade="all, delete-orphan")
     reminders = relationship("Reminder", back_populates="user", cascade="all, delete-orphan")
+    push_tokens = relationship("PushToken", back_populates="user", cascade="all, delete-orphan")
 
 
 class Token(Base):
@@ -222,6 +223,24 @@ class Reminder(Base):
     user = relationship("User", back_populates="reminders")
     category = relationship("Category")
     entry = relationship("Entry")
+
+
+class PushToken(Base):
+    """Store user push notification tokens for FCM"""
+    __tablename__ = "push_tokens"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    token = Column(String, unique=True, nullable=False, index=True)
+    device_type = Column(String, nullable=True)  # 'ios', 'android', 'web'
+    device_name = Column(String, nullable=True)  # Optional device identifier
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    last_used_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    user = relationship("User", back_populates="push_tokens")
 
 
 class DatabaseBackup(Base):

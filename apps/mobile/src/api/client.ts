@@ -1,13 +1,40 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 
-export const BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
+// For physical devices via USB, use your computer's local IP
+// Find your IP: Windows (ipconfig), Mac/Linux (ifconfig)
+// Example: "http://192.168.1.100:8000"
+const getBaseURL = () => {
+  // Check environment variable first
+  if (process.env.EXPO_PUBLIC_API_BASE_URL) {
+    return process.env.EXPO_PUBLIC_API_BASE_URL;
+  }
+  
+  // Default URLs based on platform
+  if (Platform.OS === 'android') {
+    // For Android emulator
+    return "http://10.0.2.2:8000";
+  } else if (Platform.OS === 'ios') {
+    // For iOS simulator
+    return "http://localhost:8000";
+  }
+  
+  // For web or physical devices, you need to set EXPO_PUBLIC_API_BASE_URL
+  return "http://localhost:8000";
+};
+
+export const BASE_URL = getBaseURL();
+
+console.log("🌐 API Base URL:", BASE_URL);
+console.log("📱 Platform:", Platform.OS);
+console.log("💡 For physical devices, set EXPO_PUBLIC_API_BASE_URL to your computer's IP");
 
 export const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
+  timeout: 15000, // Increased timeout for slower connections
   headers: {
+    "Content-Type": "application/json",
     // bypass ngrok warning page for programmatic requests
     "ngrok-skip-browser-warning": "any",
   },
@@ -53,10 +80,11 @@ api.interceptors.response.use(
 
     // Check if error is 401 and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
-      // Don't retry for login/register endpoints
+      // Don't retry for login/register/password-reset endpoints
       if (
         originalRequest.url?.includes("/auth/login") ||
-        originalRequest.url?.includes("/auth/register")
+        originalRequest.url?.includes("/auth/register") ||
+        originalRequest.url?.includes("/password-reset")
       ) {
         return Promise.reject(error);
       }

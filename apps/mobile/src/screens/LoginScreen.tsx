@@ -20,26 +20,38 @@ export default function LoginScreen({ navigation }: any) {
   const onSubmit = async (data: any) => {
     setIsLoading(true);
     try {
+      console.log('🔐 Attempting login for:', data.email);
       const res = await API.post('/auth/login', data);
+      console.log('✅ Login successful, saving tokens...');
       await setTokens(res.data.access_token, res.data.refresh_token);
+      console.log('✅ Tokens saved, fetching profile...');
       await fetchProfile();
+      console.log('✅ Login complete! User authenticated.');
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error('❌ Login error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        code: error.code,
+      });
       
       let errorMessage = 'Invalid email or password. Please try again.';
+      let errorTitle = 'Login Failed';
       
-      if (error.response?.status === 401) {
-        // Authentication error - invalid credentials
+      if (error.code === 'ECONNABORTED') {
+        errorTitle = 'Connection Timeout';
+        errorMessage = 'The server is taking too long to respond. Please check if the API server is running and try again.';
+      } else if (error.code === 'ERR_NETWORK' || error.message === 'Network Error' || !error.response) {
+        errorTitle = 'Network Error';
+        errorMessage = 'Cannot connect to the server. Please ensure:\n\n1. The API server is running\n2. Your device has network access\n3. For physical devices: Set EXPO_PUBLIC_API_BASE_URL to your computer\'s IP address\n\nCurrent API URL: ' + (process.env.EXPO_PUBLIC_API_BASE_URL || 'default');
+      } else if (error.response?.status === 401) {
         errorMessage = error.response?.data?.detail || 'Invalid email or password.';
-      } else if (error.message === 'Network Error' || !error.response) {
-        // Network error - no connection to server
-        errorMessage = 'Network error. Please check your connection and try again.';
       } else if (error.response?.data?.detail) {
-        // Other server errors
         errorMessage = error.response.data.detail;
       }
       
-      Alert.alert('Login Failed', errorMessage);
+      Alert.alert(errorTitle, errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -49,7 +61,7 @@ export default function LoginScreen({ navigation }: any) {
     <ThemedView variant="primary" style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.emoji}>🗡️</Text>
-        <ThemedText size="4xl" weight="bold" style={styles.title}>
+        <ThemedText size="h1" weight="bold" style={styles.title}>
           ACT Gen-1
         </ThemedText>
         <ThemedText size="base" variant="secondary" style={styles.subtitle}>

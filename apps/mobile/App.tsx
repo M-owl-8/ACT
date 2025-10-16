@@ -15,6 +15,15 @@ import {
 } from "@expo-google-fonts/noto-sans-jp";
 import "./src/i18n";
 
+// Import Sentry for crash reporting
+import { initSentry } from "./src/services/sentryService";
+
+// Import notification service
+import { initializeNotifications } from "./src/services/notificationService";
+
+// Initialize Sentry at app startup
+initSentry();
+
 export default function App() {
   const { t } = useTranslation();
   const [showWelcome, setShowWelcome] = useState(true);
@@ -30,6 +39,11 @@ export default function App() {
   useEffect(() => {
     // Initialize auth on app start
     initializeAuth();
+    
+    // Initialize notifications
+    initializeNotifications().catch(error => {
+      console.error('Failed to initialize notifications:', error);
+    });
 
     // Hide welcome screen after 2 seconds
     const timer = setTimeout(() => {

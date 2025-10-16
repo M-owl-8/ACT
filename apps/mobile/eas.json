@@ -1,16 +1,11 @@
 {
   "cli": {
-    "version": ">= 13.2.0",
-    "appVersionSource": "remote"
+    "version": ">= 13.2.0"
   },
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
-      "android": {
-        "gradleCommand": ":app:assembleDebug",
-        "buildType": "apk"
-      }
+      "distribution": "internal"
     },
     "preview": {
       "distribution": "internal",
@@ -22,14 +17,20 @@
       "android": {
         "buildType": "app-bundle"
       }
+    },
+    "standalone": {
+      "developmentClient": false,
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
+      },
+      "env": {
+        "NODE_ENV": "production"
+      }
     }
   },
   "submit": {
-    "production": {
-      "android": {
-        "serviceAccountKeyPath": "./google-play-service-account.json",
-        "track": "internal"
-      }
-    }
+    "production": {}
   }
 }

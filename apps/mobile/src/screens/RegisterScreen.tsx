@@ -19,29 +19,41 @@ export default function RegisterScreen({ navigation }: any) {
   const onSubmit = async (data: any) => {
     setIsLoading(true);
     try {
+      console.log('📝 Attempting registration for:', data.email);
       const res = await API.post('/auth/register', {
         email: data.email,
         password: data.password
       });
+      console.log('✅ Registration successful, saving tokens...');
       await setTokens(res.data.access_token, res.data.refresh_token);
+      console.log('✅ Tokens saved, fetching profile...');
       await fetchProfile();
+      console.log('✅ Registration complete! User authenticated.');
     } catch (error: any) {
-      console.error('Registration error:', error);
+      console.error('❌ Registration error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        code: error.code,
+      });
       
       let errorMessage = 'Registration failed. Please try again.';
+      let errorTitle = 'Registration Failed';
       
-      if (error.response?.status === 400) {
-        // Bad request - likely email already exists
+      if (error.code === 'ECONNABORTED') {
+        errorTitle = 'Connection Timeout';
+        errorMessage = 'The server is taking too long to respond. Please check if the API server is running and try again.';
+      } else if (error.code === 'ERR_NETWORK' || error.message === 'Network Error' || !error.response) {
+        errorTitle = 'Network Error';
+        errorMessage = 'Cannot connect to the server. Please ensure:\n\n1. The API server is running\n2. Your device has network access\n3. For physical devices: Set EXPO_PUBLIC_API_BASE_URL to your computer\'s IP address\n\nCurrent API URL: ' + (process.env.EXPO_PUBLIC_API_BASE_URL || 'default');
+      } else if (error.response?.status === 400) {
         errorMessage = error.response?.data?.detail || 'Email already registered.';
-      } else if (error.message === 'Network Error' || !error.response) {
-        // Network error - no connection to server
-        errorMessage = 'Network error. Please check your connection and try again.';
       } else if (error.response?.data?.detail) {
-        // Other server errors
         errorMessage = error.response.data.detail;
       }
       
-      Alert.alert('Registration Failed', errorMessage);
+      Alert.alert(errorTitle, errorMessage);
     } finally {
       setIsLoading(false);
     }

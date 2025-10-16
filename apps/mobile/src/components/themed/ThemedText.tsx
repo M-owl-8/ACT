@@ -38,9 +38,9 @@ export const ThemedText: React.FC<ThemedTextProps> = ({
         { 
           color, 
           fontFamily,
-          fontSize: textStyle.fontSize,
-          lineHeight: textStyle.lineHeight,
-          fontWeight: textStyle.fontWeight,
+          fontSize: textStyle?.fontSize,
+          lineHeight: textStyle?.lineHeight,
+          fontWeight: textStyle?.fontWeight,
         }, 
         style
       ]} 

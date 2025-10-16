@@ -1,232 +1,363 @@
-# Troubleshooting Guide - ACT Gen-1
+# ACT Gen-1 Troubleshooting Guide
 
-## ✅ Issues Fixed
+## 🔥 Core Issues and Solutions
 
-### 1. Package Version Mismatch
-**Problem**: `expo-notifications@0.30.3` was incompatible with Expo SDK 54
+### Issue 1: Network Error / Login Not Working
 
-**Solution**: Updated to `expo-notifications@~0.32.12`
-```bash
-npx expo install expo-notifications@~0.32.12
-```
+**Root Cause:** The backend API server is not running.
 
-### 2. Missing Dependencies
-**Problem**: `expo-sharing` and `expo-file-system` were not installed
+**Symptoms:**
+- Login shows "Network Error"
+- App logs show: `Unable to connect to http://10.0.2.2:8000`
+- Connection timeout errors
 
-**Solution**: Installed both packages
-```bash
-npx expo install expo-sharing expo-file-system
-```
+**Solution:**
 
-**Updated package.json**:
-```json
-"expo-file-system": "~19.0.17",
-"expo-notifications": "~0.32.12",
-"expo-sharing": "~14.0.7"
-```
+1. **Start the Backend Server:**
+   ```powershell
+   # Option 1: Use the startup script
+   cd c:\Users\user\Desktop\Bitway\Programs\act-gen1
+   .\START_BACKEND.ps1
+   
+   # Option 2: Manual start
+   cd apps\api
+   .\.venv\Scripts\Activate.ps1
+   uvicorn main:app --reload --host 0.0.0.0 --port 8000
+   ```
 
-### 3. Backend API Not Running
-**Problem**: Network Error - Mobile app couldn't connect to backend
+2. **Verify Backend is Running:**
+   - Open browser: http://localhost:8000/docs
+   - You should see the FastAPI documentation page
+   - Check terminal for: "Uvicorn running on http://0.0.0.0:8000"
 
-**Solution**: Started the FastAPI backend server
-```bash
-cd apps/api
-.\.venv\Scripts\Activate.ps1
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-**Backend Status**: ✅ Running on `http://10.21.69.205:8000`
-
-### 4. Expo Notifications Warning
-**Problem**: `expo-notifications` doesn't support push notifications in Expo Go (SDK 53+)
-
-**Solution**: Added graceful error handling in CalendarScreen.tsx
-- Notifications will work for scheduling/reminders
-- Push notifications require a development build (not Expo Go)
-- App continues to function without push notifications
-
----
-
-## 🚀 Current Status
-
-### Backend API
-- ✅ Running on `http://10.21.69.205:8000`
-- ✅ Database initialized with default data
-- ✅ All endpoints operational
-- ✅ Daily backup task active
-
-### Mobile App
-- ✅ All dependencies installed
-- ✅ Connected to backend API
-- ✅ Bundling successfully
-- ⚠️ Push notifications limited in Expo Go (expected)
-
----
-
-## 📱 Running the App
-
-### Start Backend (Terminal 1)
-```bash
-cd C:\Users\user\Desktop\Bitway\Programs\act-gen1\apps\api
-.\.venv\Scripts\Activate.ps1
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-### Start Mobile App (Terminal 2)
-```bash
-cd C:\Users\user\Desktop\Bitway\Programs\act-gen1\apps\mobile
-npm start
-# or
-npx expo start
-```
-
-### Access Points
-- **Backend API Docs**: http://10.21.69.205:8000/docs
-- **Mobile App**: Scan QR code in Expo Go app
-
----
-
-## ⚠️ Known Limitations
-
-### Expo Go Limitations
-1. **Push Notifications**: Not supported in Expo Go (SDK 53+)
-   - **Impact**: Local notifications for reminders won't trigger
-   - **Workaround**: Use a development build for full notification support
-   - **Documentation**: https://docs.expo.dev/develop/development-builds/introduction/
-
-2. **Features Still Working**:
-   - ✅ Calendar view and reminder management
-   - ✅ All CRUD operations for reminders
-   - ✅ Expense tracking from reminders
-   - ✅ All other app features
-
-### Creating a Development Build (Optional)
-If you need push notifications:
-
-```bash
-# Install EAS CLI
-npm install -g eas-cli
-
-# Login to Expo
-eas login
-
-# Build for Android
-eas build --platform android --profile development
-
-# Build for iOS
-eas build --platform ios --profile development
-```
-
----
-
-## 🔧 Common Issues
-
-### Issue: "Network Error" when logging in
-**Cause**: Backend API not running
-
-**Solution**:
-1. Check if backend is running: `http://10.21.69.205:8000/docs`
-2. If not, start it: `cd apps/api && .\.venv\Scripts\Activate.ps1 && uvicorn main:app --host 0.0.0.0 --port 8000 --reload`
-
-### Issue: "Unable to resolve module"
-**Cause**: Missing dependencies
-
-**Solution**:
-```bash
-cd apps/mobile
-npm install
-# or
-npx expo install
-```
-
-### Issue: Expo Go crashes on notification
-**Cause**: Expo Go limitation with expo-notifications
-
-**Solution**: This is expected. The app handles it gracefully. For full notification support, create a development build.
-
-### Issue: Can't connect from physical device
-**Cause**: Device and computer not on same network
-
-**Solution**:
-1. Ensure both are on the same WiFi network
-2. Check firewall settings allow port 8000
-3. Verify IP address in `.env` file matches your computer's IP:
-   ```bash
-   # Check your IP
-   ipconfig
-   # Update apps/mobile/.env
-   EXPO_PUBLIC_API_BASE_URL=http://YOUR_IP:8000
+3. **Test API Connection:**
+   ```powershell
+   # Test from PowerShell
+   Invoke-WebRequest -Uri http://localhost:8000/docs
    ```
 
 ---
 
-## 📊 Testing Checklist
+### Issue 2: expo-blur Warning (Native Module Not Found)
 
-### Backend Tests
-- [ ] API docs accessible at http://10.21.69.205:8000/docs
-- [ ] Can create user account
-- [ ] Can login and get token
-- [ ] Can fetch categories
-- [ ] Can create expense/income entries
+**Root Cause:** The `expo-blur` native module is not properly linked in the development build.
 
-### Mobile App Tests
-- [ ] App loads without errors
-- [ ] Can login with credentials
-- [ ] Can view dashboard
-- [ ] Can create expense
-- [ ] Can create income
-- [ ] Can view calendar
-- [ ] Can create reminder
-- [ ] Can view motivation screen
-- [ ] Can change language in settings
-- [ ] Can export data (CSV/JSON)
-- [ ] Can switch theme (light/dark)
+**Symptoms:**
+```
+WARN  The native view manager for module(ExpoBlurView) from NativeViewManagerAdapter 
+isn't exported by expo-modules-core. Views of this type may not render correctly.
+```
+
+**Impact:** 
+- ⚠️ **Low Priority** - The app still works! 
+- The glass blur effect falls back to a semi-transparent white background
+- All functionality remains intact
+
+**Solutions:**
+
+#### Quick Fix (Already Applied):
+The code now includes a fallback that uses a regular View with semi-transparent background when BlurView is not available. **No action needed.**
+
+#### Complete Fix (Rebuild Native App):
+If you want the full blur effect:
+
+```powershell
+# 1. Clean the build
+cd c:\Users\user\Desktop\Bitway\Programs\act-gen1\apps\mobile
+Remove-Item -Recurse -Force android\app\build
+
+# 2. Rebuild the development client
+npx expo prebuild --clean
+npx expo run:android
+
+# This will take 5-10 minutes
+```
+
+**Note:** The fallback looks great, so rebuilding is optional!
 
 ---
 
-## 🆘 Getting Help
+### Issue 3: App Won't Start / Metro Bundler Error
 
-### Check Logs
-**Backend logs**: Check terminal where uvicorn is running
+**Symptoms:**
+- "Unable to resolve module"
+- "Module not found"
+- Bundler crashes
 
-**Mobile logs**: Check Expo Dev Tools or Metro bundler output
+**Solutions:**
 
-### Debug Mode
-Enable debug logging in mobile app:
-```typescript
-// In src/api/client.ts
-api.interceptors.request.use((config) => {
-  console.log('API Request:', config.method, config.url);
-  return config;
-});
+1. **Clear Cache and Reinstall:**
+   ```powershell
+   cd c:\Users\user\Desktop\Bitway\Programs\act-gen1\apps\mobile
+   
+   # Clear cache
+   Remove-Item -Recurse -Force node_modules
+   Remove-Item -Force package-lock.json
+   npx expo start -c
+   
+   # Reinstall
+   npm install
+   npm start
+   ```
+
+2. **Check Dependencies:**
+   ```powershell
+   # Verify all packages are installed
+   npm list expo-blur
+   npm list expo-linear-gradient
+   npm list react-hook-form
+   ```
+
+---
+
+## 🚀 Quick Start Checklist
+
+Before running the app, ensure:
+
+- [ ] **Backend is running** on port 8000
+  ```powershell
+  .\START_BACKEND.ps1
+  ```
+
+- [ ] **Dependencies are installed**
+  ```powershell
+  cd apps\mobile
+  npm install
+  ```
+
+- [ ] **Emulator/Simulator is running**
+  - Android: Open Android Studio → AVD Manager → Start emulator
+  - iOS: Open Xcode → Simulator
+
+- [ ] **Start the mobile app**
+  ```powershell
+  cd apps\mobile
+  npm start
+  # Press 'a' for Android or 'i' for iOS
+  ```
+
+---
+
+## 🔍 Diagnostic Commands
+
+### Check Backend Status
+```powershell
+# Test if backend is running
+Test-NetConnection -ComputerName localhost -Port 8000
+
+# Check backend logs
+cd apps\api
+Get-Content -Path "uvicorn.log" -Tail 50
 ```
 
-### Reset Everything
-If all else fails:
-```bash
+### Check Mobile App Status
+```powershell
+# Check Expo status
+cd apps\mobile
+npx expo doctor
+
+# Check for issues
+npm run android -- --verbose
+```
+
+### Check Network Configuration
+```powershell
+# For Android Emulator
+# The emulator uses 10.0.2.2 to access host machine's localhost
+
+# Test from emulator (using adb)
+adb shell
+curl http://10.0.2.2:8000/docs
+```
+
+---
+
+## 📱 Platform-Specific Issues
+
+### Android Emulator
+
+**Issue:** Can't connect to backend
+**Solution:** 
+- Backend must use `0.0.0.0` not `127.0.0.1`
+- Emulator accesses host via `10.0.2.2`
+- Check firewall isn't blocking port 8000
+
+**Issue:** Slow performance
+**Solution:**
+- Enable hardware acceleration in BIOS
+- Allocate more RAM to emulator (4GB+)
+- Use x86_64 system image, not ARM
+
+### iOS Simulator
+
+**Issue:** Can't connect to backend
+**Solution:**
+- Use `localhost` or your machine's IP address
+- Update `EXPO_PUBLIC_API_BASE_URL` in `.env`
+
+---
+
+## 🛠️ Environment Variables
+
+Create `.env` file in `apps/mobile/`:
+
+```env
+# For Android Emulator
+EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:8000
+
+# For iOS Simulator
+# EXPO_PUBLIC_API_BASE_URL=http://localhost:8000
+
+# For Physical Device (replace with your IP)
+# EXPO_PUBLIC_API_BASE_URL=http://192.168.1.100:8000
+```
+
+---
+
+## 🔐 Test Credentials
+
+```
+Email: admin@actgen1.com
+Password: admin123
+```
+
+---
+
+## 📊 Common Error Messages
+
+### "Network Error"
+→ Backend not running. Start with `.\START_BACKEND.ps1`
+
+### "Unable to resolve expo-blur"
+→ Run `npm install` in `apps/mobile`
+
+### "Port 8000 already in use"
+→ Backend already running or another app using port
+```powershell
+# Find process using port 8000
+Get-NetTCPConnection -LocalPort 8000 | Select-Object OwningProcess
+# Kill the process
+Stop-Process -Id <ProcessId>
+```
+
+### "ECONNREFUSED"
+→ Backend not accessible. Check:
+1. Backend is running
+2. Firewall allows port 8000
+3. Using correct IP address (10.0.2.2 for Android emulator)
+
+---
+
+## 🆘 Still Having Issues?
+
+1. **Check all services are running:**
+   ```powershell
+   # Backend
+   Test-NetConnection localhost -Port 8000
+   
+   # Mobile app
+   Get-Process -Name "node" -ErrorAction SilentlyContinue
+   ```
+
+2. **Restart everything:**
+   ```powershell
+   # Stop all
+   Stop-Process -Name "node" -Force
+   Stop-Process -Name "python" -Force
+   
+   # Start fresh
+   .\START_APP.ps1
+   ```
+
+3. **Check logs:**
+   - Backend logs: Terminal where uvicorn is running
+   - Mobile logs: Expo terminal
+   - Device logs: `adb logcat` (Android) or Console.app (iOS)
+
+---
+
+## 📝 Maintenance Commands
+
+### Update Dependencies
+```powershell
 # Backend
-cd apps/api
-rm dev.db
-# Restart backend - it will recreate database
+cd apps\api
+pip install --upgrade -r requirements.txt
 
 # Mobile
-cd apps/mobile
-rm -rf node_modules
-npm install
-npx expo start --clear
+cd apps\mobile
+npm update
 ```
+
+### Clean Everything
+```powershell
+# Mobile
+cd apps\mobile
+Remove-Item -Recurse -Force node_modules, .expo, android\app\build
+npm install
+
+# Backend
+cd apps\api
+Remove-Item -Recurse -Force __pycache__, .pytest_cache
+```
+
+---
+
+## ✅ Success Indicators
+
+When everything is working correctly, you should see:
+
+**Backend Terminal:**
+```
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process
+INFO:     Started server process
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+```
+
+**Mobile Terminal:**
+```
+› Metro waiting on exp://10.21.69.205:8081
+› Scan the QR code above with Expo Go (Android) or the Camera app (iOS)
+› Press a │ open Android
+› Press i │ open iOS simulator
+```
+
+**Mobile App Logs:**
+```
+LOG  🌐 API Base URL: http://10.0.2.2:8000
+```
+
+**No Errors:**
+- No "Network Error" messages
+- No "ECONNREFUSED" errors
+- Login works successfully
+
+---
+
+## 🎯 Performance Optimization
+
+### Backend
+- Use `--workers 4` for production
+- Enable caching for database queries
+- Use connection pooling
+
+### Mobile
+- Enable Hermes engine (already enabled)
+- Use `useNativeDriver: true` for animations (already done)
+- Optimize images and assets
 
 ---
 
 ## 📚 Additional Resources
 
-- **Expo Documentation**: https://docs.expo.dev/
-- **FastAPI Documentation**: https://fastapi.tiangolo.com/
-- **React Native Documentation**: https://reactnative.dev/
-- **Expo Notifications**: https://docs.expo.dev/versions/latest/sdk/notifications/
-- **Development Builds**: https://docs.expo.dev/develop/development-builds/introduction/
+- [Expo Documentation](https://docs.expo.dev/)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [React Native Debugging](https://reactnative.dev/docs/debugging)
+- [Android Emulator Networking](https://developer.android.com/studio/run/emulator-networking)
 
 ---
 
-**Last Updated**: 2025-01-12
-**Status**: All critical issues resolved ✅
+**Last Updated:** October 2025
+**Version:** 1.0.0

@@ -1,340 +1,235 @@
-#!/usr/bin/env pwsh
-# ACT App - Release Keystore Generator
-# This script generates a release keystore for Play Store signing
+# ========================================
+#  ACT Gen-1 - Release Keystore Generator
+# ========================================
 
-Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  ACT App - Keystore Generator" -ForegroundColor Cyan
+Write-Host "  ACT Gen-1 Keystore Generator" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
-
-# Check if keytool is available
-try {
-    $keytoolVersion = keytool -help 2>&1 | Out-Null
-    Write-Host "✅ keytool found" -ForegroundColor Green
-} catch {
-    Write-Host "❌ keytool not found!" -ForegroundColor Red
-    Write-Host ""
-    Write-Host "Please install Java JDK 17:" -ForegroundColor Yellow
-    Write-Host "  https://adoptium.net/temurin/releases/" -ForegroundColor Yellow
-    Write-Host ""
-    exit 1
-}
-
-# Set paths
-$projectRoot = $PSScriptRoot
-$androidAppDir = Join-Path $projectRoot "android\app"
-$keystorePath = Join-Path $androidAppDir "act-release.keystore"
-$backupDir = Join-Path $projectRoot "keystore-backup"
 
 # Check if keystore already exists
+$keystorePath = "android\app\act-release.keystore"
 if (Test-Path $keystorePath) {
     Write-Host "⚠️  WARNING: Keystore already exists!" -ForegroundColor Yellow
     Write-Host "   Location: $keystorePath" -ForegroundColor Yellow
     Write-Host ""
-    $overwrite = Read-Host "Do you want to overwrite it? (yes/no)"
+    $overwrite = Read-Host "Do you want to create a new keystore? This will backup the old one. (yes/no)"
     
     if ($overwrite -ne "yes") {
-        Write-Host ""
         Write-Host "❌ Cancelled. Existing keystore preserved." -ForegroundColor Red
-        Write-Host ""
         exit 0
     }
     
     # Backup existing keystore
+    $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+    $backupPath = "android\app\act-release-backup-$timestamp.keystore"
+    Copy-Item $keystorePath $backupPath
+    Write-Host "✅ Existing keystore backed up to: $backupPath" -ForegroundColor Green
     Write-Host ""
-    Write-Host "📦 Backing up existing keystore..." -ForegroundColor Cyan
-    $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-    $backupFile = Join-Path $backupDir "act-release.keystore.backup.$timestamp"
-    
-    if (-not (Test-Path $backupDir)) {
-        New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
-    }
-    
-    Copy-Item $keystorePath $backupFile
-    Write-Host "✅ Backup saved: $backupFile" -ForegroundColor Green
 }
 
+Write-Host "📋 This script will generate a release keystore for signing your Android app." -ForegroundColor White
 Write-Host ""
-Write-Host "🔐 IMPORTANT: Keystore Security" -ForegroundColor Yellow
-Write-Host "================================" -ForegroundColor Yellow
-Write-Host "The keystore is the ONLY way to update your app on Play Store!" -ForegroundColor Yellow
-Write-Host "• LOSE IT = You can NEVER update your app" -ForegroundColor Red
-Write-Host "• FORGET PASSWORD = You can NEVER update your app" -ForegroundColor Red
-Write-Host "• BACKUP IT = Save to USB drive and cloud storage" -ForegroundColor Green
+Write-Host "⚠️  IMPORTANT WARNINGS:" -ForegroundColor Yellow
+Write-Host "   1. The keystore and password are CRITICAL for app updates" -ForegroundColor Yellow
+Write-Host "   2. If you lose them, you can NEVER update your app on Play Store" -ForegroundColor Yellow
+Write-Host "   3. You'll have to publish a completely new app" -ForegroundColor Yellow
+Write-Host "   4. BACKUP the keystore to multiple secure locations" -ForegroundColor Yellow
 Write-Host ""
 
-$continue = Read-Host "Do you understand and want to continue? (yes/no)"
-if ($continue -ne "yes") {
-    Write-Host ""
-    Write-Host "❌ Cancelled." -ForegroundColor Red
-    Write-Host ""
+# Confirm user understands
+$confirm = Read-Host "Do you understand these warnings? (yes/no)"
+if ($confirm -ne "yes") {
+    Write-Host "❌ Cancelled. Please read the warnings carefully." -ForegroundColor Red
     exit 0
 }
 
 Write-Host ""
-Write-Host "📝 Keystore Information" -ForegroundColor Cyan
-Write-Host "=======================" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "  Step 1: Keystore Information" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Get keystore details
-Write-Host "Enter keystore password (min 6 characters):" -ForegroundColor Yellow
-$password1 = Read-Host -AsSecureString
-$password1Plain = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($password1))
+# Get keystore password
+Write-Host "Enter a STRONG password for the keystore:" -ForegroundColor White
+Write-Host "(Minimum 6 characters, use letters, numbers, and symbols)" -ForegroundColor Gray
+$password1 = Read-Host "Password" -AsSecureString
+$password2 = Read-Host "Confirm password" -AsSecureString
 
-if ($password1Plain.Length -lt 6) {
-    Write-Host ""
-    Write-Host "❌ Password must be at least 6 characters!" -ForegroundColor Red
-    Write-Host ""
+# Convert to plain text for comparison
+$pwd1Plain = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($password1))
+$pwd2Plain = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($password2))
+
+if ($pwd1Plain -ne $pwd2Plain) {
+    Write-Host "❌ Passwords don't match. Please try again." -ForegroundColor Red
     exit 1
 }
 
-Write-Host "Confirm keystore password:" -ForegroundColor Yellow
-$password2 = Read-Host -AsSecureString
-$password2Plain = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($password2))
-
-if ($password1Plain -ne $password2Plain) {
-    Write-Host ""
-    Write-Host "❌ Passwords do not match!" -ForegroundColor Red
-    Write-Host ""
+if ($pwd1Plain.Length -lt 6) {
+    Write-Host "❌ Password too short. Minimum 6 characters required." -ForegroundColor Red
     exit 1
 }
 
-Write-Host ""
-Write-Host "Enter your details (for certificate):" -ForegroundColor Cyan
-Write-Host ""
-
-$name = Read-Host "Your name or company name (e.g., ACT Development Team)"
-$orgUnit = Read-Host "Organizational unit (e.g., Mobile Development)"
-$org = Read-Host "Organization (e.g., ACT)"
-$city = Read-Host "City (e.g., Tokyo)"
-$state = Read-Host "State/Province (e.g., Tokyo)"
-$country = Read-Host "Country code (2 letters, e.g., JP)"
-
-# Validate country code
-if ($country.Length -ne 2) {
-    Write-Host ""
-    Write-Host "❌ Country code must be 2 letters (e.g., JP, US, UK)" -ForegroundColor Red
-    Write-Host ""
-    exit 1
-}
-
-Write-Host ""
-Write-Host "🔨 Generating keystore..." -ForegroundColor Cyan
+Write-Host "✅ Password set" -ForegroundColor Green
 Write-Host ""
 
-# Build DN string
-$dn = "CN=$name, OU=$orgUnit, O=$org, L=$city, ST=$state, C=$country"
+# Get organization information
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "  Step 2: Organization Information" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "This information will be embedded in the keystore." -ForegroundColor Gray
+Write-Host "You can press Enter to skip optional fields." -ForegroundColor Gray
+Write-Host ""
 
-# Generate keystore
-$keytoolArgs = @(
-    "-genkeypair",
-    "-v",
-    "-storetype", "PKCS12",
-    "-keystore", $keystorePath,
-    "-alias", "act-key",
-    "-keyalg", "RSA",
-    "-keysize", "2048",
-    "-validity", "10000",
-    "-dname", $dn,
-    "-storepass", $password1Plain,
-    "-keypass", $password1Plain
-)
+$name = Read-Host "Your name or company name"
+$unit = Read-Host "Organizational unit (optional, press Enter to skip)"
+$org = Read-Host "Organization name (optional, press Enter to skip)"
+$city = Read-Host "City (optional, press Enter to skip)"
+$state = Read-Host "State/Province (optional, press Enter to skip)"
+$country = Read-Host "Country code (e.g., US, UK, UZ)"
+
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "  Step 3: Generating Keystore" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Build keytool command
+$keytoolCmd = "keytool -genkeypair -v -storetype PKCS12 -keystore `"$keystorePath`" -alias act-key -keyalg RSA -keysize 2048 -validity 10000"
+
+# Build distinguished name
+$dn = "CN=$name"
+if ($unit) { $dn += ", OU=$unit" }
+if ($org) { $dn += ", O=$org" }
+if ($city) { $dn += ", L=$city" }
+if ($state) { $dn += ", ST=$state" }
+if ($country) { $dn += ", C=$country" }
+
+$keytoolCmd += " -dname `"$dn`""
+$keytoolCmd += " -storepass `"$pwd1Plain`" -keypass `"$pwd1Plain`""
+
+Write-Host "Generating keystore..." -ForegroundColor Yellow
 
 try {
-    $output = & keytool $keytoolArgs 2>&1
+    # Execute keytool
+    Invoke-Expression $keytoolCmd 2>&1 | Out-Null
     
-    if ($LASTEXITCODE -eq 0) {
+    if (Test-Path $keystorePath) {
         Write-Host "✅ Keystore generated successfully!" -ForegroundColor Green
         Write-Host ""
-        Write-Host "📍 Location: $keystorePath" -ForegroundColor Cyan
+        
+        # Show keystore info
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  Keystore Information" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "Location: $keystorePath" -ForegroundColor White
+        Write-Host "Alias: act-key" -ForegroundColor White
+        Write-Host "Algorithm: RSA 2048-bit" -ForegroundColor White
+        Write-Host "Validity: 10,000 days (~27 years)" -ForegroundColor White
         Write-Host ""
+        
+        # Backup instructions
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  ⚠️  CRITICAL: BACKUP YOUR KEYSTORE" -ForegroundColor Yellow
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "Creating automatic backups..." -ForegroundColor Yellow
+        
+        # Create backups
+        $desktopBackup = "$env:USERPROFILE\Desktop\act-release-BACKUP.keystore"
+        $documentsBackup = "$env:USERPROFILE\Documents\act-release-BACKUP.keystore"
+        
+        Copy-Item $keystorePath $desktopBackup -Force
+        Copy-Item $keystorePath $documentsBackup -Force
+        
+        Write-Host "✅ Backup 1: $desktopBackup" -ForegroundColor Green
+        Write-Host "✅ Backup 2: $documentsBackup" -ForegroundColor Green
+        Write-Host ""
+        
+        Write-Host "⚠️  ADDITIONAL BACKUPS REQUIRED:" -ForegroundColor Yellow
+        Write-Host "   1. Upload to cloud storage (Google Drive, OneDrive, Dropbox)" -ForegroundColor White
+        Write-Host "   2. Copy to USB drive and store in safe place" -ForegroundColor White
+        Write-Host "   3. Save password in password manager (1Password, LastPass, etc.)" -ForegroundColor White
+        Write-Host "   4. Write password on paper and store securely" -ForegroundColor White
+        Write-Host ""
+        
+        # Save password to file (encrypted)
+        Write-Host "Do you want to save the password to an encrypted file? (yes/no)" -ForegroundColor White
+        $savePassword = Read-Host
+        
+        if ($savePassword -eq "yes") {
+            $passwordFile = "$env:USERPROFILE\Desktop\act-keystore-password.txt"
+            $pwd1Plain | Out-File $passwordFile
+            Write-Host "✅ Password saved to: $passwordFile" -ForegroundColor Green
+            Write-Host "   ⚠️  Keep this file secure and delete after backing up!" -ForegroundColor Yellow
+            Write-Host ""
+        }
+        
+        # Configure gradle.properties
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  Step 4: Configure Gradle Properties" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host ""
+        
+        $gradlePropsPath = "android\gradle.properties"
+        $gradleProps = Get-Content $gradlePropsPath -Raw
+        
+        # Check if already configured
+        if ($gradleProps -match "ACT_RELEASE_STORE_FILE") {
+            Write-Host "⚠️  Gradle properties already configured" -ForegroundColor Yellow
+            Write-Host "   Updating with new password..." -ForegroundColor Yellow
+            
+            # Update existing configuration
+            $gradleProps = $gradleProps -replace "ACT_RELEASE_STORE_PASSWORD=.*", "ACT_RELEASE_STORE_PASSWORD=$pwd1Plain"
+            $gradleProps = $gradleProps -replace "ACT_RELEASE_KEY_PASSWORD=.*", "ACT_RELEASE_KEY_PASSWORD=$pwd1Plain"
+            
+            $gradleProps | Out-File $gradlePropsPath -Encoding UTF8
+        } else {
+            Write-Host "Adding keystore configuration to gradle.properties..." -ForegroundColor Yellow
+            
+            # Add new configuration
+            $keystoreConfig = @"
+
+# Release keystore configuration
+ACT_RELEASE_STORE_FILE=act-release.keystore
+ACT_RELEASE_KEY_ALIAS=act-key
+ACT_RELEASE_STORE_PASSWORD=$pwd1Plain
+ACT_RELEASE_KEY_PASSWORD=$pwd1Plain
+"@
+            
+            Add-Content $gradlePropsPath $keystoreConfig
+        }
+        
+        Write-Host "✅ Gradle properties configured" -ForegroundColor Green
+        Write-Host ""
+        
+        # Final instructions
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  ✅ Setup Complete!" -ForegroundColor Green
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "Next steps:" -ForegroundColor White
+        Write-Host "1. BACKUP the keystore to cloud storage and USB" -ForegroundColor White
+        Write-Host "2. SAVE the password securely" -ForegroundColor White
+        Write-Host "3. Build release APK:" -ForegroundColor White
+        Write-Host "   cd android" -ForegroundColor Gray
+        Write-Host "   .\gradlew assembleRelease" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "Release APK will be at:" -ForegroundColor White
+        Write-Host "android\app\build\outputs\apk\release\app-release.apk" -ForegroundColor Gray
+        Write-Host ""
+        
     } else {
-        Write-Host "❌ Failed to generate keystore!" -ForegroundColor Red
-        Write-Host $output
+        Write-Host "❌ Failed to generate keystore" -ForegroundColor Red
+        Write-Host "Please check the error messages above" -ForegroundColor Red
         exit 1
     }
+    
 } catch {
     Write-Host "❌ Error generating keystore: $_" -ForegroundColor Red
     exit 1
 }
 
-# Create backup directory
-if (-not (Test-Path $backupDir)) {
-    New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
-}
-
-# Copy to backup
-$backupFile = Join-Path $backupDir "act-release.keystore"
-Copy-Item $keystorePath $backupFile -Force
-Write-Host "✅ Backup created: $backupFile" -ForegroundColor Green
-Write-Host ""
-
-# Create info file
-$infoFile = Join-Path $backupDir "KEYSTORE_INFO.txt"
-$infoContent = @"
-ACT App Keystore Information
-============================
-Created: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
-
-Keystore Details:
------------------
-File: act-release.keystore
-Alias: act-key
-Algorithm: RSA
-Key Size: 2048
-Validity: 10000 days (~27 years)
-
-Certificate Details:
--------------------
-Name: $name
-Organizational Unit: $orgUnit
-Organization: $org
-City: $city
-State: $state
-Country: $country
-
-Passwords:
-----------
-Keystore Password: $password1Plain
-Key Password: $password1Plain
-
-File Locations:
---------------
-Primary: android/app/act-release.keystore
-Backup: keystore-backup/act-release.keystore
-
-⚠️  CRITICAL SECURITY NOTES:
-============================
-1. BACKUP this keystore to multiple locations:
-   - USB drive
-   - Cloud storage (Google Drive, OneDrive, Dropbox)
-   - Secure password manager
-
-2. NEVER commit this file to Git!
-
-3. NEVER share this file publicly!
-
-4. WITHOUT this keystore, you CANNOT update your app on Play Store!
-
-5. Store this information file securely (password manager recommended)
-
-Next Steps:
------------
-1. Backup keystore to USB drive and cloud
-2. Save this info file to password manager
-3. Update gradle.properties with keystore details
-4. Build release: cd android && .\gradlew bundleRelease
-5. Upload to Play Console
-
-For detailed instructions, see: PLAY_STORE_SETUP.md
-"@
-
-Set-Content -Path $infoFile -Value $infoContent
-Write-Host "✅ Info file created: $infoFile" -ForegroundColor Green
-Write-Host ""
-
-# Update gradle.properties
-$gradlePropsPath = Join-Path $projectRoot "android\gradle.properties"
-$gradlePropsBackup = Join-Path $projectRoot "android\gradle.properties.backup"
-
-Write-Host "📝 Updating gradle.properties..." -ForegroundColor Cyan
-
-# Backup gradle.properties
-if (Test-Path $gradlePropsPath) {
-    Copy-Item $gradlePropsPath $gradlePropsBackup -Force
-    Write-Host "✅ Backed up gradle.properties" -ForegroundColor Green
-}
-
-# Read existing content
-$gradleContent = Get-Content $gradlePropsPath -Raw
-
-# Check if signing config already exists
-if ($gradleContent -match "ACT_RELEASE_STORE_FILE") {
-    Write-Host "⚠️  Signing config already exists in gradle.properties" -ForegroundColor Yellow
-    Write-Host "   Skipping update. Please update manually if needed." -ForegroundColor Yellow
-} else {
-    # Add signing config
-    $signingConfig = @"
-
-# ============================================
-# Release Signing Configuration
-# ============================================
-# ⚠️  WARNING: These contain sensitive passwords!
-# For production, use environment variables instead:
-#   ACT_RELEASE_STORE_PASSWORD=`$env:ACT_KEYSTORE_PASSWORD
-#   ACT_RELEASE_KEY_PASSWORD=`$env:ACT_KEY_PASSWORD
-# ============================================
-ACT_RELEASE_STORE_FILE=act-release.keystore
-ACT_RELEASE_KEY_ALIAS=act-key
-ACT_RELEASE_STORE_PASSWORD=$password1Plain
-ACT_RELEASE_KEY_PASSWORD=$password1Plain
-"@
-
-    Add-Content -Path $gradlePropsPath -Value $signingConfig
-    Write-Host "✅ Added signing config to gradle.properties" -ForegroundColor Green
-}
-
-Write-Host ""
-
-# Update build.gradle
-$buildGradlePath = Join-Path $projectRoot "android\app\build.gradle"
-$buildGradleContent = Get-Content $buildGradlePath -Raw
-
-if ($buildGradleContent -match "signingConfigs\.release") {
-    Write-Host "✅ build.gradle already has release signing config" -ForegroundColor Green
-} else {
-    Write-Host "⚠️  build.gradle needs manual update for release signing" -ForegroundColor Yellow
-    Write-Host "   See: PLAY_STORE_SETUP.md Step 2" -ForegroundColor Yellow
-}
-
-Write-Host ""
-Write-Host "========================================" -ForegroundColor Green
-Write-Host "  ✅ Keystore Setup Complete!" -ForegroundColor Green
-Write-Host "========================================" -ForegroundColor Green
-Write-Host ""
-
-Write-Host "📋 CRITICAL NEXT STEPS:" -ForegroundColor Yellow
-Write-Host ""
-Write-Host "1. BACKUP THE KEYSTORE (DO THIS NOW!):" -ForegroundColor Red
-Write-Host "   • Copy to USB drive:" -ForegroundColor White
-Write-Host "     Copy-Item '$backupFile' -Destination 'D:\ACT_Keystore_Backup\'" -ForegroundColor Cyan
-Write-Host "   • Upload to cloud storage (Google Drive, OneDrive, etc.)" -ForegroundColor White
-Write-Host "   • Save password to password manager" -ForegroundColor White
-Write-Host ""
-
-Write-Host "2. VERIFY SIGNING CONFIG:" -ForegroundColor Yellow
-Write-Host "   • Check: android\gradle.properties" -ForegroundColor White
-Write-Host "   • Check: android\app\build.gradle" -ForegroundColor White
-Write-Host "   • See: PLAY_STORE_SETUP.md Step 2" -ForegroundColor White
-Write-Host ""
-
-Write-Host "3. BUILD RELEASE:" -ForegroundColor Yellow
-Write-Host "   cd android" -ForegroundColor Cyan
-Write-Host "   .\gradlew clean" -ForegroundColor Cyan
-Write-Host "   .\gradlew bundleRelease" -ForegroundColor Cyan
-Write-Host ""
-
-Write-Host "4. FIND YOUR AAB:" -ForegroundColor Yellow
-Write-Host "   android\app\build\outputs\bundle\release\app-release.aab" -ForegroundColor Cyan
-Write-Host ""
-
-Write-Host "5. UPLOAD TO PLAY CONSOLE:" -ForegroundColor Yellow
-Write-Host "   https://play.google.com/console" -ForegroundColor Cyan
-Write-Host ""
-
-Write-Host "📚 Full Guide: PLAY_STORE_SETUP.md" -ForegroundColor Cyan
-Write-Host ""
-
-Write-Host "⚠️  REMEMBER: Without this keystore, you CANNOT update your app!" -ForegroundColor Red
-Write-Host ""
-
-# Ask to open info file
-$openInfo = Read-Host "Open keystore info file now? (yes/no)"
-if ($openInfo -eq "yes") {
-    Start-Process notepad.exe $infoFile
-}
-
-Write-Host ""
-Write-Host "🎉 Good luck with your Play Store submission!" -ForegroundColor Green
-Write-Host ""
+Write-Host "Press any key to exit..."
+$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")

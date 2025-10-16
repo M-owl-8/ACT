@@ -71,18 +71,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const { accessToken } = get();
       if (!accessToken) {
-        console.log('No access token available for profile fetch');
+        console.log('⚠️ No access token available for profile fetch');
         return;
       }
       
+      console.log('📡 Fetching user profile...');
       const res = await API.get('/users/me');
       set({ user: res.data });
-      console.log('Profile fetched successfully:', res.data.email);
+      console.log('✅ Profile fetched successfully:', res.data.email);
     } catch (error: any) {
-      console.error('Failed to fetch profile:', error.response?.data || error.message);
+      console.error('❌ Failed to fetch profile:', error.response?.data || error.message);
       // If profile fetch fails with 401, clear auth state
       if (error.response?.status === 401) {
+        console.log('🔄 Token expired, logging out...');
         await get().logout();
+      } else {
+        // For other errors (network, etc.), don't logout but clear user
+        console.log('⚠️ Network or server error, keeping tokens for retry');
+        set({ user: null });
       }
     }
   },
@@ -90,18 +96,31 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   initializeAuth: async () => {
     try {
       set({ isLoading: true });
+      console.log('🔐 Initializing authentication...');
+      
       // Try to restore tokens from secure storage
       const accessToken = await SecureStore.getItemAsync('access');
       const refreshToken = await SecureStore.getItemAsync('refresh');
 
       if (accessToken && refreshToken) {
+        console.log('✅ Found stored tokens, restoring session...');
         set({ accessToken, refreshToken });
         await get().fetchProfile();
+      } else {
+        console.log('ℹ️ No stored tokens found, user needs to login');
       }
     } catch (error) {
-      console.error('Failed to restore auth session:', error);
+      console.error('❌ Failed to restore auth session:', error);
+      // Clear any corrupted tokens
+      try {
+        await SecureStore.deleteItemAsync('access');
+        await SecureStore.deleteItemAsync('refresh');
+      } catch (e) {
+        console.warn('Failed to clear tokens:', e);
+      }
     } finally {
       set({ isLoading: false });
+      console.log('✅ Auth initialization complete');
     }
   }
 }));

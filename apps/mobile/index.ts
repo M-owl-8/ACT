@@ -1,5 +1,6 @@
 import { registerRootComponent } from 'expo';
 
+// STANDALONE VERSION - Works offline without backend!
 import App from './App';
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);

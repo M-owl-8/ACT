@@ -1,0 +1,239 @@
+name: Android Build
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      # Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/mobile/package-lock.json
+      
+      # Setup Java
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+      
+      # Install dependencies
+      - name: Install dependencies
+        working-directory: apps/mobile
+        run: npm ci
+      
+      # Decode and setup keystore
+      - name: Decode keystore
+        if: github.event_name != 'pull_request'
+        working-directory: apps/mobile/android/app
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > act-release.keystore
+          echo "✅ Keystore decoded"
+      
+      # Setup google-services.json
+      - name: Setup Firebase config
+        if: github.event_name != 'pull_request'
+        working-directory: apps/mobile/android/app
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          echo "$GOOGLE_SERVICES_JSON" > google-services.json
+          echo "✅ Firebase config created"
+      
+      # Create gradle.properties with keystore config
+      - name: Configure Gradle properties
+        if: github.event_name != 'pull_request'
+        working-directory: apps/mobile/android
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "" >> gradle.properties
+          echo "# CI/CD Keystore Configuration" >> gradle.properties
+          echo "ACT_RELEASE_STORE_FILE=act-release.keystore" >> gradle.properties
+          echo "ACT_RELEASE_KEY_ALIAS=$KEY_ALIAS" >> gradle.properties
+          echo "ACT_RELEASE_STORE_PASSWORD=$KEYSTORE_PASSWORD" >> gradle.properties
+          echo "ACT_RELEASE_KEY_PASSWORD=$KEY_PASSWORD" >> gradle.properties
+          echo "✅ Gradle properties configured"
+      
+      # Cache Gradle dependencies
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            apps/mobile/android/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      
+      # Build debug APK (for PRs)
+      - name: Build debug APK
+        if: github.event_name == 'pull_request'
+        working-directory: apps/mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+      
+      # Build release APK (for main/master/develop)
+      - name: Build release APK
+        if: github.event_name != 'pull_request'
+        working-directory: apps/mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+      
+      # Upload debug APK artifact
+      - name: Upload debug APK
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+      
+      # Upload release APK artifact
+      - name: Upload release APK
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
+      
+      # Upload source maps to Sentry (optional)
+      - name: Upload source maps to Sentry
+        if: github.event_name != 'pull_request' && secrets.SENTRY_AUTH_TOKEN != ''
+        working-directory: apps/mobile
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+        run: |
+          npx @sentry/cli releases new "com.act.app@${{ github.sha }}"
+          npx @sentry/cli releases files "com.act.app@${{ github.sha }}" upload-sourcemaps android/app/build/generated/sourcemaps/react/release
+          npx @sentry/cli releases finalize "com.act.app@${{ github.sha }}"
+          echo "✅ Source maps uploaded to Sentry"
+        continue-on-error: true
+      
+      # Get APK info
+      - name: Get APK info
+        if: github.event_name != 'pull_request'
+        working-directory: apps/mobile/android/app/build/outputs/apk/release
+        run: |
+          APK_SIZE=$(du -h app-release.apk | cut -f1)
+          echo "📦 APK Size: $APK_SIZE"
+          echo "APK_SIZE=$APK_SIZE" >> $GITHUB_ENV
+      
+      # Comment on PR with build info
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const apkPath = 'apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk';
+            const stats = fs.statSync(apkPath);
+            const fileSizeInMB = (stats.size / (1024 * 1024)).toFixed(2);
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🤖 Build Complete\n\n✅ Debug APK built successfully!\n\n📦 **Size:** ${fileSizeInMB} MB\n\n📥 Download the APK from the artifacts section below.`
+            });
+
+  # Optional: Build Android App Bundle (AAB) for Play Store
+  build-aab:
+    name: Build Android App Bundle
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/mobile/package-lock.json
+      
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+      
+      - name: Install dependencies
+        working-directory: apps/mobile
+        run: npm ci
+      
+      - name: Decode keystore
+        working-directory: apps/mobile/android/app
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > act-release.keystore
+      
+      - name: Setup Firebase config
+        working-directory: apps/mobile/android/app
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          echo "$GOOGLE_SERVICES_JSON" > google-services.json
+      
+      - name: Configure Gradle properties
+        working-directory: apps/mobile/android
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "" >> gradle.properties
+          echo "ACT_RELEASE_STORE_FILE=act-release.keystore" >> gradle.properties
+          echo "ACT_RELEASE_KEY_ALIAS=$KEY_ALIAS" >> gradle.properties
+          echo "ACT_RELEASE_STORE_PASSWORD=$KEYSTORE_PASSWORD" >> gradle.properties
+          echo "ACT_RELEASE_KEY_PASSWORD=$KEY_PASSWORD" >> gradle.properties
+      
+      - name: Build release AAB
+        working-directory: apps/mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew bundleRelease --no-daemon --stacktrace
+      
+      - name: Upload release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-bundle
+          path: apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 90
+      
+      - name: Get AAB info
+        working-directory: apps/mobile/android/app/build/outputs/bundle/release
+        run: |
+          AAB_SIZE=$(du -h app-release.aab | cut -f1)
+          echo "📦 AAB Size: $AAB_SIZE"
+          echo "✅ Ready for Play Store upload"
