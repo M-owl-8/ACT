@@ -1,83 +1,68 @@
+"""
+Database configuration and session management for ACT Gen-1 API.
+Uses SQLAlchemy async ORM with proper async pool configuration.
+"""
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.pool import NullPool
 
-try:
-    # Try to import AsyncAdaptedQueuePool (SQLAlchemy 2.0+)
-    from sqlalchemy.ext.asyncio import AsyncAdaptedQueuePool
-    ASYNC_POOL_AVAILABLE = True
-except ImportError:
-    # Fallback for older SQLAlchemy versions
-    ASYNC_POOL_AVAILABLE = False
-    print("⚠️ AsyncAdaptedQueuePool not available, using NullPool instead")
-
 from config import settings
 
-# Determine pool class and connection args based on database type
+print("\n" + "="*60)
+print("DATABASE INITIALIZATION")
+print("="*60)
+
+# Get database URL from config
 db_url = settings.DATABASE_URL
 print(f"📊 Database URL (first 60 chars): {db_url[:60]}...")
 
-if "sqlite" in db_url:
-    # SQLite configuration for local development
+# Configure connection pool based on database type
+# CRITICAL: Use NullPool for async engines - QueuePool causes crashes!
+if "sqlite" in db_url.lower():
+    print("🔷 SQLite detected - using NullPool")
     pool_config = {
-        "poolclass": NullPool,              # avoids SQLite pool/thread issues
+        "poolclass": NullPool,
         "connect_args": {"check_same_thread": False}
     }
-    print("✓ Using SQLite connection pool")
-elif "postgresql" in db_url or "asyncpg" in db_url:
-    # PostgreSQL configuration for production
-    if ASYNC_POOL_AVAILABLE:
-        pool_class = AsyncAdaptedQueuePool
-        pool_name = "AsyncAdaptedQueuePool"
-    else:
-        pool_class = NullPool
-        pool_name = "NullPool"
-    
+elif "postgresql" in db_url.lower() or "asyncpg" in db_url.lower():
+    print("🔷 PostgreSQL detected - using NullPool (async-safe)")
+    # For async engines, we must use NullPool to avoid blocking issues
+    # Connection pooling is handled by the database driver (asyncpg)
     pool_config = {
-        "poolclass": pool_class,             # async-compatible connection pooling
-    }
-    if ASYNC_POOL_AVAILABLE:
-        pool_config.update({
-            "pool_size": 20,                 # number of connections to keep in pool
-            "max_overflow": 10,              # number of connections to create on demand
-            "pool_pre_ping": True,           # verify connection health before using
-            "pool_recycle": 3600,            # recycle connections after 1 hour
-        })
-    
-    pool_config.update({
+        "poolclass": NullPool,
         "connect_args": {
-            "ssl": True,                     # Enable SSL for asyncpg
+            "ssl": True,
             "server_settings": {
                 "application_name": "act_api"
             }
         }
-    })
-    print(f"✓ Using {pool_name} for PostgreSQL with SSL")
+    }
 else:
-    # Default configuration - use NullPool for safety with async
+    print("🔷 Unknown database - using NullPool (safe default)")
     pool_config = {
         "poolclass": NullPool
     }
-    print("✓ Using NullPool for default async configuration")
 
-# Async engine - with error handling
+# Create async engine
 engine = None
 try:
+    print("\n🔧 Creating async engine...")
     engine = create_async_engine(
         settings.DATABASE_URL,
         echo=False,
         future=True,
         **pool_config
     )
-    print("✓ Async engine created successfully")
+    print("✅ Async engine created successfully!")
+    print("✅ Ready to connect to database")
+    print("="*60 + "\n")
 except Exception as e:
-    print(f"❌ ERROR creating async engine: {str(e)}")
-    print(f"❌ This will cause database operations to fail, but app will still start")
-    # Create a dummy engine that won't crash on import
-    import asyncio
-    from sqlalchemy.engine import Engine
+    print(f"\n❌ CRITICAL ERROR: {str(e)}")
+    print(f"❌ Failed to create async engine")
+    print("❌ Falling back to in-memory SQLite")
+    print("="*60 + "\n")
     
-    # Fallback: use in-memory SQLite if all else fails
+    # Fallback engine for resilience
     try:
         engine = create_async_engine(
             "sqlite+aiosqlite:///:memory:",
@@ -86,12 +71,12 @@ except Exception as e:
             poolclass=NullPool,
             connect_args={"check_same_thread": False}
         )
-        print("✓ Using in-memory SQLite fallback")
+        print("⚠️  Using in-memory SQLite (DATA WILL NOT PERSIST)")
     except Exception as fallback_error:
-        print(f"❌ CRITICAL: Even fallback engine failed: {str(fallback_error)}")
+        print(f"❌ FATAL: Even fallback failed: {str(fallback_error)}")
         raise
 
-# Session factory
+# Create async session factory
 AsyncSessionLocal = sessionmaker(
     bind=engine,
     class_=AsyncSession,
@@ -100,10 +85,14 @@ AsyncSessionLocal = sessionmaker(
     autocommit=False,
 )
 
-# Declarative base for models
+# Declarative base for SQLAlchemy ORM models
 Base = declarative_base()
 
-# Dependency for FastAPI routes
+# Dependency function for FastAPI routes
 async def get_db():
+    """
+    Get database session for FastAPI dependency injection.
+    Usage: async def my_route(db: AsyncSession = Depends(get_db))
+    """
     async with AsyncSessionLocal() as session:
         yield session
