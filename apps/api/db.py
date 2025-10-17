@@ -1,6 +1,6 @@
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, AsyncAdaptedQueuePool
 from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy.pool import NullPool, QueuePool
+from sqlalchemy.pool import NullPool
 
 from config import settings
 
@@ -18,27 +18,25 @@ if "sqlite" in db_url:
 elif "postgresql" in db_url or "asyncpg" in db_url:
     # PostgreSQL configuration for production
     pool_config = {
-        "poolclass": QueuePool,             # use connection pooling for PostgreSQL
-        "pool_size": 20,                    # number of connections to keep in pool
-        "max_overflow": 10,                 # number of connections to create on demand
-        "pool_pre_ping": True,              # verify connection health before using
-        "pool_recycle": 3600,               # recycle connections after 1 hour
+        "poolclass": AsyncAdaptedQueuePool,  # async-compatible connection pooling
+        "pool_size": 20,                     # number of connections to keep in pool
+        "max_overflow": 10,                  # number of connections to create on demand
+        "pool_pre_ping": True,               # verify connection health before using
+        "pool_recycle": 3600,                # recycle connections after 1 hour
         "connect_args": {
-            "ssl": True,                    # Enable SSL for asyncpg
+            "ssl": True,                     # Enable SSL for asyncpg
             "server_settings": {
                 "application_name": "act_api"
             }
         }
     }
-    print("✓ Using PostgreSQL connection pool with SSL")
+    print("✓ Using AsyncAdaptedQueuePool for PostgreSQL with SSL")
 else:
-    # Default configuration
+    # Default configuration - use NullPool for safety with async
     pool_config = {
-        "poolclass": QueuePool,
-        "pool_size": 5,
-        "max_overflow": 5
+        "poolclass": NullPool
     }
-    print("✓ Using default connection pool")
+    print("✓ Using NullPool for default async configuration")
 
 # Async engine - with error handling
 engine = None
