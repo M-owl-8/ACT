@@ -22,9 +22,15 @@ elif "postgresql" in db_url or "asyncpg" in db_url:
         "pool_size": 20,                    # number of connections to keep in pool
         "max_overflow": 10,                 # number of connections to create on demand
         "pool_pre_ping": True,              # verify connection health before using
-        "pool_recycle": 3600                # recycle connections after 1 hour
+        "pool_recycle": 3600,               # recycle connections after 1 hour
+        "connect_args": {
+            "ssl": True,                    # Enable SSL for asyncpg
+            "server_settings": {
+                "application_name": "act_api"
+            }
+        }
     }
-    print("✓ Using PostgreSQL connection pool")
+    print("✓ Using PostgreSQL connection pool with SSL")
 else:
     # Default configuration
     pool_config = {

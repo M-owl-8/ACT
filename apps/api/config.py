@@ -30,11 +30,23 @@ if settings.DATABASE_URL.startswith("postgresql://"):
     settings.DATABASE_URL = settings.DATABASE_URL.replace(
         "postgresql://", "postgresql+asyncpg://", 1
     )
+    # Add SSL parameters for Railway PostgreSQL - disable ALPN negotiation
+    if "?" not in settings.DATABASE_URL:
+        settings.DATABASE_URL += "?ssl=require"
+    elif "ssl=" not in settings.DATABASE_URL:
+        settings.DATABASE_URL += "&ssl=require"
+    print("🔒 Added SSL parameter for Railway PostgreSQL")
 elif settings.DATABASE_URL.startswith("postgres://"):
     print("🔄 Converting postgres:// to postgresql+asyncpg://")
     # Handle old postgres:// format as well
     settings.DATABASE_URL = settings.DATABASE_URL.replace(
         "postgres://", "postgresql+asyncpg://", 1
     )
+    # Add SSL parameters for Railway PostgreSQL
+    if "?" not in settings.DATABASE_URL:
+        settings.DATABASE_URL += "?ssl=require"
+    elif "ssl=" not in settings.DATABASE_URL:
+        settings.DATABASE_URL += "&ssl=require"
+    print("🔒 Added SSL parameter for Railway PostgreSQL")
 
 print(f"✓ Final DATABASE_URL: {settings.DATABASE_URL[:60]}...")
