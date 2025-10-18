@@ -1,7 +1,16 @@
 ﻿import os
+import base64
+import json
+import tempfile
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 
 class Settings(BaseSettings):
+    model_config = ConfigDict(
+        env_file=".env",
+        extra="ignore"
+    )
+    
     APP_NAME: str = "ACT Gen1 API"
 
     # JWT
@@ -14,29 +23,48 @@ class Settings(BaseSettings):
     # On Railway, this will be set to PostgreSQL connection string
     DATABASE_URL: str = "sqlite+aiosqlite:///./dev.db?check_same_thread=False"
 
-    class Config:
-        env_file = ".env"
+    # Firebase
+    FIREBASE_CREDENTIALS_PATH: str = ""
+    FIREBASE_CREDENTIALS_JSON: str = ""  # Base64 encoded credentials (production)
 
 settings = Settings()
 
+# Strip whitespace from all environment variables (critical for Railway)
+settings.DATABASE_URL = settings.DATABASE_URL.strip() if settings.DATABASE_URL else settings.DATABASE_URL
+settings.JWT_SECRET = settings.JWT_SECRET.strip() if settings.JWT_SECRET else settings.JWT_SECRET
+settings.FIREBASE_CREDENTIALS_JSON = settings.FIREBASE_CREDENTIALS_JSON.strip() if settings.FIREBASE_CREDENTIALS_JSON else settings.FIREBASE_CREDENTIALS_JSON
+
+# Handle Firebase credentials - convert Base64 if needed (for production)
+if settings.FIREBASE_CREDENTIALS_JSON and not settings.FIREBASE_CREDENTIALS_PATH:
+    try:
+        # Decode Base64 and write to temp file
+        decoded = base64.b64decode(settings.FIREBASE_CREDENTIALS_JSON)
+        credentials_path = os.path.join(tempfile.gettempdir(), "firebase-credentials.json")
+        with open(credentials_path, 'w') as f:
+            f.write(decoded.decode('utf-8'))
+        settings.FIREBASE_CREDENTIALS_PATH = credentials_path
+        print("[Firebase] ✓ Credentials loaded from Base64 environment variable")
+    except Exception as e:
+        print(f"[Firebase] ⚠️ Failed to decode Base64 credentials: {e}")
+
 # Debug: Log what DATABASE_URL we're using
-print(f"📊 Initial DATABASE_URL: {settings.DATABASE_URL[:60] if settings.DATABASE_URL else 'NOT SET'}...")
-print(f"📊 Environment DATABASE_URL exists: {'DATABASE_URL' in os.environ}")
+print(f"[DB] Initial DATABASE_URL: {settings.DATABASE_URL[:60] if settings.DATABASE_URL else 'NOT SET'}...")
+print(f"[DB] Environment DATABASE_URL exists: {'DATABASE_URL' in os.environ}")
 
 # Convert standard PostgreSQL URL to async format if needed
 if settings.DATABASE_URL.startswith("postgresql://"):
-    print("🔄 Converting postgresql:// to postgresql+asyncpg://")
+    print("[DB] Converting postgresql:// to postgresql+asyncpg://")
     # Railway provides standard postgresql:// URL, convert to asyncpg format
     settings.DATABASE_URL = settings.DATABASE_URL.replace(
         "postgresql://", "postgresql+asyncpg://", 1
     )
-    print("🔒 Using internal Railway connection (SSL disabled)")
+    print("[DB] Using internal Railway connection (SSL disabled)")
 elif settings.DATABASE_URL.startswith("postgres://"):
-    print("🔄 Converting postgres:// to postgresql+asyncpg://")
+    print("[DB] Converting postgres:// to postgresql+asyncpg://")
     # Handle old postgres:// format as well
     settings.DATABASE_URL = settings.DATABASE_URL.replace(
         "postgres://", "postgresql+asyncpg://", 1
     )
-    print("🔒 Using internal Railway connection (SSL disabled)")
+    print("[DB] Using internal Railway connection (SSL disabled)")
 
-print(f"✓ Final DATABASE_URL: {settings.DATABASE_URL[:60]}...")
+print(f"[DB] Final DATABASE_URL: {settings.DATABASE_URL[:60]}...")
