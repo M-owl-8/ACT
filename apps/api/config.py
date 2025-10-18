@@ -30,9 +30,19 @@ class Settings(BaseSettings):
 settings = Settings()
 
 # Strip whitespace from all environment variables (critical for Railway)
-settings.DATABASE_URL = settings.DATABASE_URL.strip() if settings.DATABASE_URL else settings.DATABASE_URL
-settings.JWT_SECRET = settings.JWT_SECRET.strip() if settings.JWT_SECRET else settings.JWT_SECRET
-settings.FIREBASE_CREDENTIALS_JSON = settings.FIREBASE_CREDENTIALS_JSON.strip() if settings.FIREBASE_CREDENTIALS_JSON else settings.FIREBASE_CREDENTIALS_JSON
+# Remove both leading/trailing AND embedded whitespace/newlines
+if settings.DATABASE_URL:
+    settings.DATABASE_URL = settings.DATABASE_URL.strip()
+    # Also remove any embedded newlines and extra whitespace
+    settings.DATABASE_URL = ''.join(settings.DATABASE_URL.split())
+    # Re-add the connection string separator if it was removed
+    settings.DATABASE_URL = settings.DATABASE_URL.replace(':///', '://').replace('://', '://')
+
+if settings.JWT_SECRET:
+    settings.JWT_SECRET = settings.JWT_SECRET.strip()
+
+if settings.FIREBASE_CREDENTIALS_JSON:
+    settings.FIREBASE_CREDENTIALS_JSON = settings.FIREBASE_CREDENTIALS_JSON.strip()
 
 # Handle Firebase credentials - convert Base64 if needed (for production)
 if settings.FIREBASE_CREDENTIALS_JSON and not settings.FIREBASE_CREDENTIALS_PATH:
