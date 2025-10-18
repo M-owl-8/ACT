@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../api/client';
 import * as Notifications from 'expo-notifications';
+import { SAMURAI_COLORS, SAMURAI_PATTERNS } from '../theme/SAMURAI_COLORS';
 
 const { width } = Dimensions.get('window');
 
@@ -750,7 +751,7 @@ export default function CalendarScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: SAMURAI_COLORS.background.primary,
   },
   scrollView: {
     flex: 1,
@@ -763,29 +764,33 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
   },
   header: {
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: SAMURAI_COLORS.background.surface,
+    borderBottomWidth: 2,
+    borderBottomColor: SAMURAI_COLORS.accent,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
   },
   monthNav: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: SAMURAI_COLORS.background.surface,
     marginTop: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: SAMURAI_COLORS.border.primary,
   },
   navButton: {
     padding: 8,
@@ -796,10 +801,10 @@ const styles = StyleSheet.create({
   monthTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
   },
   calendarContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: SAMURAI_COLORS.background.surface,
     marginTop: 8,
     padding: 16,
   },
@@ -815,7 +820,7 @@ const styles = StyleSheet.create({
   dayHeaderText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
   },
   calendarGrid: {
     flexDirection: 'row',
@@ -828,25 +833,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: SAMURAI_COLORS.border.primary,
   },
   calendarDayInactive: {
     opacity: 0.3,
   },
   calendarDayToday: {
-    backgroundColor: '#E8F5E9',
-    borderColor: '#4CAF50',
+    backgroundColor: 'rgba(239, 83, 80, 0.15)',
+    borderColor: SAMURAI_COLORS.accent,
   },
   calendarDayText: {
     fontSize: 14,
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
     fontWeight: '500',
   },
   calendarDayTextInactive: {
-    color: '#999',
+    color: SAMURAI_COLORS.text.tertiary,
   },
   calendarDayTextToday: {
-    color: '#4CAF50',
+    color: SAMURAI_COLORS.accent,
     fontWeight: 'bold',
   },
   reminderDots: {
@@ -857,12 +862,13 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#4CAF50',
+    backgroundColor: SAMURAI_COLORS.accent,
     marginHorizontal: 1,
   },
   upcomingSection: {
     padding: 16,
     marginTop: 8,
+    backgroundColor: SAMURAI_COLORS.background.primary,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -872,38 +878,35 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
     marginLeft: 8,
   },
   emptyState: {
     alignItems: 'center',
     padding: 40,
-    backgroundColor: '#fff',
+    backgroundColor: SAMURAI_COLORS.background.surface,
     borderRadius: 12,
+    ...SAMURAI_PATTERNS.shadowSmall,
   },
   emptyStateText: {
     fontSize: 16,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
     marginTop: 12,
     fontWeight: '500',
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#999',
+    color: SAMURAI_COLORS.text.tertiary,
     marginTop: 4,
   },
   reminderCard: {
-    backgroundColor: '#fff',
+    backgroundColor: SAMURAI_COLORS.background.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderLeftWidth: 3,
+    borderLeftColor: SAMURAI_COLORS.accent,
+    ...SAMURAI_PATTERNS.shadowSmall,
   },
   reminderHeader: {
     flexDirection: 'row',
@@ -918,6 +921,7 @@ const styles = StyleSheet.create({
   reminderIcon: {
     fontSize: 24,
     marginRight: 12,
+    color: SAMURAI_COLORS.accent,
   },
   reminderDetails: {
     flex: 1,
@@ -925,27 +929,27 @@ const styles = StyleSheet.create({
   reminderTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
     marginBottom: 4,
   },
   reminderDate: {
     fontSize: 14,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
     marginBottom: 2,
   },
   reminderCategory: {
     fontSize: 12,
-    color: '#4CAF50',
+    color: SAMURAI_COLORS.accent,
     fontWeight: '500',
   },
   reminderAmount: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#4CAF50',
+    color: SAMURAI_COLORS.semantic.income,
   },
   reminderNote: {
     fontSize: 14,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
     marginBottom: 12,
     fontStyle: 'italic',
   },
@@ -962,13 +966,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   actionButtonPrimary: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: SAMURAI_COLORS.accent,
     flex: 1,
   },
   actionButtonSecondary: {
-    backgroundColor: '#fff',
+    backgroundColor: SAMURAI_COLORS.background.surface,
     borderWidth: 1,
-    borderColor: '#4CAF50',
+    borderColor: SAMURAI_COLORS.accent,
     flex: 1,
   },
   actionButtonTextPrimary: {
@@ -977,7 +981,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   actionButtonTextSecondary: {
-    color: '#4CAF50',
+    color: SAMURAI_COLORS.accent,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -986,14 +990,16 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: SAMURAI_COLORS.background.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '90%',
+    borderTopWidth: 3,
+    borderTopColor: SAMURAI_COLORS.accent,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1001,19 +1007,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: SAMURAI_COLORS.border.primary,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
   },
   modalBody: {
     padding: 20,
   },
   selectedDateText: {
     fontSize: 16,
-    color: '#4CAF50',
+    color: SAMURAI_COLORS.accent,
     fontWeight: '600',
     marginBottom: 20,
     textAlign: 'center',
@@ -1021,18 +1027,19 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
     marginBottom: 8,
     marginTop: 12,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: SAMURAI_COLORS.border.primary,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#333',
-    backgroundColor: '#fff',
+    color: SAMURAI_COLORS.text.primary,
+    backgroundColor: SAMURAI_COLORS.background.primary,
+    ...SAMURAI_PATTERNS.inputField,
   },
   textArea: {
     height: 80,
@@ -1043,28 +1050,28 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: SAMURAI_COLORS.border.primary,
     borderRadius: 8,
     padding: 12,
-    backgroundColor: '#fff',
+    backgroundColor: SAMURAI_COLORS.background.primary,
   },
   categoryButtonText: {
     fontSize: 16,
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
   },
   categoryPicker: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: SAMURAI_COLORS.border.primary,
     borderRadius: 8,
     marginTop: 8,
-    backgroundColor: '#fff',
+    backgroundColor: SAMURAI_COLORS.background.primary,
   },
   categoryOption: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: SAMURAI_COLORS.border.primary,
   },
   categoryOptionIcon: {
     fontSize: 20,
@@ -1072,14 +1079,14 @@ const styles = StyleSheet.create({
   },
   categoryOptionText: {
     fontSize: 16,
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
     flex: 1,
   },
   modalFooter: {
     flexDirection: 'row',
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: SAMURAI_COLORS.border.primary,
     gap: 12,
   },
   modalButton: {
@@ -1089,12 +1096,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalButtonPrimary: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: SAMURAI_COLORS.accent,
   },
   modalButtonSecondary: {
-    backgroundColor: '#fff',
+    backgroundColor: SAMURAI_COLORS.background.primary,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: SAMURAI_COLORS.border.primary,
   },
   modalButtonTextPrimary: {
     color: '#fff',
@@ -1102,7 +1109,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   modalButtonTextSecondary: {
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
     fontSize: 16,
     fontWeight: '600',
   },

@@ -15,6 +15,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createEntry } from "../api/entries";
 import { getCategories, Category, ExpenseType } from "../api/categories";
+import { SAMURAI_COLORS, SAMURAI_PATTERNS } from "../theme/SAMURAI_COLORS";
 
 const LAST_CATEGORY_KEY = "@last_expense_category";
 
@@ -180,7 +181,7 @@ export default function AddExpenseScreen({ navigation, route }: any) {
     if (loadingCategories) {
       return (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color="#F44336" />
+          <ActivityIndicator size="small" color={SAMURAI_COLORS.semantic.expense} />
         </View>
       );
     }
@@ -264,7 +265,7 @@ export default function AddExpenseScreen({ navigation, route }: any) {
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
-            <Ionicons name="arrow-back" size={24} color="#333" />
+            <Ionicons name="arrow-back" size={24} color={SAMURAI_COLORS.text.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Add Expense</Text>
           <View style={{ width: 24 }} />
@@ -301,9 +302,9 @@ export default function AddExpenseScreen({ navigation, route }: any) {
             onPress={() => setShowDatePicker(true)}
             style={styles.datePickerButton}
           >
-            <Ionicons name="calendar-outline" size={24} color="#F44336" />
+            <Ionicons name="calendar-outline" size={24} color={SAMURAI_COLORS.semantic.expense} />
             <Text style={styles.datePickerText}>{formatDateForDisplay(date)}</Text>
-            <Ionicons name="chevron-down" size={20} color="#666" />
+            <Ionicons name="chevron-down" size={20} color={SAMURAI_COLORS.text.secondary} />
           </TouchableOpacity>
 
           {/* Date Picker Modal */}
@@ -323,7 +324,7 @@ export default function AddExpenseScreen({ navigation, route }: any) {
               onPress={() => adjustDate(-1)}
               style={styles.dateNavButton}
             >
-              <Ionicons name="chevron-back" size={20} color="#F44336" />
+              <Ionicons name="chevron-back" size={20} color={SAMURAI_COLORS.semantic.expense} />
               <Text style={styles.dateNavText}>Previous Day</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -335,7 +336,7 @@ export default function AddExpenseScreen({ navigation, route }: any) {
               <Ionicons
                 name="chevron-forward"
                 size={20}
-                color={date >= new Date() ? "#ccc" : "#F44336"}
+                color={date >= new Date() ? SAMURAI_COLORS.text.tertiary : SAMURAI_COLORS.semantic.expense}
               />
             </TouchableOpacity>
           </View>
@@ -398,7 +399,7 @@ export default function AddExpenseScreen({ navigation, route }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: SAMURAI_COLORS.background.primary,
   },
   content: {
     padding: 20,
@@ -416,7 +417,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#333",
+    color: SAMURAI_COLORS.text.primary,
   },
   section: {
     marginBottom: 24,
@@ -424,32 +425,28 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: SAMURAI_COLORS.text.primary,
     marginBottom: 8,
   },
   amountContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: SAMURAI_COLORS.background.surface,
     borderRadius: 12,
     padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...SAMURAI_PATTERNS.shadowSmall,
   },
   currencySymbol: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#F44336",
+    color: SAMURAI_COLORS.semantic.expense,
     marginRight: 8,
   },
   amountInput: {
     flex: 1,
     fontSize: 32,
     fontWeight: "bold",
-    color: "#333",
+    color: SAMURAI_COLORS.text.primary,
   },
   loadingContainer: {
     padding: 20,
@@ -475,7 +472,7 @@ const styles = StyleSheet.create({
   categoryGroupTitle: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#666",
+    color: SAMURAI_COLORS.text.secondary,
   },
   categoryRow: {
     flexDirection: "row",
@@ -483,23 +480,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryButton: {
-    backgroundColor: "#fff",
+    backgroundColor: SAMURAI_COLORS.background.surface,
     borderRadius: 8,
     padding: 8,
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#ddd",
+    borderColor: SAMURAI_COLORS.border.primary,
     width: "31%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    ...SAMURAI_PATTERNS.shadowSmall,
   },
   categoryButtonSelected: {
     borderWidth: 2,
-    shadowOpacity: 0.15,
-    elevation: 3,
+    ...SAMURAI_PATTERNS.shadowMedium,
   },
   categoryIconSmall: {
     width: 36,
@@ -515,21 +507,17 @@ const styles = StyleSheet.create({
   categoryButtonText: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#333",
+    color: SAMURAI_COLORS.text.primary,
     textAlign: "center",
   },
   dateContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#fff",
+    backgroundColor: SAMURAI_COLORS.background.surface,
     borderRadius: 12,
     padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...SAMURAI_PATTERNS.shadowSmall,
   },
   dateButton: {
     padding: 8,
@@ -537,7 +525,7 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: SAMURAI_COLORS.text.primary,
   },
   quickDateButtons: {
     flexDirection: "row",
@@ -546,45 +534,37 @@ const styles = StyleSheet.create({
   },
   quickDateButton: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: SAMURAI_COLORS.background.surface,
     borderRadius: 8,
     padding: 12,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#F44336",
+    borderColor: SAMURAI_COLORS.semantic.expense,
   },
   quickDateText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#F44336",
+    color: SAMURAI_COLORS.semantic.expense,
   },
   noteInput: {
-    backgroundColor: "#fff",
+    backgroundColor: SAMURAI_COLORS.background.surface,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: "#333",
+    color: SAMURAI_COLORS.text.primary,
     minHeight: 100,
     textAlignVertical: "top",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...SAMURAI_PATTERNS.shadowSmall,
   },
   saveButton: {
-    backgroundColor: "#F44336",
+    backgroundColor: SAMURAI_COLORS.semantic.expense,
     borderRadius: 12,
     padding: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     marginTop: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 5,
+    ...SAMURAI_PATTERNS.shadowMedium,
   },
   saveButtonDisabled: {
     opacity: 0.6,
@@ -598,21 +578,17 @@ const styles = StyleSheet.create({
   datePickerButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: SAMURAI_COLORS.background.surface,
     borderRadius: 12,
     padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...SAMURAI_PATTERNS.shadowSmall,
     gap: 12,
   },
   datePickerText: {
     flex: 1,
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: SAMURAI_COLORS.text.primary,
   },
   dateNavigation: {
     flexDirection: "row",
@@ -625,16 +601,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff",
+    backgroundColor: SAMURAI_COLORS.background.surface,
     borderRadius: 8,
     padding: 10,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: SAMURAI_COLORS.border.primary,
     gap: 6,
   },
   dateNavText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#666",
+    color: SAMURAI_COLORS.semantic.expense,
   },
 });

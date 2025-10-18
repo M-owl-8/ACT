@@ -1,4 +1,4 @@
-// AuthScreens.tsx
+// AuthScreens.tsx - English version
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -15,8 +15,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useFonts, Noto_Serif_JP_400Regular, Noto_Serif_JP_700Bold } from '@expo-google-fonts/noto-serif-jp';
-import { NotoSansJP_400Regular, NotoSansJP_700Bold } from '@expo-google-fonts/noto-sans-jp';
+import { useFonts, Roboto_400Regular, Roboto_700Bold } from '@expo-google-fonts/roboto';
 import { MaterialIcons } from '@expo/vector-icons';
 import Svg, { Path, Circle, G, Ellipse, Rect } from 'react-native-svg';
 
@@ -39,19 +38,19 @@ const THEME = {
   panel: 'rgba(255,255,255,0.92)',
 };
 
-function JapaneseHeader({ small = false }) {
-  // simple decorative header (sun, branch, Fuji)
+function AppHeader({ small = false }) {
+  // simple decorative header
   return (
     <View style={styles.headerWrap} pointerEvents="none">
       <Svg style={styles.svg} viewBox="0 0 380 200" preserveAspectRatio="xMidYMid slice">
         {/* Large sun (left) */}
         <Circle cx="60" cy="60" r="45" fill="#dd5b3f" />
-        {/* Fuji simplified */}
+        {/* Mountain simplified */}
         <G transform="translate(60,30)">
           <Path d="M20 120 L160 10 L300 120 Z" fill="#e9e6e3" />
           <Path d="M120 20 L160 10 L200 35 L175 10 L160 8 L140 30 Z" fill="#fff" opacity="0.95" />
         </G>
-        {/* cherry branch top-right */}
+        {/* decorative branch top-right */}
         <G transform="translate(260,6)">
           <Path d="M0 30 C 16 26 36 24 58 10" stroke="#3b2a22" strokeWidth="3" fill="none" strokeLinecap="round" />
           <G transform="translate(44,6)" fill="#dd5b3f" stroke="#7a3b2f" strokeWidth="0.8">
@@ -63,10 +62,10 @@ function JapaneseHeader({ small = false }) {
       </Svg>
       
       <View style={styles.brandRow}>
-        <View style={styles.logo}><Text style={{fontSize:20}}>🌸</Text></View>
+        <View style={styles.logo}><Text style={{fontSize:20}}>✨</Text></View>
         <View>
-          <Text style={styles.brandTitle}>桜 Studio</Text>
-          {!small && <Text style={styles.brandSubtitle}>Quiet · Minimal · Japanese-inspired</Text>}
+          <Text style={styles.brandTitle}>ACT Studio</Text>
+          {!small && <Text style={styles.brandSubtitle}>Clean · Minimal · Secure</Text>}
         </View>
       </View>
     </View>
@@ -113,12 +112,10 @@ function Field({ placeholder, secureTextEntry, value, onChangeText, icon, keyboa
 }
 
 /* Default export: SignInScreen */
-export default function SignInScreen({ onSignIn = (c: any) => Alert.alert('SignIn', JSON.stringify(c)), onSwitch = () => {}, style }: any) {
+export default function SignInScreen({ onSignIn = (c: any) => Alert.alert('Sign In', JSON.stringify(c)), onSwitch = () => {}, style }: any) {
   const [fontsLoaded] = useFonts({
-    Noto_Serif_JP_400Regular,
-    Noto_Serif_JP_700Bold,
-    NotoSansJP_400Regular,
-    NotoSansJP_700Bold,
+    Roboto_400Regular,
+    Roboto_700Bold,
   });
   
   const [email, setEmail] = useState('');
@@ -136,11 +133,11 @@ export default function SignInScreen({ onSignIn = (c: any) => Alert.alert('SignI
     ]).start();
   }, []);
   
-  if (!fontsLoaded) return null; // or a loader
+  if (!fontsLoaded) return null;
   
   async function submit() {
     if (!email || !password) {
-      return Alert.alert('入力エラー', 'メールアドレスとパスワードを入力してください。');
+      return Alert.alert('Input Error', 'Please enter your email and password.');
     }
     setIsLoading(true);
     try {
@@ -155,13 +152,13 @@ export default function SignInScreen({ onSignIn = (c: any) => Alert.alert('SignI
   return (
     <KeyboardAvoidingView style={[styles.container, style]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <LinearGradient colors={[THEME.paper, '#fffdf9']} style={styles.background}>
-        <JapaneseHeader />
+        <AppHeader />
         <Animated.View style={[styles.card, { transform: [{ translateY }], opacity }]}>
-          <Text style={styles.bigTitle}>サインイン</Text>
-          <Text style={styles.lead}>メールアドレスとパスワードでログイン</Text>
+          <Text style={styles.bigTitle}>Sign In</Text>
+          <Text style={styles.lead}>Enter your email and password</Text>
           
           <Field
-            placeholder="メールアドレス"
+            placeholder="Email Address"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -169,7 +166,7 @@ export default function SignInScreen({ onSignIn = (c: any) => Alert.alert('SignI
             editable={!isLoading}
           />
           <Field
-            placeholder="パスワード"
+            placeholder="Password"
             secureTextEntry
             value={password}
             onChangeText={setPassword}
@@ -186,7 +183,7 @@ export default function SignInScreen({ onSignIn = (c: any) => Alert.alert('SignI
             {isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.primaryText}>サインイン</Text>
+              <Text style={styles.primaryText}>Sign In</Text>
             )}
           </TouchableOpacity>
           
@@ -195,7 +192,7 @@ export default function SignInScreen({ onSignIn = (c: any) => Alert.alert('SignI
             onPress={() => onSwitch('signup')}
             disabled={isLoading}
           >
-            <Text style={styles.ghostText}>アカウントを作成する</Text>
+            <Text style={styles.ghostText}>Don't have an account? Create one</Text>
           </TouchableOpacity>
          
         </Animated.View>
@@ -205,12 +202,10 @@ export default function SignInScreen({ onSignIn = (c: any) => Alert.alert('SignI
 }
 
 /* Named export: SignUpScreen */
-export function SignUpScreen({ onSignUp = (c: any) => Alert.alert('SignUp', JSON.stringify(c)), onSwitch = () => {}, style }: any) {
+export function SignUpScreen({ onSignUp = (c: any) => Alert.alert('Sign Up', JSON.stringify(c)), onSwitch = () => {}, style }: any) {
   const [fontsLoaded] = useFonts({
-    Noto_Serif_JP_400Regular,
-    Noto_Serif_JP_700Bold,
-    NotoSansJP_400Regular,
-    NotoSansJP_700Bold,
+    Roboto_400Regular,
+    Roboto_700Bold,
   });
   
   const [name, setName] = useState('');
@@ -231,7 +226,7 @@ export function SignUpScreen({ onSignUp = (c: any) => Alert.alert('SignUp', JSON
   if (!fontsLoaded) return null;
   
   async function submit() {
-    if (!name || !email || !password) return Alert.alert('入力エラー', '全てのフィールドを入力してください。');
+    if (!name || !email || !password) return Alert.alert('Input Error', 'Please fill in all fields.');
     setIsLoading(true);
     try {
       await onSignUp({ name, email: email.trim().toLowerCase(), password });
@@ -245,14 +240,14 @@ export function SignUpScreen({ onSignUp = (c: any) => Alert.alert('SignUp', JSON
   return (
     <KeyboardAvoidingView style={[styles.container, style]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <LinearGradient colors={[THEME.paper, '#fffdf9']} style={styles.background}>
-        <JapaneseHeader small />
+        <AppHeader small />
         <Animated.View style={[styles.card, { transform: [{ translateY }], opacity }]}>
-          <Text style={styles.bigTitle}>アカウント作成</Text>
-          <Text style={styles.lead}>桜 Studio にようこそ — アカウントを作成してください</Text>
+          <Text style={styles.bigTitle}>Create Account</Text>
+          <Text style={styles.lead}>Welcome to ACT Studio — Create your account</Text>
           
-          <Field placeholder="フルネーム" value={name} onChangeText={setName} icon="person" editable={!isLoading} />
-          <Field placeholder="メールアドレス" value={email} onChangeText={setEmail} keyboardType="email-address" icon="email" editable={!isLoading} />
-          <Field placeholder="パスワード" secureTextEntry value={password} onChangeText={setPassword} icon="lock" editable={!isLoading} />
+          <Field placeholder="Full Name" value={name} onChangeText={setName} icon="person" editable={!isLoading} />
+          <Field placeholder="Email Address" value={email} onChangeText={setEmail} keyboardType="email-address" icon="email" editable={!isLoading} />
+          <Field placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} icon="lock" editable={!isLoading} />
           
           <TouchableOpacity 
             accessibilityRole="button" 
@@ -263,7 +258,7 @@ export function SignUpScreen({ onSignUp = (c: any) => Alert.alert('SignUp', JSON
             {isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.primaryText}>アカウントを作成</Text>
+              <Text style={styles.primaryText}>Create Account</Text>
             )}
           </TouchableOpacity>
           
@@ -272,7 +267,7 @@ export function SignUpScreen({ onSignUp = (c: any) => Alert.alert('SignUp', JSON
             onPress={() => onSwitch('signin')}
             disabled={isLoading}
           >
-            <Text style={styles.ghostText}>既にアカウントをお持ちですか？ サインイン</Text>
+            <Text style={styles.ghostText}>Already have an account? Sign In</Text>
           </TouchableOpacity>
          
         </Animated.View>
@@ -290,15 +285,15 @@ const styles = StyleSheet.create({
   svg: { width: '100%', height: 140 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: -36, paddingHorizontal: 6 },
   logo: { width: 54, height: 54, borderRadius: 12, backgroundColor: THEME.sakuraLight, alignItems: 'center', justifyContent: 'center', marginRight: 10, borderWidth: 1, borderColor: 'rgba(0,0,0,0.04)' },
-  brandTitle: { fontFamily: 'Noto_Serif_JP_700Bold', fontSize: 18, color: THEME.ink },
+  brandTitle: { fontFamily: 'Roboto_700Bold', fontSize: 18, color: THEME.ink },
   brandSubtitle: { fontSize: 12, color: THEME.muted },
   
   card: { width: '92%', backgroundColor: THEME.panel, borderRadius: 16, padding: 18, marginTop: 6, shadowColor: '#000', shadowOpacity: 0.06, shadowOffset: { width: 0, height: 8 }, elevation: 6, alignSelf: 'center' },
-  bigTitle: { fontFamily: 'Noto_Serif_JP_700Bold', fontSize: 28, textAlign: 'center', color: THEME.ink, marginBottom: 6 },
-  lead: { fontFamily: 'NotoSansJP_400Regular', fontSize: 13, color: THEME.muted, textAlign: 'center', marginBottom: 16 },
+  bigTitle: { fontFamily: 'Roboto_700Bold', fontSize: 28, textAlign: 'center', color: THEME.ink, marginBottom: 6 },
+  lead: { fontFamily: 'Roboto_400Regular', fontSize: 13, color: THEME.muted, textAlign: 'center', marginBottom: 16 },
   
   field: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(67,58,52,0.06)', backgroundColor: '#fffaf6', marginBottom: 10 },
-  input: { flex: 1, paddingVertical: 10, fontSize: 15, color: THEME.ink, fontFamily: 'NotoSansJP_400Regular' },
+  input: { flex: 1, paddingVertical: 10, fontSize: 15, color: THEME.ink, fontFamily: 'Roboto_400Regular' },
   
   primaryButton: { marginTop: 8, paddingVertical: 14, borderRadius: 12, backgroundColor: THEME.sakura, alignItems: 'center', justifyContent: 'center', shadowColor: THEME.sakura, shadowOpacity: 0.18, shadowOffset: { width: 0, height: 10 }, elevation: 4 },
   buttonDisabled: { opacity: 0.6 },

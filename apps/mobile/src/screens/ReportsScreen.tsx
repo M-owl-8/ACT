@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../api/client';
+import { SAMURAI_COLORS, SAMURAI_PATTERNS } from '../theme/SAMURAI_COLORS';
 
 const { width } = Dimensions.get('window');
 
@@ -324,7 +325,7 @@ export default function ReportsScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Reports</Text>
         <TouchableOpacity onPress={fetchReport}>
-          <Ionicons name="refresh" size={24} color="#333" />
+          <Ionicons name="refresh" size={24} color={SAMURAI_COLORS.accent.red} />
         </TouchableOpacity>
       </View>
 
@@ -333,12 +334,12 @@ export default function ReportsScreen() {
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4CAF50" />
+          <ActivityIndicator size="large" color={SAMURAI_COLORS.accent.red} />
           <Text style={styles.loadingText}>Loading report...</Text>
         </View>
       ) : !reportData ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="bar-chart-outline" size={80} color="#ccc" />
+          <Ionicons name="bar-chart-outline" size={80} color={SAMURAI_COLORS.text.tertiary} />
           <Text style={styles.emptyTitle}>No Data Available</Text>
           <Text style={styles.emptyMessage}>
             Start tracking your income and expenses to see reports here.
@@ -347,7 +348,7 @@ export default function ReportsScreen() {
             style={styles.retryButton}
             onPress={fetchReport}
           >
-            <Ionicons name="refresh" size={20} color="#fff" />
+            <Ionicons name="refresh" size={20} color={SAMURAI_COLORS.text.primary} />
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -367,7 +368,7 @@ export default function ReportsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: SAMURAI_COLORS.background.primary,
   },
   header: {
     flexDirection: 'row',
@@ -375,19 +376,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#FFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    backgroundColor: SAMURAI_COLORS.background.surface,
+    borderBottomWidth: 2,
+    borderBottomColor: SAMURAI_COLORS.accent.red,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
   },
   tabsContainer: {
-    backgroundColor: '#FFF',
+    backgroundColor: SAMURAI_COLORS.background.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: SAMURAI_COLORS.border.primary,
   },
   tab: {
     paddingHorizontal: 20,
@@ -396,15 +397,15 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 3,
-    borderBottomColor: '#4CAF50',
+    borderBottomColor: SAMURAI_COLORS.accent.red,
   },
   tabText: {
     fontSize: 14,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
     fontWeight: '500',
   },
   activeTabText: {
-    color: '#4CAF50',
+    color: SAMURAI_COLORS.accent.red,
     fontWeight: 'bold',
   },
   dateRangeContainer: {
@@ -412,12 +413,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
-    backgroundColor: '#FFF',
+    backgroundColor: SAMURAI_COLORS.background.surface,
     gap: 6,
   },
   dateRangeText: {
     fontSize: 12,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
   },
   content: {
     flex: 1,
@@ -430,7 +431,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
   },
   emptyContainer: {
     flex: 1,
@@ -441,35 +442,35 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
     marginTop: 16,
     marginBottom: 8,
   },
   emptyMessage: {
     fontSize: 14,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
     textAlign: 'center',
     marginBottom: 24,
   },
   retryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#4CAF50',
+    backgroundColor: SAMURAI_COLORS.accent.red,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
     gap: 8,
   },
   retryButtonText: {
-    color: '#fff',
+    color: SAMURAI_COLORS.text.primary,
     fontSize: 16,
     fontWeight: '600',
   },
   alertBanner: {
     flexDirection: 'row',
-    backgroundColor: '#FFF3CD',
+    backgroundColor: SAMURAI_COLORS.opacity.redSubtle,
     borderLeftWidth: 4,
-    borderLeftColor: '#FF6B6B',
+    borderLeftColor: SAMURAI_COLORS.accent.red,
     padding: 16,
     margin: 16,
     borderRadius: 8,
@@ -481,12 +482,12 @@ const styles = StyleSheet.create({
   alertTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#856404',
+    color: SAMURAI_COLORS.accent.red,
     marginBottom: 4,
   },
   alertMessage: {
     fontSize: 14,
-    color: '#856404',
+    color: SAMURAI_COLORS.accent.red,
     lineHeight: 20,
   },
   summaryContainer: {
@@ -498,62 +499,54 @@ const styles = StyleSheet.create({
   summaryCard: {
     flex: 1,
     minWidth: (width - 48) / 2,
-    backgroundColor: '#FFF',
+    backgroundColor: SAMURAI_COLORS.background.surface,
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...SAMURAI_PATTERNS.shadowSmall,
   },
   incomeCard: {
     borderTopWidth: 3,
-    borderTopColor: '#4CAF50',
+    borderTopColor: SAMURAI_COLORS.semantic.income,
   },
   expenseCard: {
     borderTopWidth: 3,
-    borderTopColor: '#FF6B6B',
+    borderTopColor: SAMURAI_COLORS.accent.red,
   },
   netCard: {
     width: '100%',
     borderTopWidth: 3,
-    borderTopColor: '#2196F3',
+    borderTopColor: SAMURAI_COLORS.semantic.info,
   },
   summaryLabel: {
     fontSize: 14,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
     marginTop: 8,
     marginBottom: 4,
   },
   summaryAmount: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
   },
   positiveAmount: {
-    color: '#4CAF50',
+    color: SAMURAI_COLORS.semantic.income,
   },
   negativeAmount: {
-    color: '#FF6B6B',
+    color: SAMURAI_COLORS.accent.red,
   },
   section: {
-    backgroundColor: '#FFF',
+    backgroundColor: SAMURAI_COLORS.background.surface,
     marginHorizontal: 16,
     marginBottom: 16,
     padding: 16,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...SAMURAI_PATTERNS.shadowSmall,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
     marginBottom: 16,
   },
   barChartContainer: {
@@ -569,13 +562,13 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   mandatoryBar: {
-    backgroundColor: '#2196F3',
+    backgroundColor: SAMURAI_COLORS.semantic.info,
   },
   neutralBar: {
-    backgroundColor: '#FFC107',
+    backgroundColor: SAMURAI_COLORS.semantic.neutral,
   },
   excessBar: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: SAMURAI_COLORS.accent.red,
   },
   legendContainer: {
     gap: 8,
@@ -593,33 +586,33 @@ const styles = StyleSheet.create({
   legendText: {
     flex: 1,
     fontSize: 14,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
   },
   legendAmount: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
   },
   categoryItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: SAMURAI_COLORS.border.primary,
     gap: 12,
   },
   categoryRank: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#4CAF50',
+    backgroundColor: SAMURAI_COLORS.accent.red,
     justifyContent: 'center',
     alignItems: 'center',
   },
   rankText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: SAMURAI_COLORS.text.primary,
   },
   categoryInfo: {
     flex: 1,
@@ -636,20 +629,20 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
   },
   categoryCount: {
     fontSize: 12,
-    color: '#999',
+    color: SAMURAI_COLORS.text.tertiary,
   },
   categoryAmount: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: SAMURAI_COLORS.accent.red,
   },
   emptyText: {
     fontSize: 14,
-    color: '#999',
+    color: SAMURAI_COLORS.text.tertiary,
     textAlign: 'center',
     paddingVertical: 20,
   },

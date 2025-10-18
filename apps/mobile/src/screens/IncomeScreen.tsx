@@ -158,7 +158,7 @@ export default function IncomeScreen({ navigation }: any) {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#4CAF50" />
+        <ActivityIndicator size="large" color="#66BB6A" />
         <Text style={styles.loadingText}>Loading income...</Text>
       </View>
     );
@@ -189,7 +189,8 @@ export default function IncomeScreen({ navigation }: any) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#4CAF50"]}
+            colors={["#EF5350"]}
+            tintColor="#EF5350"
           />
         }
         ListEmptyComponent={
@@ -217,46 +218,51 @@ export default function IncomeScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#0B0B0E",
   },
   centerContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#0B0B0E",
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: "#666",
+    color: "#BDBDBD",
   },
   header: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#111217",
     paddingTop: 60,
     paddingBottom: 24,
     paddingHorizontal: 20,
+    borderBottomWidth: 2,
+    borderBottomColor: "#EF5350",
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "bold",
-    color: "#fff",
+    color: "#F4F4F5",
     marginBottom: 16,
+    letterSpacing: 1,
   },
   totalsCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: "rgba(102, 187, 106, 0.15)",
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
+    borderLeftWidth: 3,
+    borderLeftColor: "#66BB6A",
   },
   totalAmount: {
     fontSize: 36,
     fontWeight: "bold",
-    color: "#fff",
+    color: "#66BB6A",
     marginBottom: 4,
   },
   totalCount: {
     fontSize: 14,
-    color: "#fff",
+    color: "#BDBDBD",
     opacity: 0.9,
   },
   listContent: {
@@ -264,16 +270,18 @@ const styles = StyleSheet.create({
     paddingBottom: 80,
   },
   entryCard: {
-    backgroundColor: "#fff",
+    backgroundColor: "#111217",
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    borderLeftWidth: 3,
+    borderLeftColor: "#EF5350",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -299,17 +307,17 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: "#F4F4F5",
     marginBottom: 2,
   },
   entryDate: {
     fontSize: 13,
-    color: "#666",
+    color: "#BDBDBD",
     marginBottom: 2,
   },
   entryNote: {
     fontSize: 12,
-    color: "#999",
+    color: "#757575",
     fontStyle: "italic",
   },
   entryRight: {
@@ -318,7 +326,7 @@ const styles = StyleSheet.create({
   entryAmount: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#4CAF50",
+    color: "#66BB6A",
     marginBottom: 8,
   },
   entryActions: {
@@ -336,12 +344,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#999",
+    color: "#757575",
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: "#bbb",
+    color: "#424242",
     marginTop: 8,
     textAlign: "center",
   },
@@ -352,13 +360,13 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#66BB6A",
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 8,
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 12,
   },
 });

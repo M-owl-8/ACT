@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import { API } from '../api/client';
+import { registerPushTokenAfterLogin } from '../services/notificationService';
 
 type User = {
   id: number;
@@ -35,6 +36,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await SecureStore.setItemAsync('access', access);
       await SecureStore.setItemAsync('refresh', refresh);
       set({ accessToken: access, refreshToken: refresh });
+      
+      // Register push token with backend after successful login
+      registerPushTokenAfterLogin().catch(error => {
+        console.warn('Failed to register push token after login:', error);
+      });
     } catch (error) {
       console.error('Failed to save tokens:', error);
       throw error;

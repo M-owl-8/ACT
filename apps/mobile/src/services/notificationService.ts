@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+import { API } from '../api/client';
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -105,6 +106,37 @@ class NotificationService {
    */
   getPushToken(): string | null {
     return this.expoPushToken;
+  }
+
+  /**
+   * Register push token with backend
+   */
+  async registerTokenWithBackend(): Promise<boolean> {
+    try {
+      if (!this.expoPushToken) {
+        console.warn('No push token available to register');
+        return false;
+      }
+
+      console.log('📤 Registering push token with backend...');
+      
+      await API.post('/push/register', {
+        token: this.expoPushToken,
+        device_type: Platform.OS,
+        device_name: `${Platform.OS}-${Constants.deviceName || 'device'}`,
+      });
+
+      console.log('✅ Push token registered with backend successfully');
+      return true;
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        // User not authenticated yet, this is normal
+        console.log('ℹ️ User not authenticated yet, will register token after login');
+        return false;
+      }
+      console.error('❌ Failed to register push token with backend:', error.message);
+      return false;
+    }
   }
 
   /**
@@ -272,18 +304,40 @@ export const notificationService = new NotificationService();
  */
 export const initializeNotifications = async (): Promise<void> => {
   try {
-    console.log('Initializing notifications...');
+    console.log('🔔 Initializing notifications...');
     
     // Register for push notifications
     const token = await notificationService.registerForPushNotifications();
     
     if (token) {
       console.log('✅ Notifications initialized. Push token:', token);
+      
+      // Try to register token with backend
+      // This will fail with 401 if user not authenticated (which is OK)
+      setTimeout(async () => {
+        await notificationService.registerTokenWithBackend();
+      }, 1000);
     } else {
       console.log('⚠️ Notifications initialized without push token (emulator or permissions denied)');
     }
   } catch (error) {
     console.error('Failed to initialize notifications:', error);
+  }
+};
+
+/**
+ * Register push token with backend after login
+ * Call this after successful authentication
+ */
+export const registerPushTokenAfterLogin = async (): Promise<void> => {
+  try {
+    const token = notificationService.getPushToken();
+    if (token) {
+      console.log('🔐 Registering push token after login...');
+      await notificationService.registerTokenWithBackend();
+    }
+  } catch (error) {
+    console.error('Failed to register push token after login:', error);
   }
 };
 

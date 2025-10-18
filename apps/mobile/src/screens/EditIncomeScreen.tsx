@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { updateEntry, Entry } from "../api/entries";
+import { SAMURAI_COLORS, SAMURAI_PATTERNS } from "../theme/SAMURAI_COLORS";
 
 export default function EditIncomeScreen({ navigation, route }: any) {
   const { entry, onSave } = route.params as { entry: Entry; onSave: () => void };
@@ -183,7 +184,7 @@ export default function EditIncomeScreen({ navigation, route }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: SAMURAI_COLORS.background.primary,
   },
   content: {
     padding: 20,
@@ -201,7 +202,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#333",
+    color: SAMURAI_COLORS.text.primary,
   },
   section: {
     marginBottom: 24,
@@ -209,45 +210,37 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: SAMURAI_COLORS.text.primary,
     marginBottom: 8,
   },
   amountContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: SAMURAI_COLORS.background.surface,
     borderRadius: 12,
     padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...SAMURAI_PATTERNS.shadowSmall,
   },
   currencySymbol: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#4CAF50",
+    color: SAMURAI_COLORS.semantic.income,
     marginRight: 8,
   },
   amountInput: {
     flex: 1,
     fontSize: 32,
     fontWeight: "bold",
-    color: "#333",
+    color: SAMURAI_COLORS.text.primary,
   },
   dateContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#fff",
+    backgroundColor: SAMURAI_COLORS.background.surface,
     borderRadius: 12,
     padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...SAMURAI_PATTERNS.shadowSmall,
   },
   dateButton: {
     padding: 8,
@@ -255,7 +248,7 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: SAMURAI_COLORS.text.primary,
   },
   quickDateButtons: {
     flexDirection: "row",
@@ -264,45 +257,37 @@ const styles = StyleSheet.create({
   },
   quickDateButton: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: SAMURAI_COLORS.background.surface,
     borderRadius: 8,
     padding: 12,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#4CAF50",
+    borderColor: SAMURAI_COLORS.semantic.income,
   },
   quickDateText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#4CAF50",
+    color: SAMURAI_COLORS.semantic.income,
   },
   noteInput: {
-    backgroundColor: "#fff",
+    backgroundColor: SAMURAI_COLORS.background.surface,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: "#333",
+    color: SAMURAI_COLORS.text.primary,
     minHeight: 100,
     textAlignVertical: "top",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...SAMURAI_PATTERNS.shadowSmall,
   },
   saveButton: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: SAMURAI_COLORS.semantic.income,
     borderRadius: 12,
     padding: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     marginTop: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 5,
+    ...SAMURAI_PATTERNS.shadowMedium,
   },
   saveButtonDisabled: {
     opacity: 0.6,

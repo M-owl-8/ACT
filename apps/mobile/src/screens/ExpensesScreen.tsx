@@ -221,7 +221,7 @@ export default function ExpensesScreen({ navigation }: any) {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#F44336" />
+        <ActivityIndicator size="large" color="#EF5350" />
         <Text style={styles.loadingText}>Loading expenses...</Text>
       </View>
     );
@@ -341,7 +341,8 @@ export default function ExpensesScreen({ navigation }: any) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#F44336"]}
+            colors={["#EF5350"]}
+            tintColor="#EF5350"
           />
         }
         onEndReached={loadMore}
@@ -349,7 +350,7 @@ export default function ExpensesScreen({ navigation }: any) {
         ListFooterComponent={
           loadingMore ? (
             <View style={styles.loadingMore}>
-              <ActivityIndicator size="small" color="#F44336" />
+              <ActivityIndicator size="small" color="#EF5350" />
             </View>
           ) : null
         }
@@ -380,30 +381,33 @@ export default function ExpensesScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#0B0B0E",
   },
   centerContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#0B0B0E",
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: "#666",
+    color: "#BDBDBD",
   },
   header: {
-    backgroundColor: "#F44336",
+    backgroundColor: "#111217",
     paddingTop: 60,
     paddingBottom: 24,
     paddingHorizontal: 20,
+    borderBottomWidth: 2,
+    borderBottomColor: "#EF5350",
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "bold",
-    color: "#fff",
+    color: "#F4F4F5",
     marginBottom: 16,
+    letterSpacing: 1,
   },
   statsContainer: {
     flexDirection: "row",
@@ -412,54 +416,60 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: "rgba(239, 83, 80, 0.1)",
     borderRadius: 8,
     padding: 12,
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(239, 83, 80, 0.3)",
   },
   statLabel: {
     fontSize: 11,
-    color: "#fff",
+    color: "#BDBDBD",
     opacity: 0.9,
     marginBottom: 4,
   },
   statAmount: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#fff",
+    color: "#EF5350",
   },
   totalCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: "rgba(239, 83, 80, 0.12)",
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
+    borderLeftWidth: 4,
+    borderLeftColor: "#EF5350",
   },
   totalLabel: {
     fontSize: 12,
-    color: "#fff",
+    color: "#BDBDBD",
     opacity: 0.9,
     marginBottom: 4,
   },
   totalAmount: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#fff",
+    color: "#EF5350",
     marginBottom: 4,
   },
   totalCount: {
     fontSize: 14,
-    color: "#fff",
+    color: "#BDBDBD",
     opacity: 0.9,
   },
   segmentedControl: {
     flexDirection: "row",
-    backgroundColor: "#fff",
+    backgroundColor: "#111217",
     margin: 16,
     borderRadius: 8,
     padding: 4,
+    borderWidth: 1,
+    borderColor: "#1A1A1F",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -471,31 +481,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   segmentActive: {
-    backgroundColor: "#F44336",
+    backgroundColor: "#EF5350",
   },
   segmentText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#666",
+    color: "#757575",
   },
   segmentTextActive: {
-    color: "#fff",
+    color: "#F4F4F5",
   },
   listContent: {
     padding: 16,
     paddingBottom: 80,
   },
   entryCard: {
-    backgroundColor: "#fff",
+    backgroundColor: "#111217",
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    borderLeftWidth: 3,
+    borderLeftColor: "#EF5350",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -521,29 +533,29 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: "#F4F4F5",
     marginBottom: 2,
   },
   entryDate: {
     fontSize: 13,
-    color: "#666",
+    color: "#BDBDBD",
     marginBottom: 4,
   },
   typeBadge: {
     alignSelf: "flex-start",
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: 4,
     marginBottom: 4,
   },
   typeBadgeText: {
     fontSize: 10,
     fontWeight: "600",
-    color: "#fff",
+    color: "#F4F4F5",
   },
   entryNote: {
     fontSize: 12,
-    color: "#999",
+    color: "#757575",
     fontStyle: "italic",
   },
   entryRight: {
@@ -552,7 +564,7 @@ const styles = StyleSheet.create({
   entryAmount: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#F44336",
+    color: "#EF5350",
     marginBottom: 8,
   },
   entryActions: {
@@ -574,12 +586,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#999",
+    color: "#757575",
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: "#bbb",
+    color: "#424242",
     marginTop: 8,
     textAlign: "center",
   },
@@ -590,13 +602,13 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: "#F44336",
+    backgroundColor: "#EF5350",
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 8,
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 12,
   },
 });

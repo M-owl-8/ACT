@@ -11,6 +11,7 @@ from db import get_db
 from models import User, PushToken
 from security import get_current_user
 from pydantic import BaseModel
+from services.fcm_service import fcm_service
 
 
 router = APIRouter(prefix="/push", tags=["Push Notifications"])
@@ -162,6 +163,53 @@ def delete_all_push_tokens(
     db.commit()
     
     return None
+
+
+@router.post("/test-notification", status_code=200)
+def send_test_notification(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Send a test notification to verify FCM is working.
+    This is useful for debugging and testing the push notification system.
+    """
+    # Get active tokens for current user
+    tokens = get_active_tokens_for_user(db, current_user.id)
+    
+    if not tokens:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No active push tokens registered for this user. Please register a device first."
+        )
+    
+    # Send test notification
+    success_count, failed_tokens = fcm_service.send_multicast(
+        tokens=tokens,
+        title="🧪 Test Notification",
+        body="If you see this, push notifications are working!",
+        data={
+            "type": "test",
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+    )
+    
+    # Update last_used_at for successful tokens
+    for token in tokens:
+        if token not in failed_tokens:
+            update_token_last_used(db, token)
+    
+    # Deactivate failed tokens
+    for token in failed_tokens:
+        deactivate_invalid_token(db, token)
+    
+    return {
+        "success": True,
+        "message": f"Test notification sent to {success_count} device(s)",
+        "tokens_sent": success_count,
+        "tokens_failed": len(failed_tokens),
+        "failed_tokens": failed_tokens if failed_tokens else None
+    }
 
 
 # ===== HELPER FUNCTIONS (for internal use) =====

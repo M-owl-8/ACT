@@ -14,18 +14,18 @@ print("="*60)
 
 # Get database URL from config
 db_url = settings.DATABASE_URL
-print(f"📊 Database URL (first 60 chars): {db_url[:60]}...")
+print(f"[DB] Database URL (first 60 chars): {db_url[:60]}...")
 
 # Configure connection pool based on database type
 # CRITICAL: Use NullPool for async engines - QueuePool causes crashes!
 if "sqlite" in db_url.lower():
-    print("🔷 SQLite detected - using NullPool")
+    print("[DB] SQLite detected - using NullPool")
     pool_config = {
         "poolclass": NullPool,
         "connect_args": {"check_same_thread": False}
     }
 elif "postgresql" in db_url.lower() or "asyncpg" in db_url.lower():
-    print("🔷 PostgreSQL detected - using NullPool (async-safe)")
+    print("[DB] PostgreSQL detected - using NullPool (async-safe)")
     # For async engines, we must use NullPool to avoid blocking issues
     # Connection pooling is handled by the database driver (asyncpg)
     # Railway internal connections don't need SSL verification
@@ -39,7 +39,7 @@ elif "postgresql" in db_url.lower() or "asyncpg" in db_url.lower():
         }
     }
 else:
-    print("🔷 Unknown database - using NullPool (safe default)")
+    print("[DB] Unknown database - using NullPool (safe default)")
     pool_config = {
         "poolclass": NullPool
     }
@@ -47,20 +47,20 @@ else:
 # Create async engine
 engine = None
 try:
-    print("\n🔧 Creating async engine...")
+    print("\n[DB] Creating async engine...")
     engine = create_async_engine(
         settings.DATABASE_URL,
         echo=False,
         future=True,
         **pool_config
     )
-    print("✅ Async engine created successfully!")
-    print("✅ Ready to connect to database")
+    print("[DB] Async engine created successfully!")
+    print("[DB] Ready to connect to database")
     print("="*60 + "\n")
 except Exception as e:
-    print(f"\n❌ CRITICAL ERROR: {str(e)}")
-    print(f"❌ Failed to create async engine")
-    print("❌ Falling back to in-memory SQLite")
+    print(f"\n[DB] CRITICAL ERROR: {str(e)}")
+    print(f"[DB] Failed to create async engine")
+    print("[DB] Falling back to in-memory SQLite")
     print("="*60 + "\n")
     
     # Fallback engine for resilience
@@ -72,9 +72,9 @@ except Exception as e:
             poolclass=NullPool,
             connect_args={"check_same_thread": False}
         )
-        print("⚠️  Using in-memory SQLite (DATA WILL NOT PERSIST)")
+        print("[DB] Using in-memory SQLite (DATA WILL NOT PERSIST)")
     except Exception as fallback_error:
-        print(f"❌ FATAL: Even fallback failed: {str(fallback_error)}")
+        print(f"[DB] FATAL: Even fallback failed: {str(fallback_error)}")
         raise
 
 # Create async session factory

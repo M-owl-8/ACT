@@ -45,10 +45,10 @@ export default function App() {
       console.error('Failed to initialize notifications:', error);
     });
 
-    // Hide welcome screen after 2 seconds
+    // Hide welcome screen after 2.5 seconds
     const timer = setTimeout(() => {
       setShowWelcome(false);
-    }, 2000);
+    }, 2500);
 
     return () => clearTimeout(timer);
   }, []);
@@ -57,7 +57,8 @@ export default function App() {
   if (!fontsLoaded) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#B71C1C" />
+        <JapaneseNightBackdrop intensity={0.85} vignetteOpacity={0.3} />
+        <ActivityIndicator size="large" color="#EF5350" style={styles.centerIndicator} />
       </View>
     );
   }
@@ -65,12 +66,29 @@ export default function App() {
   if (showWelcome) {
     return (
       <View style={styles.welcomeContainer}>
-        <JapaneseNightBackdrop intensity={0.9} vignetteOpacity={0.28} />
+        <JapaneseNightBackdrop intensity={0.9} vignetteOpacity={0.32} />
         <View style={styles.welcomeContent}>
-          <Text style={styles.appTitle}>ACT Gen-1</Text>
+          {/* ACT Header with Japanese characters */}
+          <View style={styles.headerRow}>
+            <Text style={styles.kanji}>行</Text>
+            <Text style={styles.appTitle}>ACT</Text>
+          </View>
+          
+          {/* Red divider line */}
+          <View style={styles.redDivider} />
+          
+          {/* Katana emoji */}
           <Text style={styles.katana}>🗡️</Text>
-          <Text style={styles.subtitle}>Dashboard • 7/30 day totals</Text>
-          <ActivityIndicator size="large" color="#FFFFFF" style={styles.loader} />
+          
+          {/* Subtitle with Japanese and English */}
+          <Text style={styles.japaneseSubtitle}>財務管理</Text>
+          <Text style={styles.subtitle}>Finance Dashboard • Master Your Money</Text>
+          
+          {/* Loading indicator */}
+          <View style={styles.loaderContainer}>
+            <ActivityIndicator size="large" color="#EF5350" />
+            <Text style={styles.loadingText}>Initializing...</Text>
+          </View>
         </View>
       </View>
     );
@@ -79,7 +97,8 @@ export default function App() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#B71C1C" />
+        <JapaneseNightBackdrop intensity={0.85} vignetteOpacity={0.3} />
+        <ActivityIndicator size="large" color="#EF5350" style={styles.centerIndicator} />
       </View>
     );
   }
@@ -96,6 +115,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#0B0B0E",
   },
   welcomeContent: {
     flex: 1,
@@ -103,37 +123,83 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
   },
-  appTitle: {
-    fontSize: 28,
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  kanji: {
+    fontSize: 32,
     fontWeight: "700",
-    color: "#fff",
-    textShadowColor: "rgba(0,0,0,0.45)",
+    color: "#F4F4F5",
+    marginRight: 8,
+    textShadowColor: "rgba(0,0,0,0.5)",
     textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 6,
-    marginBottom: 10,
+    textShadowRadius: 8,
+  },
+  appTitle: {
+    fontSize: 42,
+    fontWeight: "700",
+    color: "#EF5350",
+    textShadowColor: "rgba(0,0,0,0.5)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
+    letterSpacing: 2,
+  },
+  redDivider: {
+    height: 2,
+    width: 80,
+    backgroundColor: "#EF5350",
+    marginVertical: 12,
   },
   katana: {
-    fontSize: 120,
-    marginBottom: 10,
+    fontSize: 100,
+    marginVertical: 12,
   },
-  subtitle: {
-    fontSize: 14,
-    color: "rgba(255,255,255,0.85)",
+  japaneseSubtitle: {
+    fontSize: 16,
+    color: "rgba(244,244,245,0.7)",
     textShadowColor: "rgba(0,0,0,0.3)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
-    marginBottom: 20,
+    marginBottom: 4,
   },
-  loader: {
-    marginTop: 20,
+  subtitle: {
+    fontSize: 14,
+    color: "rgba(189,189,189,0.9)",
+    textShadowColor: "rgba(0,0,0,0.3)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+    marginBottom: 32,
+    fontWeight: "500",
+  },
+  loaderContainer: {
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 16,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 12,
+    color: "rgba(189,189,189,0.7)",
+    textShadowColor: "rgba(0,0,0,0.3)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FAFAFA",
+    backgroundColor: "#0B0B0E",
+  },
+  centerIndicator: {
+    position: "absolute",
+    zIndex: 10,
   },
 });
+
 
 
 

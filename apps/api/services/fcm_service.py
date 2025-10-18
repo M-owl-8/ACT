@@ -33,7 +33,9 @@ class FCMService:
         
         # Initialize Firebase Admin SDK
         try:
-            credentials_path = os.getenv('FIREBASE_CREDENTIALS_PATH', 'firebase-service-account.json')
+            # Import settings to get Firebase credentials path
+            from config import settings
+            credentials_path = settings.FIREBASE_CREDENTIALS_PATH or 'firebase-service-account.json'
             
             if not os.path.exists(credentials_path):
                 logger.warning(f"Firebase credentials not found at: {credentials_path}")

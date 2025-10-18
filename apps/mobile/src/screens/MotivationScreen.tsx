@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../api/client';
 import { useTranslation } from 'react-i18next';
+import { SAMURAI_COLORS, SAMURAI_PATTERNS } from '../theme/SAMURAI_COLORS';
 
 const { width } = Dimensions.get('window');
 
@@ -282,7 +283,7 @@ export default function MotivationScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4CAF50" />
+          <ActivityIndicator size="large" color={SAMURAI_COLORS.accent.red} />
           <Text style={styles.loadingText}>Loading motivation...</Text>
         </View>
       </SafeAreaView>
@@ -329,7 +330,7 @@ export default function MotivationScreen() {
               style={styles.addButton}
               onPress={() => setShowAddGoalModal(true)}
             >
-              <Ionicons name="add-circle" size={28} color="#4CAF50" />
+              <Ionicons name="add-circle" size={28} color={SAMURAI_COLORS.accent.red} />
             </TouchableOpacity>
           </View>
 
@@ -620,7 +621,7 @@ export default function MotivationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: SAMURAI_COLORS.background.primary,
   },
   loadingContainer: {
     flex: 1,
@@ -630,26 +631,26 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
   },
   scrollView: {
     flex: 1,
   },
   header: {
     padding: 20,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    backgroundColor: SAMURAI_COLORS.background.surface,
+    borderBottomWidth: 2,
+    borderBottomColor: SAMURAI_COLORS.accent.red,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
   },
   section: {
     padding: 16,
@@ -663,7 +664,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
     marginBottom: 12,
   },
   addButton: {
@@ -672,14 +673,9 @@ const styles = StyleSheet.create({
 
   // Streak Styles
   streakCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    ...SAMURAI_PATTERNS.cardWithAccent,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...SAMURAI_PATTERNS.shadowMedium,
   },
   streakMain: {
     flexDirection: 'row',
@@ -696,11 +692,11 @@ const styles = StyleSheet.create({
   streakCount: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: '#333',
+    color: SAMURAI_COLORS.accent.red,
   },
   streakLabel: {
     fontSize: 16,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
   },
   streakBest: {
     flexDirection: 'row',
@@ -708,21 +704,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: SAMURAI_COLORS.border.primary,
     marginBottom: 12,
   },
   streakBestLabel: {
     fontSize: 14,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
   },
   streakBestCount: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FF9800',
+    color: SAMURAI_COLORS.semantic.neutral,
   },
   streakDescription: {
     fontSize: 12,
-    color: '#999',
+    color: SAMURAI_COLORS.text.tertiary,
     fontStyle: 'italic',
   },
 
@@ -730,30 +726,25 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     padding: 40,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: SAMURAI_COLORS.background.surface,
     borderRadius: 12,
   },
   emptyStateText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
     marginTop: 12,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#999',
+    color: SAMURAI_COLORS.text.tertiary,
     marginTop: 4,
   },
   goalCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    ...SAMURAI_PATTERNS.cardWithAccent,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    ...SAMURAI_PATTERNS.shadowSmall,
   },
   goalHeader: {
     flexDirection: 'row',
@@ -768,12 +759,12 @@ const styles = StyleSheet.create({
   goalTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
     marginBottom: 4,
   },
   goalDescription: {
     fontSize: 14,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
   },
   progressContainer: {
     flexDirection: 'row',
@@ -783,20 +774,20 @@ const styles = StyleSheet.create({
   progressBar: {
     flex: 1,
     height: 8,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: SAMURAI_COLORS.border.primary,
     borderRadius: 4,
     overflow: 'hidden',
     marginRight: 12,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#4CAF50',
+    backgroundColor: SAMURAI_COLORS.semantic.income,
     borderRadius: 4,
   },
   progressText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#4CAF50',
+    color: SAMURAI_COLORS.semantic.income,
     minWidth: 45,
     textAlign: 'right',
   },
@@ -805,33 +796,28 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: SAMURAI_COLORS.border.primary,
   },
   goalStat: {
     alignItems: 'center',
   },
   goalStatLabel: {
     fontSize: 12,
-    color: '#999',
+    color: SAMURAI_COLORS.text.tertiary,
     marginBottom: 4,
   },
   goalStatValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
   },
 
   // Challenge Styles
   challengeCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    ...SAMURAI_PATTERNS.cardWithAccent,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    ...SAMURAI_PATTERNS.shadowSmall,
   },
   challengeHeader: {
     flexDirection: 'row',
@@ -846,12 +832,12 @@ const styles = StyleSheet.create({
   challengeTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
     marginBottom: 4,
   },
   challengeDescription: {
     fontSize: 14,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
   },
   challengeProgress: {
     marginBottom: 16,
@@ -864,50 +850,45 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: SAMURAI_COLORS.border.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 4,
   },
   challengeDayComplete: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: SAMURAI_COLORS.semantic.income,
   },
   challengeDayText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#999',
+    color: SAMURAI_COLORS.text.tertiary,
   },
   challengeDayTextComplete: {
-    color: '#FFFFFF',
+    color: SAMURAI_COLORS.text.primary,
   },
   challengeButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: SAMURAI_COLORS.accent.red,
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
   },
   challengeButtonActive: {
-    backgroundColor: '#E0E0E0',
+    backgroundColor: SAMURAI_COLORS.border.primary,
   },
   challengeButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: SAMURAI_COLORS.text.primary,
   },
   challengeButtonTextActive: {
-    color: '#999',
+    color: SAMURAI_COLORS.text.tertiary,
   },
 
   // Summary Styles
   summaryCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    ...SAMURAI_PATTERNS.cardWithAccent,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    ...SAMURAI_PATTERNS.shadowSmall,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -915,26 +896,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: SAMURAI_COLORS.border.primary,
   },
   summaryLabel: {
     fontSize: 14,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
   },
   summaryValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
   },
 
   // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: SAMURAI_COLORS.opacity.subtle,
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: SAMURAI_COLORS.background.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '90%',
@@ -944,13 +925,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomWidth: 2,
+    borderBottomColor: SAMURAI_COLORS.accent.red,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
   },
   modalBody: {
     padding: 20,
@@ -958,18 +939,12 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
     marginBottom: 8,
     marginTop: 12,
   },
   input: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: '#333',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+    ...SAMURAI_PATTERNS.inputField,
   },
   textArea: {
     height: 80,
@@ -985,26 +960,26 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#E0E0E0',
+    borderColor: SAMURAI_COLORS.border.primary,
     alignItems: 'center',
   },
   goalTypeButtonActive: {
-    borderColor: '#4CAF50',
-    backgroundColor: '#E8F5E9',
+    borderColor: SAMURAI_COLORS.accent.red,
+    backgroundColor: SAMURAI_COLORS.opacity.redSubtle,
   },
   goalTypeButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
   },
   goalTypeButtonTextActive: {
-    color: '#4CAF50',
+    color: SAMURAI_COLORS.accent.red,
   },
   modalFooter: {
     flexDirection: 'row',
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: SAMURAI_COLORS.border.primary,
     gap: 12,
   },
   modalButtonSecondary: {
@@ -1012,24 +987,24 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: SAMURAI_COLORS.border.primary,
     alignItems: 'center',
   },
   modalButtonSecondaryText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
   },
   modalButtonPrimary: {
     flex: 1,
     padding: 16,
     borderRadius: 8,
-    backgroundColor: '#4CAF50',
+    backgroundColor: SAMURAI_COLORS.accent.red,
     alignItems: 'center',
   },
   modalButtonPrimaryText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: SAMURAI_COLORS.text.primary,
   },
 });

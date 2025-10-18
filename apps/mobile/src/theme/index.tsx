@@ -15,31 +15,35 @@ export const typography = {
   h1: { fontSize: 28, lineHeight: 36, fontWeight: "700" as const },
 };
 
-// Color tokens inspired by Japanese minimal palette
+// Color tokens inspired by Japanese minimal palette - SAMURAI THEME
 const lightColors = {
-  background: "#FFFBF7",    // warm paper
-  surface: "#FFFFFF",       // card
-  textPrimary: "#0B0B0B",   // sumi black
-  textSecondary: "#5E5E5E",
-  sumi: "#1B1B1B",          // deep sumi ink
-  accent: "#B71C1C",        // sumi-red (aka 'aka')
-  accentSoft: "#FBEAEA",
-  matcha: "#2E7D32",        // matcha green accent
-  border: "#EDE7E3",
-  shadow: "rgba(11,11,11,0.08)",
+  background: "#0B0B0E",    // Deep dark background (samurai night)
+  surface: "#111217",       // Card surface (dark)
+  textPrimary: "#F4F4F5",   // Light text (sumi white)
+  textSecondary: "#BDBDBD", // Secondary text
+  sumi: "#ECECEC",          // Light sumi
+  accent: "#EF5350",        // Samurai red accent (matches web app)
+  accentSoft: "#3A0E0E",    // Dark red for backgrounds
+  matcha: "#66BB6A",        // Green for income
+  border: "#1A1A1F",        // Dark border
+  shadow: "rgba(0,0,0,0.7)",
+  warning: "#FF9800",       // Orange for neutral
+  error: "#D32F2F",         // Red for errors
 };
 
 const darkColors = {
-  background: "#0B0B0E",
-  surface: "#111217",
-  textPrimary: "#F4F4F5",
-  textSecondary: "#BDBDBD",
-  sumi: "#ECECEC",
-  accent: "#FF6B6B",
-  accentSoft: "#3A0E0E",
-  matcha: "#66BB6A",
-  border: "#1A1A1F",
+  background: "#0B0B0E",    // Same dark theme (always dark)
+  surface: "#111217",       // Card surface
+  textPrimary: "#F4F4F5",   // Light text
+  textSecondary: "#BDBDBD", // Secondary text
+  sumi: "#ECECEC",          // Light sumi
+  accent: "#EF5350",        // Samurai red
+  accentSoft: "#3A0E0E",    // Dark red
+  matcha: "#66BB6A",        // Green
+  border: "#1A1A1F",        // Dark border
   shadow: "rgba(0,0,0,0.7)",
+  warning: "#FF9800",       // Orange
+  error: "#D32F2F",         // Red
 };
 
 export type ThemeColors = typeof lightColors;

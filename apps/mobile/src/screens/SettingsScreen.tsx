@@ -17,6 +17,7 @@ import { useAuthStore } from '../store/auth';
 import { useTheme } from '../theme';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import { SAMURAI_COLORS, SAMURAI_PATTERNS } from '../theme/SAMURAI_COLORS';
 
 interface UserSettings {
   language: string;
@@ -271,7 +272,7 @@ export default function SettingsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4CAF50" />
+          <ActivityIndicator size="large" color={SAMURAI_COLORS.accent} />
           <Text style={styles.loadingText}>Loading settings...</Text>
         </View>
       </SafeAreaView>
@@ -294,7 +295,7 @@ export default function SettingsScreen() {
           {/* Language */}
           <TouchableOpacity style={styles.settingItem} onPress={showLanguageOptions}>
             <View style={styles.settingLeft}>
-              <Ionicons name="language" size={24} color="#4CAF50" />
+              <Ionicons name="language" size={24} color={SAMURAI_COLORS.accent} />
               <View style={styles.settingInfo}>
                 <Text style={styles.settingLabel}>Language</Text>
                 <Text style={styles.settingValue}>{getLanguageLabel(settings.language)}</Text>
@@ -306,7 +307,7 @@ export default function SettingsScreen() {
           {/* Currency */}
           <TouchableOpacity style={styles.settingItem} onPress={showCurrencyOptions}>
             <View style={styles.settingLeft}>
-              <Ionicons name="cash" size={24} color="#4CAF50" />
+              <Ionicons name="cash" size={24} color={SAMURAI_COLORS.accent} />
               <View style={styles.settingInfo}>
                 <Text style={styles.settingLabel}>Currency</Text>
                 <Text style={styles.settingValue}>{settings.currency}</Text>
@@ -321,7 +322,7 @@ export default function SettingsScreen() {
               <Ionicons 
                 name={settings.theme === 'dark' ? 'moon' : 'sunny'} 
                 size={24} 
-                color="#4CAF50" 
+                color={SAMURAI_COLORS.accent} 
               />
               <View style={styles.settingInfo}>
                 <Text style={styles.settingLabel}>Theme</Text>
@@ -348,7 +349,7 @@ export default function SettingsScreen() {
             disabled={exportLoading}
           >
             <View style={styles.exportButtonContent}>
-              <Ionicons name="document-text" size={24} color="#4CAF50" />
+              <Ionicons name="document-text" size={24} color={SAMURAI_COLORS.accent} />
               <View style={styles.exportButtonInfo}>
                 <Text style={styles.exportButtonTitle}>Export as CSV</Text>
                 <Text style={styles.exportButtonDescription}>
@@ -357,9 +358,9 @@ export default function SettingsScreen() {
               </View>
             </View>
             {exportLoading ? (
-              <ActivityIndicator size="small" color="#4CAF50" />
+              <ActivityIndicator size="small" color={SAMURAI_COLORS.accent} />
             ) : (
-              <Ionicons name="download" size={24} color="#4CAF50" />
+              <Ionicons name="download" size={24} color={SAMURAI_COLORS.accent} />
             )}
           </TouchableOpacity>
 
@@ -370,7 +371,7 @@ export default function SettingsScreen() {
             disabled={exportLoading}
           >
             <View style={styles.exportButtonContent}>
-              <Ionicons name="code-slash" size={24} color="#4CAF50" />
+              <Ionicons name="code-slash" size={24} color={SAMURAI_COLORS.accent} />
               <View style={styles.exportButtonInfo}>
                 <Text style={styles.exportButtonTitle}>Export as JSON</Text>
                 <Text style={styles.exportButtonDescription}>
@@ -379,9 +380,9 @@ export default function SettingsScreen() {
               </View>
             </View>
             {exportLoading ? (
-              <ActivityIndicator size="small" color="#4CAF50" />
+              <ActivityIndicator size="small" color={SAMURAI_COLORS.accent} />
             ) : (
-              <Ionicons name="download" size={24} color="#4CAF50" />
+              <Ionicons name="download" size={24} color={SAMURAI_COLORS.accent} />
             )}
           </TouchableOpacity>
         </View>
@@ -419,7 +420,7 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: SAMURAI_COLORS.background.primary,
   },
   loadingContainer: {
     flex: 1,
@@ -429,26 +430,26 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
   },
   scrollView: {
     flex: 1,
   },
   header: {
     padding: 20,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    backgroundColor: SAMURAI_COLORS.background.surface,
+    borderBottomWidth: 2,
+    borderBottomColor: SAMURAI_COLORS.accent,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
   },
   section: {
     padding: 16,
@@ -456,27 +457,25 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
     marginBottom: 8,
   },
   sectionDescription: {
     fontSize: 14,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
     marginBottom: 16,
   },
   settingItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: SAMURAI_COLORS.background.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    borderLeftWidth: 3,
+    borderLeftColor: SAMURAI_COLORS.accent,
+    ...SAMURAI_PATTERNS.shadowSmall,
   },
   settingLeft: {
     flexDirection: 'row',
@@ -490,26 +489,24 @@ const styles = StyleSheet.create({
   settingLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
     marginBottom: 2,
   },
   settingValue: {
     fontSize: 14,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
   },
   exportButton: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: SAMURAI_COLORS.background.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    borderLeftWidth: 3,
+    borderLeftColor: SAMURAI_COLORS.accent,
+    ...SAMURAI_PATTERNS.shadowSmall,
   },
   exportButtonContent: {
     flexDirection: 'row',
@@ -523,22 +520,20 @@ const styles = StyleSheet.create({
   exportButtonTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
     marginBottom: 4,
   },
   exportButtonDescription: {
     fontSize: 12,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
   },
   infoCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: SAMURAI_COLORS.background.surface,
     borderRadius: 12,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    borderLeftWidth: 3,
+    borderLeftColor: SAMURAI_COLORS.accent,
+    ...SAMURAI_PATTERNS.shadowSmall,
   },
   infoRow: {
     flexDirection: 'row',
@@ -546,16 +541,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: SAMURAI_COLORS.border.primary,
   },
   infoLabel: {
     fontSize: 14,
-    color: '#666',
+    color: SAMURAI_COLORS.text.secondary,
   },
   infoValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
   },
   footer: {
     alignItems: 'center',
@@ -564,11 +559,11 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: SAMURAI_COLORS.text.primary,
     marginBottom: 4,
   },
   footerSubtext: {
     fontSize: 12,
-    color: '#999',
+    color: SAMURAI_COLORS.text.tertiary,
   },
 });
