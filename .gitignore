@@ -44,4 +44,6 @@ dist/
 # Environment specific files
 .env.*.local
 
-apps/api/act-gen1-f9812-firebase-adminsdk-fbsvc-83acc8b162.json
+# All Firebase admin SDK credentials (with any hash)
+apps/api/*firebase-adminsdk*.json
+apps/api/*act-gen1*.json
