@@ -68,23 +68,11 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS for mobile app
-# UPDATE: Add your Railway domain here!
-# Example: "https://your-railway-app.railway.app"
+# CORS for mobile app - PRODUCTION SECURED
+# Only allows requests from the production Railway domain
 ALLOWED = [
-    # Development URLs
-    "https://nine-turtles-serve.loca.lt",
-    "https://*.exp.direct",       # Expo web
-    "http://localhost:19006",     # Expo web local
-    "http://127.0.0.1:19006",
-    "http://localhost:8081",      # Expo mobile
-    "http://127.0.0.1:8081",
-    
-    # Production URLs
-    # "https://your-railway-app.railway.app",  # ← UNCOMMENT and update with your Railway domain
-    
-    # Temporary for testing (remove in production)
-    "*",
+    # Production URL (CRITICAL: Only your app!)
+    "https://act-production-8080.up.railway.app",
 ]
 app.add_middleware(
     CORSMiddleware,
