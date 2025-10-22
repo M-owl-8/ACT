@@ -14,6 +14,7 @@ import EditIncomeScreen from '../screens/EditIncomeScreen';
 import ExpensesScreen from '../screens/ExpensesScreen';
 import AddExpenseScreen from '../screens/AddExpenseScreen';
 import EditExpenseScreen from '../screens/EditExpenseScreen';
+import AddScreen from '../screens/AddScreen';
 import ReportsScreen from '../screens/ReportsScreen';
 import CalendarScreen from '../screens/CalendarScreen';
 import MotivationScreen from '../screens/MotivationScreen';
@@ -37,75 +38,79 @@ function MainTabs() {
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: any;
 
-          if (route.name === 'IncomeTab') {
-            iconName = focused ? 'cash' : 'cash-outline';
-          } else if (route.name === 'ExpensesTab') {
-            iconName = focused ? 'wallet' : 'wallet-outline';
-          } else if (route.name === 'CalendarTab') {
-            iconName = focused ? 'calendar' : 'calendar-outline';
-          } else if (route.name === 'MotivationTab') {
-            iconName = focused ? 'flame' : 'flame-outline';
-          } else if (route.name === 'BooksTab') {
-            iconName = focused ? 'book' : 'book-outline';
-          } else if (route.name === 'ReportsTab') {
+          if (route.name === 'HomeTab') {
+            iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'AddTab') {
+            iconName = focused ? 'add-circle' : 'add-circle-outline';
+          } else if (route.name === 'OverviewTab') {
             iconName = focused ? 'stats-chart' : 'stats-chart-outline';
           } else if (route.name === 'SettingsTab') {
             iconName = focused ? 'settings' : 'settings-outline';
-          } else if (route.name === 'ProfileTab') {
-            iconName = focused ? 'person' : 'person-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: theme.colors.accent,
-        tabBarInactiveTintColor: theme.colors.textSecondary,
+        tabBarActiveTintColor: '#000',
+        tabBarInactiveTintColor: '#999',
         tabBarStyle: {
-          backgroundColor: theme.colors.surface,
-          borderTopColor: theme.colors.border,
+          backgroundColor: '#fff',
+          borderTopColor: '#f0f0f0',
           borderTopWidth: 1,
+          height: 60,
+          paddingBottom: 8,
         },
         headerShown: false,
+        tabBarLabel: ({ focused }) => {
+          let label = '';
+          if (route.name === 'HomeTab') label = 'Home';
+          else if (route.name === 'AddTab') label = 'Add';
+          else if (route.name === 'OverviewTab') label = 'Overview';
+          else if (route.name === 'SettingsTab') label = 'Settings';
+          
+          return (
+            <Ionicons 
+              name={route.name === 'HomeTab' ? 'home' : 
+                     route.name === 'AddTab' ? 'add-circle' :
+                     route.name === 'OverviewTab' ? 'stats-chart' :
+                     'settings'}
+              size={0}
+              color="transparent"
+            />
+          );
+        },
       })}
     >
       <Tab.Screen 
-        name="IncomeTab" 
-        component={IncomeScreen}
-        options={{ tabBarLabel: t('income') }}
-      />
-      <Tab.Screen 
-        name="ExpensesTab" 
+        name="HomeTab" 
         component={ExpensesScreen}
-        options={{ tabBarLabel: t('expenses') }}
+        options={{ 
+          tabBarLabel: 'Home',
+          tabBarLabelStyle: { fontSize: 12, fontWeight: '500', marginTop: 4 },
+        }}
       />
       <Tab.Screen 
-        name="CalendarTab" 
+        name="AddTab" 
+        component={AddScreen}
+        options={{ 
+          tabBarLabel: 'Add',
+          tabBarLabelStyle: { fontSize: 12, fontWeight: '500', marginTop: 4 },
+        }}
+      />
+      <Tab.Screen 
+        name="OverviewTab" 
         component={CalendarScreen}
-        options={{ tabBarLabel: t('calendar') }}
-      />
-      <Tab.Screen 
-        name="MotivationTab" 
-        component={MotivationScreen}
-        options={{ tabBarLabel: t('motivation') }}
-      />
-      <Tab.Screen 
-        name="BooksTab" 
-        component={BooksScreen}
-        options={{ tabBarLabel: t('books') }}
-      />
-      <Tab.Screen 
-        name="ReportsTab" 
-        component={ReportsScreen}
-        options={{ tabBarLabel: t('reports') }}
+        options={{ 
+          tabBarLabel: 'Overview',
+          tabBarLabelStyle: { fontSize: 12, fontWeight: '500', marginTop: 4 },
+        }}
       />
       <Tab.Screen 
         name="SettingsTab" 
         component={SettingsScreen}
-        options={{ tabBarLabel: t('settings') }}
-      />
-      <Tab.Screen 
-        name="ProfileTab" 
-        component={ProfileScreen}
-        options={{ tabBarLabel: t('profile') }}
+        options={{ 
+          tabBarLabel: 'Settings',
+          tabBarLabelStyle: { fontSize: 12, fontWeight: '500', marginTop: 4 },
+        }}
       />
     </Tab.Navigator>
   );

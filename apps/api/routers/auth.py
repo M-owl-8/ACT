@@ -29,9 +29,11 @@ async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)):
     user_count = await db.execute(select(User))
     is_first_user = len(user_count.scalars().all()) == 0
 
+    # Hash password asynchronously
+    password_hash = await hash_password(payload.password)
     user = User(
         email=payload.email, 
-        password_hash=hash_password(payload.password),
+        password_hash=password_hash,
         is_admin=is_first_user
     )
     db.add(user)
@@ -46,7 +48,12 @@ async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)):
 async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
     q = await db.execute(select(User).where(User.email == payload.email))
     user = q.scalar_one_or_none()
-    if not user or not verify_password(payload.password, user.password_hash):
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Verify password asynchronously
+    password_valid = await verify_password(payload.password, user.password_hash)
+    if not password_valid:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     access = create_access_token(user.id)

@@ -2,6 +2,12 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
+// Production Railway URL
+const PRODUCTION_API_URL = "https://act-production-8080.up.railway.app";
+
+// Local development URL for emulator
+const LOCAL_API_URL = "http://10.0.2.2:8000";
+
 // For physical devices via USB, use your computer's local IP
 // Find your IP: Windows (ipconfig), Mac/Linux (ifconfig)
 // Example: "http://192.168.1.100:8000"
@@ -13,22 +19,25 @@ const getBaseURL = () => {
   
   // Default URLs based on platform
   if (Platform.OS === 'android') {
-    // For Android emulator
-    return "http://10.0.2.2:8000";
+    // For Android emulator - use local development by default
+    return LOCAL_API_URL;
   } else if (Platform.OS === 'ios') {
-    // For iOS simulator
-    return "http://localhost:8000";
+    // For iOS simulator - use local development by default
+    return LOCAL_API_URL;
   }
   
-  // For web or physical devices, you need to set EXPO_PUBLIC_API_BASE_URL
-  return "http://localhost:8000";
+  // For web or physical devices - use production by default
+  return PRODUCTION_API_URL;
 };
 
 export const BASE_URL = getBaseURL();
 
-console.log("🌐 API Base URL:", BASE_URL);
-console.log("📱 Platform:", Platform.OS);
-console.log("💡 For physical devices, set EXPO_PUBLIC_API_BASE_URL to your computer's IP");
+// Debug logging only in development
+if (__DEV__) {
+  console.log("🌐 API Base URL:", BASE_URL);
+  console.log("📱 Platform:", Platform.OS);
+  console.log("💡 For physical devices, set EXPO_PUBLIC_API_BASE_URL to your computer's IP");
+}
 
 export const api = axios.create({
   baseURL: BASE_URL,

@@ -2,6 +2,7 @@
 from typing import Optional
 import uuid
 import jwt
+import asyncio
 from passlib.hash import argon2
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -24,12 +25,16 @@ def get_token_from_header(request: Request) -> Optional[str]:
         return None
     return parts[1]
 
-# Password hashing
-def hash_password(password: str) -> str:
-    return argon2.hash(password)
+# Password hashing - async-safe functions
+async def hash_password(password: str) -> str:
+    """Hash password in a thread to avoid blocking the event loop"""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, lambda: argon2.hash(password))
 
-def verify_password(password: str, password_hash: str) -> bool:
-    return argon2.verify(password, password_hash)
+async def verify_password(password: str, password_hash: str) -> bool:
+    """Verify password in a thread to avoid blocking the event loop"""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, lambda: argon2.verify(password, password_hash))
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)

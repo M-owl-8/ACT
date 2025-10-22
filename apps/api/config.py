@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     # DB - Read from environment variable, with SQLite default for local dev
     # On Railway, this will be set to PostgreSQL connection string
-    DATABASE_URL: str = "sqlite+aiosqlite:///./dev.db?check_same_thread=False"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./dev.db"
 
     # Firebase
     FIREBASE_CREDENTIALS_PATH: str = ""
@@ -30,13 +30,11 @@ class Settings(BaseSettings):
 settings = Settings()
 
 # Strip whitespace from all environment variables (critical for Railway)
-# Remove both leading/trailing AND embedded whitespace/newlines
+# Remove both leading/trailing AND embedded newlines
 if settings.DATABASE_URL:
     settings.DATABASE_URL = settings.DATABASE_URL.strip()
-    # Also remove any embedded newlines and extra whitespace
-    settings.DATABASE_URL = ''.join(settings.DATABASE_URL.split())
-    # Re-add the connection string separator if it was removed
-    settings.DATABASE_URL = settings.DATABASE_URL.replace(':///', '://').replace('://', '://')
+    # Remove only newlines and tabs, not spaces in the URL
+    settings.DATABASE_URL = settings.DATABASE_URL.replace('\n', '').replace('\r', '').replace('\t', '')
 
 if settings.JWT_SECRET:
     settings.JWT_SECRET = settings.JWT_SECRET.strip()

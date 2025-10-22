@@ -17,10 +17,14 @@ let SENTRY_AVAILABLE = false;
 try {
   Sentry = require('@sentry/react-native');
   SENTRY_AVAILABLE = true;
-  console.log('✅ Sentry package loaded');
+  if (__DEV__) {
+    console.log('✅ Sentry package loaded');
+  }
 } catch (error) {
-  console.warn('⚠️ Sentry package not installed. Crash reporting disabled.');
-  console.warn('To enable Sentry, run: npm install @sentry/react-native');
+  if (__DEV__) {
+    console.warn('⚠️ Sentry package not installed. Crash reporting disabled.');
+    console.warn('To enable Sentry, run: npm install @sentry/react-native');
+  }
 }
 
 // Sentry configuration
@@ -33,12 +37,16 @@ const ENVIRONMENT = __DEV__ ? 'development' : 'production';
  */
 export const initSentry = (): void => {
   if (!SENTRY_AVAILABLE) {
-    console.log('Sentry not available. Skipping initialization.');
+    if (__DEV__) {
+      console.log('Sentry not available. Skipping initialization.');
+    }
     return;
   }
 
   if (!SENTRY_DSN) {
-    console.warn('Sentry DSN not configured. Crash reporting disabled.');
+    if (__DEV__) {
+      console.warn('Sentry DSN not configured. Crash reporting disabled.');
+    }
     return;
   }
 
@@ -147,7 +155,9 @@ export const initSentry = (): void => {
     },
   });
   
-  console.log('✅ Sentry initialized:', ENVIRONMENT);
+  if (__DEV__) {
+    console.log('✅ Sentry initialized:', ENVIRONMENT);
+  }
 };
 
 /**

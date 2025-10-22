@@ -23,6 +23,10 @@ export default function IncomeScreen({ navigation }: any) {
   const [totals, setTotals] = useState<EntryTotals | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showDateDropdown, setShowDateDropdown] = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [selectedDateRange, setSelectedDateRange] = useState("This Month");
+  const [selectedCategory, setSelectedCategory] = useState("All Categories");
 
   // Date range for "this month"
   const getThisMonthRange = () => {
@@ -115,50 +119,21 @@ export default function IncomeScreen({ navigation }: any) {
   };
 
   const renderEntry = ({ item }: { item: Entry }) => (
-    <View style={styles.entryCard}>
-      <View style={styles.entryLeft}>
-        <View
-          style={[
-            styles.categoryIcon,
-            { backgroundColor: item.category?.color || "#4CAF50" },
-          ]}
-        >
-          <Text style={styles.categoryEmoji}>
-            {item.category?.icon || "💰"}
-          </Text>
-        </View>
-        <View style={styles.entryInfo}>
-          <Text style={styles.categoryName}>
-            {item.category?.name || "Uncategorized"}
-          </Text>
-          <Text style={styles.entryDate}>{formatDate(item.booked_at)}</Text>
-          {item.note && <Text style={styles.entryNote}>{item.note}</Text>}
-        </View>
+    <View style={styles.entryItem}>
+      <View style={styles.entryContent}>
+        <Text style={styles.entrySource}>
+          {item.note || item.category?.name || "Income"}
+        </Text>
+        <Text style={styles.entryDate}>{formatDate(item.booked_at)}</Text>
       </View>
-      <View style={styles.entryRight}>
-        <Text style={styles.entryAmount}>+${item.amount.toFixed(2)}</Text>
-        <View style={styles.entryActions}>
-          <TouchableOpacity
-            onPress={() => handleEdit(item)}
-            style={styles.actionButton}
-          >
-            <Ionicons name="pencil" size={18} color="#2196F3" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => handleDelete(item)}
-            style={styles.actionButton}
-          >
-            <Ionicons name="trash" size={18} color="#F44336" />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <Text style={styles.entryAmount}>${item.amount.toFixed(2)}</Text>
     </View>
   );
 
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#66BB6A" />
+        <ActivityIndicator size="large" color="#4CAF50" />
         <Text style={styles.loadingText}>Loading income...</Text>
       </View>
     );
@@ -166,32 +141,68 @@ export default function IncomeScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      {/* Header with Totals */}
+      {/* Header with Logo and Title */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Income This Month</Text>
-        <View style={styles.totalsCard}>
-          <Text style={styles.totalAmount}>
-            ${totals?.total.toFixed(2) || "0.00"}
-          </Text>
-          <Text style={styles.totalCount}>
-            {totals?.count || 0} {totals?.count === 1 ? "entry" : "entries"}
-          </Text>
+        <View style={styles.headerTop}>
+          <Ionicons name="folder" size={24} color="#000" />
+          <Text style={styles.headerTitle}>Income</Text>
+          <Text style={styles.headerSubtitle}>Summary</Text>
+        </View>
+
+        {/* Filters */}
+        <View style={styles.filtersContainer}>
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => setShowDateDropdown(!showDateDropdown)}
+          >
+            <Text style={styles.filterButtonText}>{selectedDateRange}</Text>
+            <Ionicons name="chevron-down" size={16} color="#999" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}
+          >
+            <Text style={styles.filterButtonText}>{selectedCategory}</Text>
+            <Ionicons name="chevron-down" size={16} color="#999" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Chart placeholder */}
+        <View style={styles.chartContainer}>
+          <View style={styles.chart}>
+            <Text style={styles.chartLabel}>Income Trend</Text>
+            {/* Placeholder for chart - can be replaced with actual chart library */}
+            <View style={styles.chartArea} />
+          </View>
         </View>
       </View>
 
-      {/* Income List */}
+      {/* Income Items List */}
       <FlatList
         data={entries}
         renderItem={renderEntry}
         keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={styles.listContainer}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#EF5350"]}
-            tintColor="#EF5350"
+            colors={["#4CAF50"]}
+            tintColor="#4CAF50"
           />
+        }
+        ListHeaderComponent={
+          <>
+            {totals && (
+              <View style={styles.totalsHeader}>
+                <Text style={styles.totalsLabel}>Total Income</Text>
+                <Text style={styles.totalsAmount}>
+                  ${totals?.total.toFixed(2) || "0.00"}
+                </Text>
+              </View>
+            )}
+          </>
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -218,123 +229,146 @@ export default function IncomeScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0B0B0E",
+    backgroundColor: "#f8f8f8",
   },
   centerContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#0B0B0E",
+    backgroundColor: "#f8f8f8",
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: "#BDBDBD",
+    color: "#666",
   },
   header: {
-    backgroundColor: "#111217",
-    paddingTop: 60,
-    paddingBottom: 24,
-    paddingHorizontal: 20,
-    borderBottomWidth: 2,
-    borderBottomColor: "#EF5350",
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#F4F4F5",
+    backgroundColor: "#fff",
+    paddingTop: 50,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    borderRadius: 20,
+    marginHorizontal: 12,
+    marginTop: 16,
     marginBottom: 16,
-    letterSpacing: 1,
-  },
-  totalsCard: {
-    backgroundColor: "rgba(102, 187, 106, 0.15)",
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
-    borderLeftWidth: 3,
-    borderLeftColor: "#66BB6A",
-  },
-  totalAmount: {
-    fontSize: 36,
-    fontWeight: "bold",
-    color: "#66BB6A",
-    marginBottom: 4,
-  },
-  totalCount: {
-    fontSize: 14,
-    color: "#BDBDBD",
-    opacity: 0.9,
-  },
-  listContent: {
-    padding: 16,
-    paddingBottom: 80,
-  },
-  entryCard: {
-    backgroundColor: "#111217",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderLeftWidth: 3,
-    borderLeftColor: "#EF5350",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  entryLeft: {
+  headerTop: {
     flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  categoryIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  categoryEmoji: {
-    fontSize: 24,
-  },
-  entryInfo: {
-    flex: 1,
-  },
-  categoryName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#F4F4F5",
-    marginBottom: 2,
-  },
-  entryDate: {
-    fontSize: 13,
-    color: "#BDBDBD",
-    marginBottom: 2,
-  },
-  entryNote: {
-    fontSize: 12,
-    color: "#757575",
-    fontStyle: "italic",
-  },
-  entryRight: {
-    alignItems: "flex-end",
-  },
-  entryAmount: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#66BB6A",
-    marginBottom: 8,
-  },
-  entryActions: {
-    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 20,
     gap: 8,
   },
-  actionButton: {
-    padding: 4,
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#000",
+  },
+  headerSubtitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#000",
+  },
+  filtersContainer: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 16,
+  },
+  filterButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#f5f5f5",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  filterButtonText: {
+    fontSize: 13,
+    color: "#999",
+  },
+  chartContainer: {
+    marginBottom: 0,
+  },
+  chart: {
+    backgroundColor: "#e8f5e9",
+    borderRadius: 8,
+    padding: 12,
+    minHeight: 120,
+  },
+  chartLabel: {
+    fontSize: 12,
+    color: "#999",
+    marginBottom: 8,
+  },
+  chartArea: {
+    height: 80,
+    backgroundColor: "rgba(76, 175, 80, 0.1)",
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: "#4CAF50",
+  },
+  listContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 100,
+  },
+  totalsHeader: {
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: "#4CAF50",
+  },
+  totalsLabel: {
+    fontSize: 12,
+    color: "#999",
+    marginBottom: 4,
+  },
+  totalsAmount: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#4CAF50",
+  },
+  entryItem: {
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  entryContent: {
+    flex: 1,
+  },
+  entrySource: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#000",
+    marginBottom: 4,
+  },
+  entryDate: {
+    fontSize: 12,
+    color: "#999",
+  },
+  entryAmount: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#4CAF50",
   },
   emptyContainer: {
     alignItems: "center",
@@ -344,12 +378,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#757575",
+    color: "#999",
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: "#424242",
+    color: "#bbb",
     marginTop: 8,
     textAlign: "center",
   },
@@ -360,13 +394,13 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: "#66BB6A",
+    backgroundColor: "#4CAF50",
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 12,
+    elevation: 6,
   },
 });

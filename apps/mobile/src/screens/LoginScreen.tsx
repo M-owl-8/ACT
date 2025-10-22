@@ -36,7 +36,7 @@ export default function LoginScreen({ navigation }: any) {
         code: error.code,
       });
       
-      let errorMessage = 'Invalid email or password. Please try again.';
+      let errorMessage = 'Invalid email/username or password. Please try again.';
       let errorTitle = 'Login Failed';
       
       if (error.code === 'ECONNABORTED') {
@@ -46,7 +46,7 @@ export default function LoginScreen({ navigation }: any) {
         errorTitle = 'Network Error';
         errorMessage = 'Cannot connect to the server. Please ensure:\n\n1. The API server is running\n2. Your device has network access\n3. For physical devices: Set EXPO_PUBLIC_API_BASE_URL to your computer\'s IP address\n\nCurrent API URL: ' + (process.env.EXPO_PUBLIC_API_BASE_URL || 'default');
       } else if (error.response?.status === 401) {
-        errorMessage = error.response?.data?.detail || 'Invalid email or password.';
+        errorMessage = error.response?.data?.detail || 'Invalid email/username or password.';
       } else if (error.response?.data?.detail) {
         errorMessage = error.response.data.detail;
       }
@@ -58,97 +58,94 @@ export default function LoginScreen({ navigation }: any) {
   };
 
   return (
-    <ThemedView variant="primary" style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.emoji}>🗡️</Text>
-        <ThemedText size="h1" weight="bold" style={styles.title}>
-          ACT Gen-1
-        </ThemedText>
-        <ThemedText size="base" variant="secondary" style={styles.subtitle}>
-          Personal Finance Tracker
-        </ThemedText>
-      </View>
+    <ThemedView variant="background" style={styles.container}>
+      <View style={styles.content}>
+        <View style={[styles.card, { backgroundColor: '#FFFFFF' }]}>
+          {/* Title with blue underline */}
+          <View style={styles.titleContainer}>
+            <Text style={styles.welcomeTitle}>Welcome to ACT</Text>
+            <Text style={styles.subtitleText}>BudgetWise</Text>
+            <View style={styles.underline} />
+          </View>
 
-      <View style={[styles.form, { backgroundColor: theme.colors.surface }]}>
-        <Controller 
-          name="email" 
-          control={control}
-          rules={{ 
-            required: 'Email is required',
-            pattern: {
-              value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-              message: 'Invalid email address'
-            }
-          }}
-          render={({ field: { onChange, value } }) => (
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput 
-                placeholder="user@actgen1.com" 
-                style={[styles.input, errors.email && styles.inputError]}
-                value={value} 
-                onChangeText={onChange}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                editable={!isLoading}
-              />
-              {errors.email && (
-                <Text style={styles.errorText}>{errors.email.message}</Text>
-              )}
-            </View>
-          )} 
-        />
+          {/* Email/Username Input */}
+          <Controller 
+            name="email" 
+            control={control}
+            rules={{ required: 'Email or Username is required' }}
+            render={({ field: { onChange, value } }) => (
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Username</Text>
+                <TextInput 
+                  placeholder="Enter your username or email" 
+                  style={[styles.input, errors.email && styles.inputError]}
+                  value={value} 
+                  onChangeText={onChange}
+                  autoCapitalize="none"
+                  editable={!isLoading}
+                  placeholderTextColor="#CCCCCC"
+                />
+                {errors.email && (
+                  <Text style={styles.errorText}>{errors.email.message}</Text>
+                )}
+              </View>
+            )} 
+          />
 
-        <Controller 
-          name="password" 
-          control={control}
-          rules={{ required: 'Password is required' }}
-          render={({ field: { onChange, value } }) => (
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput 
-                placeholder="Enter your password" 
-                style={[styles.input, errors.password && styles.inputError]}
-                secureTextEntry 
-                value={value} 
-                onChangeText={onChange}
-                editable={!isLoading}
-              />
-              {errors.password && (
-                <Text style={styles.errorText}>{errors.password.message}</Text>
-              )}
-            </View>
-          )} 
-        />
+          {/* Password Input */}
+          <Controller 
+            name="password" 
+            control={control}
+            rules={{ required: 'Password is required' }}
+            render={({ field: { onChange, value } }) => (
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Password</Text>
+                <TextInput 
+                  placeholder="Enter your password" 
+                  style={[styles.input, errors.password && styles.inputError]}
+                  secureTextEntry 
+                  value={value} 
+                  onChangeText={onChange}
+                  editable={!isLoading}
+                  placeholderTextColor="#CCCCCC"
+                />
+                {errors.password && (
+                  <Text style={styles.errorText}>{errors.password.message}</Text>
+                )}
+              </View>
+            )} 
+          />
 
-        <ThemedButton 
-          variant="primary"
-          size="lg"
-          onPress={handleSubmit(onSubmit)}
-          loading={isLoading}
-          style={styles.loginButton}
-        >
-          Login
-        </ThemedButton>
+          {/* Login Button */}
+          <TouchableOpacity 
+            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+            onPress={handleSubmit(onSubmit)}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.loginButtonText}>Login</Text>
+            )}
+          </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.registerButton} 
-          onPress={() => navigation.navigate('Register')}
-          disabled={isLoading}
-        >
-          <ThemedText variant="secondary" size="sm">
-            Don't have an account?{' '}
-            <ThemedText size="sm" weight="bold" style={{ color: theme.colors.accent }}>
-              Sign Up
-            </ThemedText>
-          </ThemedText>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.footer}>
-        <ThemedText variant="secondary" size="sm">
-          🔒 Secure & Private
-        </ThemedText>
+          {/* Bottom Links */}
+          <View style={styles.linksContainer}>
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('ForgotPassword')}
+              disabled={isLoading}
+            >
+              <Text style={styles.link}>Forgot Password?</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('Register')}
+              disabled={isLoading}
+            >
+              <Text style={styles.link}>Create New Account</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
     </ThemedView>
   );
@@ -157,57 +154,96 @@ export default function LoginScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { 
     flex: 1,
-  },
-  header: {
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 40,
-    marginBottom: 24,
+    paddingHorizontal: 20,
   },
-  emoji: {
-    fontSize: 80,
-    marginBottom: 12,
+  content: {
+    width: '100%',
+    maxWidth: 450,
   },
-  title: { 
+  card: {
+    borderRadius: 16,
+    padding: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  titleContainer: {
+    marginBottom: 32,
+    alignItems: 'center',
+  },
+  welcomeTitle: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#000000',
     marginBottom: 4,
   },
-  subtitle: {
-    // Styled via ThemedText
+  subtitleText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#666666',
+    marginBottom: 12,
   },
-  form: {
-    marginHorizontal: 20,
-    padding: 24,
-    borderRadius: 12,
+  underline: {
+    width: 140,
+    height: 3,
+    backgroundColor: '#2196F3',
+    borderRadius: 2,
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 18,
   },
   label: {
     fontSize: 14,
-    fontWeight: '600' as any,
+    fontWeight: '500',
+    color: '#000000',
     marginBottom: 8,
   },
   input: { 
     borderWidth: 1,
+    borderColor: '#E0E0E0',
     padding: 12, 
     borderRadius: 8,
     fontSize: 16,
+    color: '#000000',
+    backgroundColor: '#F9F9F9',
   },
   inputError: {
-    // Handled by ThemedInput
+    borderColor: '#D32F2F',
   },
   errorText: {
     fontSize: 12,
+    color: '#D32F2F',
     marginTop: 4,
   },
   loginButton: {
-    marginTop: 12,
-  },
-  registerButton: {
-    marginTop: 20,
+    backgroundColor: '#000000',
+    padding: 14,
+    borderRadius: 8,
+    marginTop: 22,
+    marginBottom: 20,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  footer: {
+  loginButtonDisabled: {
+    opacity: 0.6,
+  },
+  loginButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  linksContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 24,
+  },
+  link: {
+    fontSize: 14,
+    color: '#000000',
+    fontWeight: '500',
   },
 });

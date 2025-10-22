@@ -3,6 +3,8 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator,
 import { useForm, Controller } from 'react-hook-form';
 import { API } from '../api/client';
 import { useAuthStore } from '../store/auth';
+import { useTheme } from '../theme';
+import { ThemedView } from '../components/themed';
 
 export default function RegisterScreen({ navigation }: any) {
   const { control, handleSubmit, formState: { errors }, watch } = useForm({
@@ -13,6 +15,7 @@ export default function RegisterScreen({ navigation }: any) {
     }
   });
   const { setTokens, fetchProfile } = useAuthStore();
+  const { theme } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const password = watch('password');
 
@@ -60,14 +63,15 @@ export default function RegisterScreen({ navigation }: any) {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.emoji}>🗡️</Text>
-        <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Join ACT Gen-1</Text>
-      </View>
-
-      <View style={styles.form}>
+    <ThemedView variant="background" style={styles.container}>
+      <View style={styles.content}>
+        <View style={[styles.card, { backgroundColor: '#FFFFFF' }]}>
+          {/* Title with blue underline */}
+          <View style={styles.titleContainer}>
+            <Text style={styles.welcomeTitle}>Create Account</Text>
+            <Text style={styles.subtitleText}>Join ACT</Text>
+            <View style={styles.underline} />
+          </View>
         <Controller 
           name="email" 
           control={control}
@@ -150,129 +154,127 @@ export default function RegisterScreen({ navigation }: any) {
           )} 
         />
 
-        <TouchableOpacity 
-          style={[styles.registerButton, isLoading && styles.buttonDisabled]} 
-          onPress={handleSubmit(onSubmit)}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text style={styles.registerButtonText}>Create Account</Text>
-          )}
-        </TouchableOpacity>
+          {/* Register Button */}
+          <TouchableOpacity 
+            style={[styles.registerButton, isLoading && styles.registerButtonDisabled]} 
+            onPress={handleSubmit(onSubmit)}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.registerButtonText}>Create Account</Text>
+            )}
+          </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.loginButton} 
-          onPress={() => navigation.navigate('Login')}
-          disabled={isLoading}
-        >
-          <Text style={styles.loginButtonText}>
-            Already have an account? <Text style={styles.loginLink}>Sign In</Text>
-          </Text>
-        </TouchableOpacity>
+          {/* Bottom Link */}
+          <View style={styles.linksContainer}>
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('Login')}
+              disabled={isLoading}
+            >
+              <Text style={styles.link}>Already have an account? Sign In</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
-
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>🔒 Your data is secure</Text>
-      </View>
-    </View>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { 
-    flex: 1, 
-    backgroundColor: '#FFB7C5',
-  },
-  header: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 60,
-    marginBottom: 30,
+    paddingHorizontal: 20,
   },
-  emoji: {
-    fontSize: 70,
-    marginBottom: 10,
+  content: {
+    width: '100%',
+    maxWidth: 450,
   },
-  title: { 
-    fontSize: 32, 
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 5,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
-  },
-  form: {
-    backgroundColor: 'white',
-    marginHorizontal: 20,
-    padding: 25,
-    borderRadius: 20,
+  card: {
+    borderRadius: 16,
+    padding: 28,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 5,
+    elevation: 8,
+  },
+  titleContainer: {
+    marginBottom: 32,
+    alignItems: 'center',
+  },
+  welcomeTitle: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 4,
+  },
+  subtitleText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#666666',
+    marginBottom: 12,
+  },
+  underline: {
+    width: 140,
+    height: 3,
+    backgroundColor: '#2196F3',
+    borderRadius: 2,
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 18,
   },
   label: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '500',
+    color: '#000000',
     marginBottom: 8,
   },
   input: { 
-    borderWidth: 1, 
-    borderColor: '#DDD', 
-    padding: 14, 
-    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    padding: 12, 
+    borderRadius: 8,
     fontSize: 16,
+    color: '#000000',
     backgroundColor: '#F9F9F9',
   },
   inputError: {
-    borderColor: '#FF3B30',
+    borderColor: '#D32F2F',
   },
   errorText: {
-    color: '#FF3B30',
     fontSize: 12,
-    marginTop: 5,
+    color: '#D32F2F',
+    marginTop: 4,
   },
   registerButton: {
-    backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 10,
+    backgroundColor: '#000000',
+    padding: 14,
+    borderRadius: 8,
+    marginTop: 22,
+    marginBottom: 20,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
   },
-  buttonDisabled: {
+  registerButtonDisabled: {
     opacity: 0.6,
   },
   registerButtonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  loginButton: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  loginButtonText: {
-    color: '#666',
-    fontSize: 14,
-  },
-  loginLink: {
-    color: '#007AFF',
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: '600',
   },
-  footer: {
+  linksContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 30,
   },
-  footerText: {
-    color: 'white',
+  link: {
     fontSize: 14,
+    color: '#000000',
+    fontWeight: '500',
   },
 });

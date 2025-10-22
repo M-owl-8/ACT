@@ -1,416 +1,206 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  Switch,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { api } from '../api/client';
-import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/auth';
-import { useTheme } from '../theme';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
 import { SAMURAI_COLORS, SAMURAI_PATTERNS } from '../theme/SAMURAI_COLORS';
 
-interface UserSettings {
-  language: string;
-  theme: string;
-  currency: string;
+interface AccountFormState {
+  fullName: string;
+  email: string;
+  password: string;
 }
 
 export default function SettingsScreen() {
-  const { t, i18n } = useTranslation();
-  const user = useAuthStore((s) => s.user);
-  const fetchProfile = useAuthStore((s) => s.fetchProfile);
-  const { theme, mode, setMode } = useTheme();
-  const [loading, setLoading] = useState(false);
-  const [settings, setSettings] = useState<UserSettings>({
-    language: 'en',
-    theme: 'light',
-    currency: 'USD',
+  const user = useAuthStore((state) => state.user);
+  const [accountForm, setAccountForm] = useState<AccountFormState>({
+    fullName: user?.name || '',
+    email: user?.email || '',
+    password: '••••••••',
   });
-  const [exportLoading, setExportLoading] = useState(false);
+  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(true);
+  const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(false);
+  const [fontSize, setFontSize] = useState(14);
+  const autoBackupEnabled = false;
 
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get('/users/me');
-      const userSettings = {
-        language: response.data.language || 'en',
-        theme: response.data.theme || 'light',
-        currency: response.data.currency || 'USD',
-      };
-      
-      setSettings(userSettings);
-      
-      // Sync i18n language
-      await i18n.changeLanguage(userSettings.language);
-      
-      // Sync theme mode
-      if (userSettings.theme === 'light' || userSettings.theme === 'dark' || userSettings.theme === 'auto') {
-        await setThemeMode(userSettings.theme as 'light' | 'dark' | 'auto');
-      }
-      
-      console.log('Settings loaded successfully:', userSettings);
-    } catch (error: any) {
-      console.error('Error loading settings:', error);
-      console.error('Error response:', error.response?.data);
-      Alert.alert('Error', 'Failed to load settings');
-    } finally {
-      setLoading(false);
-    }
+  const handleFormChange = (field: keyof AccountFormState, value: string) => {
+    setAccountForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const updateSetting = async (key: keyof UserSettings, value: string) => {
-    try {
-      // Update i18n first if language changed (this will cache it)
-      if (key === 'language') {
-        await i18n.changeLanguage(value);
-      }
-      
-      // Update backend
-      await api.patch('/users/me', { [key]: value });
-      
-      // Update local state
-      setSettings(prev => ({ ...prev, [key]: value }));
-      
-      // Refresh user profile in auth store to sync changes across the app
-      await fetchProfile();
-      
-      Alert.alert(t('success'), t('settingUpdated') || 'Setting updated successfully');
-    } catch (error: any) {
-      console.error('Error updating setting:', error);
-      console.error('Error response:', error.response?.data);
-      
-      // If backend fails but language was changed, keep the language change
-      if (key === 'language') {
-        setSettings(prev => ({ ...prev, [key]: value }));
-      }
-      
-      let errorMessage = t('settingUpdateFailed') || 'Failed to update setting. ';
-      
-      if (error.response) {
-        errorMessage += error.response.data?.detail || 
-                       error.response.data?.message || 
-                       `Server error: ${error.response.status}`;
-      } else if (error.request) {
-        errorMessage += 'No response from server. Please check your internet connection.';
-      } else {
-        errorMessage += error.message || 'Unknown error occurred';
-      }
-      
-      Alert.alert(t('error'), errorMessage);
-    }
+  const toggleEmailNotifications = () => {
+    setEmailNotificationsEnabled((prev) => !prev);
   };
 
-  const handleExportCSV = async () => {
-    try {
-      setExportLoading(true);
-      
-      // Get CSV data from API
-      const response = await api.get('/export/entries/csv', {
-        responseType: 'blob',
-      });
-      
-      // Create file path
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const filename = `act_entries_${timestamp}.csv`;
-      const fileUri = `${FileSystem.documentDirectory}${filename}`;
-      
-      // Save file
-      await FileSystem.writeAsStringAsync(fileUri, response.data, {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
-      
-      // Share file
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri);
-      } else {
-        Alert.alert('Success', `File saved to: ${fileUri}`);
-      }
-    } catch (error) {
-      console.error('Error exporting CSV:', error);
-      Alert.alert('Error', 'Failed to export data');
-    } finally {
-      setExportLoading(false);
-    }
+  const togglePushNotifications = () => {
+    setPushNotificationsEnabled((prev) => !prev);
   };
 
-  const handleExportJSON = async () => {
-    try {
-      setExportLoading(true);
-      
-      // Get JSON data from API
-      const response = await api.get('/export/entries/json');
-      
-      // Create file path
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const filename = `act_entries_${timestamp}.json`;
-      const fileUri = `${FileSystem.documentDirectory}${filename}`;
-      
-      // Save file
-      await FileSystem.writeAsStringAsync(
-        fileUri,
-        JSON.stringify(response.data, null, 2),
-        { encoding: FileSystem.EncodingType.UTF8 }
-      );
-      
-      // Share file
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri);
-      } else {
-        Alert.alert('Success', `File saved to: ${fileUri}`);
-      }
-    } catch (error) {
-      console.error('Error exporting JSON:', error);
-      Alert.alert('Error', 'Failed to export data');
-    } finally {
-      setExportLoading(false);
-    }
+  const decreaseFontSize = () => {
+    setFontSize((prev) => Math.max(10, prev - 1));
   };
 
-  const showLanguageOptions = () => {
-    Alert.alert(
-      'Select Language',
-      'Choose your preferred language',
-      [
-        {
-          text: 'English',
-          onPress: () => updateSetting('language', 'en'),
-        },
-        {
-          text: 'Русский',
-          onPress: () => updateSetting('language', 'ru'),
-        },
-        {
-          text: 'O\'zbekcha',
-          onPress: () => updateSetting('language', 'uz'),
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
+  const increaseFontSize = () => {
+    setFontSize((prev) => Math.min(24, prev + 1));
   };
-
-  const showCurrencyOptions = () => {
-    Alert.alert(
-      'Select Currency',
-      'Choose your preferred currency',
-      [
-        {
-          text: 'USD ($)',
-          onPress: () => updateSetting('currency', 'USD'),
-        },
-        {
-          text: 'UZS (so\'m)',
-          onPress: () => updateSetting('currency', 'UZS'),
-        },
-        {
-          text: 'RUB (₽)',
-          onPress: () => updateSetting('currency', 'RUB'),
-        },
-        {
-          text: 'EUR (€)',
-          onPress: () => updateSetting('currency', 'EUR'),
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
-  };
-
-  const showThemeOptions = () => {
-    Alert.alert(
-      'Select Theme',
-      'Choose your preferred theme',
-      [
-        {
-          text: 'Light',
-          onPress: () => {
-            setThemeMode('light');
-            updateSetting('theme', 'light');
-          },
-        },
-        {
-          text: 'Dark',
-          onPress: () => {
-            setThemeMode('dark');
-            updateSetting('theme', 'dark');
-          },
-        },
-        {
-          text: 'Auto (System)',
-          onPress: () => {
-            setThemeMode('auto');
-            updateSetting('theme', 'auto');
-          },
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
-  };
-
-  const getLanguageLabel = (lang: string) => {
-    switch (lang) {
-      case 'en': return 'English';
-      case 'ru': return 'Русский';
-      case 'uz': return 'O\'zbekcha';
-      default: return lang;
-    }
-  };
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={SAMURAI_COLORS.accent} />
-          <Text style={styles.loadingText}>Loading settings...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Settings</Text>
-          <Text style={styles.headerSubtitle}>Customize your experience</Text>
+          <TouchableOpacity style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={SAMURAI_COLORS.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>BudgetWise Settings</Text>
         </View>
 
-        {/* Preferences Section */}
+        {/* Account Details */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
+          <Text style={styles.sectionTitle}>Account Details</Text>
 
-          {/* Language */}
-          <TouchableOpacity style={styles.settingItem} onPress={showLanguageOptions}>
-            <View style={styles.settingLeft}>
-              <Ionicons name="language" size={24} color={SAMURAI_COLORS.accent} />
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingLabel}>Language</Text>
-                <Text style={styles.settingValue}>{getLanguageLabel(settings.language)}</Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#999" />
-          </TouchableOpacity>
+          <View style={styles.inputFieldWrapper}>
+            <TextInput
+              style={styles.input}
+              placeholder="Full Name"
+              placeholderTextColor={SAMURAI_COLORS.text.tertiary}
+              value={accountForm.fullName}
+              onChangeText={(value) => handleFormChange('fullName', value)}
+            />
+          </View>
 
-          {/* Currency */}
-          <TouchableOpacity style={styles.settingItem} onPress={showCurrencyOptions}>
-            <View style={styles.settingLeft}>
-              <Ionicons name="cash" size={24} color={SAMURAI_COLORS.accent} />
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingLabel}>Currency</Text>
-                <Text style={styles.settingValue}>{settings.currency}</Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#999" />
-          </TouchableOpacity>
+          <View style={styles.inputFieldWrapper}>
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              placeholderTextColor={SAMURAI_COLORS.text.tertiary}
+              keyboardType="email-address"
+              value={accountForm.email}
+              onChangeText={(value) => handleFormChange('email', value)}
+            />
+          </View>
 
-          {/* Theme */}
-          <TouchableOpacity style={styles.settingItem} onPress={showThemeOptions}>
-            <View style={styles.settingLeft}>
-              <Ionicons 
-                name={settings.theme === 'dark' ? 'moon' : 'sunny'} 
-                size={24} 
-                color={SAMURAI_COLORS.accent} 
+          <View style={styles.inputFieldWrapper}>
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              placeholderTextColor={SAMURAI_COLORS.text.tertiary}
+              secureTextEntry
+              value={accountForm.password}
+              onChangeText={(value) => handleFormChange('password', value)}
+            />
+          </View>
+        </View>
+
+        {/* Notification Settings */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Notification Settings</Text>
+
+          <View style={styles.toggleRow}>
+            <Text style={styles.toggleLabel}>Email Notifications</Text>
+            <TouchableOpacity
+              style={[styles.toggleButton, emailNotificationsEnabled && styles.toggleButtonActive]}
+              onPress={toggleEmailNotifications}
+            >
+              <View
+                style={[styles.toggleKnob, emailNotificationsEnabled && styles.toggleKnobActive]}
               />
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingLabel}>Theme</Text>
-                <Text style={styles.settingValue}>
-                  {settings.theme.charAt(0).toUpperCase() + settings.theme.slice(1)}
-                </Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#999" />
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.toggleRow}>
+            <Text style={styles.toggleLabel}>Push Notifications</Text>
+            <TouchableOpacity
+              style={[styles.toggleButton, pushNotificationsEnabled && styles.toggleButtonActive]}
+              onPress={togglePushNotifications}
+            >
+              <View
+                style={[styles.toggleKnob, pushNotificationsEnabled && styles.toggleKnobActive]}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Data Export Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Data Export</Text>
-          <Text style={styles.sectionDescription}>
-            Export your financial data for backup or analysis
-          </Text>
+        <TouchableOpacity style={styles.upgradePlanButton}>
+          <Text style={styles.upgradePlanText}>UPGRADE PLAN</Text>
+        </TouchableOpacity>
 
-          {/* Export CSV */}
-          <TouchableOpacity
-            style={styles.exportButton}
-            onPress={handleExportCSV}
-            disabled={exportLoading}
-          >
-            <View style={styles.exportButtonContent}>
-              <Ionicons name="document-text" size={24} color={SAMURAI_COLORS.accent} />
-              <View style={styles.exportButtonInfo}>
-                <Text style={styles.exportButtonTitle}>Export as CSV</Text>
-                <Text style={styles.exportButtonDescription}>
-                  Spreadsheet format for Excel, Google Sheets
-                </Text>
+        {/* App Preferences */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>App Preferences</Text>
+
+          <View style={styles.radioGroup}>
+            <Text style={styles.toggleLabel}>Theme</Text>
+            <View style={styles.radioRow}>
+              <View style={styles.radioOption}>
+                <View style={styles.radioOuterCircle}>
+                  <View style={styles.radioInnerCircle} />
+                </View>
+              </View>
+              <View style={styles.radioOption}>
+                <View style={styles.radioOuterCircle}>
+                  <View style={styles.radioInnerCircleInactive} />
+                </View>
               </View>
             </View>
-            {exportLoading ? (
-              <ActivityIndicator size="small" color={SAMURAI_COLORS.accent} />
-            ) : (
-              <Ionicons name="download" size={24} color={SAMURAI_COLORS.accent} />
-            )}
-          </TouchableOpacity>
+          </View>
 
-          {/* Export JSON */}
-          <TouchableOpacity
-            style={styles.exportButton}
-            onPress={handleExportJSON}
-            disabled={exportLoading}
-          >
-            <View style={styles.exportButtonContent}>
-              <Ionicons name="code-slash" size={24} color={SAMURAI_COLORS.accent} />
-              <View style={styles.exportButtonInfo}>
-                <Text style={styles.exportButtonTitle}>Export as JSON</Text>
-                <Text style={styles.exportButtonDescription}>
-                  Structured data format for developers
-                </Text>
+          <View style={styles.sliderRow}>
+            <Text style={styles.toggleLabel}>Font Size</Text>
+            <View style={styles.sliderControls}>
+              <TouchableOpacity style={styles.sliderButton} onPress={decreaseFontSize}>
+                <Ionicons name="remove" size={16} color={SAMURAI_COLORS.text.primary} />
+              </TouchableOpacity>
+              <View style={styles.sliderTrack}>
+                <View style={[styles.sliderFill, { width: `${((fontSize - 10) / 14) * 100}%` }]} />
+                <View style={styles.sliderThumb} />
               </View>
-            </View>
-            {exportLoading ? (
-              <ActivityIndicator size="small" color={SAMURAI_COLORS.accent} />
-            ) : (
-              <Ionicons name="download" size={24} color={SAMURAI_COLORS.accent} />
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* About Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
-          
-          <View style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Version</Text>
-              <Text style={styles.infoValue}>1.0.0</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Account</Text>
-              <Text style={styles.infoValue}>{user?.email}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>User ID</Text>
-              <Text style={styles.infoValue}>#{user?.id}</Text>
+              <TouchableOpacity style={styles.sliderButton} onPress={increaseFontSize}>
+                <Ionicons name="add" size={16} color={SAMURAI_COLORS.text.primary} />
+              </TouchableOpacity>
             </View>
           </View>
         </View>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>ACT Gen-1</Text>
-          <Text style={styles.footerSubtext}>Personal Finance Tracker</Text>
+        {/* Data Backup */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Data Backup</Text>
+
+          <TouchableOpacity style={styles.backupButton}>
+            <Text style={styles.backupButtonText}>Backup Now</Text>
+          </TouchableOpacity>
+
+          <View style={styles.checkboxRow}>
+            <Text style={styles.toggleLabel}>Auto Backup</Text>
+            <View style={styles.checkbox}>
+              {autoBackupEnabled && <View style={styles.checkboxChecked} />}
+            </View>
+          </View>
+        </View>
+
+        {/* Privacy Settings */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Privacy Settings</Text>
+
+          <View style={styles.toggleRow}>
+            <Text style={styles.toggleLabel}>Data Sharing</Text>
+            <View style={[styles.toggleButton, styles.toggleButtonActive]}>
+              <View style={[styles.toggleKnob, styles.toggleKnobActive]} />
+            </View>
+          </View>
+
+          <View style={styles.toggleRow}>
+            <Text style={styles.toggleLabel}>Usage Stats</Text>
+            <View style={[styles.toggleButton, styles.toggleButtonActive]}>
+              <View style={[styles.toggleKnob, styles.toggleKnobActive]} />
+            </View>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -422,120 +212,48 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: SAMURAI_COLORS.background.primary,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: SAMURAI_COLORS.text.secondary,
-  },
   scrollView: {
     flex: 1,
   },
   header: {
-    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 24,
     backgroundColor: SAMURAI_COLORS.background.surface,
-    borderBottomWidth: 2,
-    borderBottomColor: SAMURAI_COLORS.accent,
+    borderBottomWidth: 1,
+    borderBottomColor: SAMURAI_COLORS.border.primary,
+  },
+  backButton: {
+    marginRight: 12,
+    padding: 4,
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '600',
     color: SAMURAI_COLORS.text.primary,
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: SAMURAI_COLORS.text.secondary,
   },
   section: {
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: SAMURAI_COLORS.text.primary,
-    marginBottom: 8,
-  },
-  sectionDescription: {
-    fontSize: 14,
-    color: SAMURAI_COLORS.text.secondary,
-    marginBottom: 16,
-  },
-  settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: SAMURAI_COLORS.background.surface,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: SAMURAI_COLORS.accent,
-    ...SAMURAI_PATTERNS.shadowSmall,
-  },
-  settingLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  settingInfo: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  settingLabel: {
     fontSize: 16,
     fontWeight: '600',
     color: SAMURAI_COLORS.text.primary,
-    marginBottom: 2,
-  },
-  settingValue: {
-    fontSize: 14,
-    color: SAMURAI_COLORS.text.secondary,
-  },
-  exportButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: SAMURAI_COLORS.background.surface,
-    borderRadius: 12,
-    padding: 16,
     marginBottom: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: SAMURAI_COLORS.accent,
-    ...SAMURAI_PATTERNS.shadowSmall,
   },
-  exportButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
+  inputFieldWrapper: {
+    marginBottom: 12,
   },
-  exportButtonInfo: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  exportButtonTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: SAMURAI_COLORS.text.primary,
-    marginBottom: 4,
-  },
-  exportButtonDescription: {
-    fontSize: 12,
-    color: SAMURAI_COLORS.text.secondary,
-  },
-  infoCard: {
-    backgroundColor: SAMURAI_COLORS.background.surface,
+  input: {
+    ...SAMURAI_PATTERNS.inputField,
     borderRadius: 12,
-    padding: 16,
-    borderLeftWidth: 3,
-    borderLeftColor: SAMURAI_COLORS.accent,
-    ...SAMURAI_PATTERNS.shadowSmall,
+    borderWidth: 0,
+    backgroundColor: SAMURAI_COLORS.background.surface,
+    color: SAMURAI_COLORS.text.primary,
   },
-  infoRow: {
+  toggleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -543,27 +261,154 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: SAMURAI_COLORS.border.primary,
   },
-  infoLabel: {
+  toggleLabel: {
     fontSize: 14,
     color: SAMURAI_COLORS.text.secondary,
   },
-  infoValue: {
+  toggleButton: {
+    width: 48,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: SAMURAI_COLORS.background.surface,
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 1,
+    borderColor: SAMURAI_COLORS.border.primary,
+  },
+  toggleButtonActive: {
+    backgroundColor: SAMURAI_COLORS.accent.red,
+    borderColor: SAMURAI_COLORS.accent.red,
+  },
+  toggleKnob: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: SAMURAI_COLORS.text.secondary,
+    alignSelf: 'flex-start',
+  },
+  toggleKnobActive: {
+    backgroundColor: SAMURAI_COLORS.text.primary,
+    alignSelf: 'flex-end',
+  },
+  upgradePlanButton: {
+    alignSelf: 'center',
+    backgroundColor: SAMURAI_COLORS.text.primary,
+    borderRadius: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginVertical: 8,
+  },
+  upgradePlanText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: SAMURAI_COLORS.background.primary,
+  },
+  radioGroup: {
+    marginBottom: 20,
+  },
+  radioRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  radioOption: {
+    paddingVertical: 12,
+  },
+  radioOuterCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: SAMURAI_COLORS.border.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radioInnerCircle: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: SAMURAI_COLORS.text.primary,
+  },
+  radioInnerCircleInactive: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: 'transparent',
+  },
+  sliderRow: {
+    marginTop: 12,
+  },
+  sliderControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 12,
+  },
+  sliderButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: SAMURAI_COLORS.background.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: SAMURAI_COLORS.border.primary,
+  },
+  sliderTrack: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: SAMURAI_COLORS.border.primary,
+    justifyContent: 'center',
+  },
+  sliderFill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    borderRadius: 3,
+    backgroundColor: SAMURAI_COLORS.text.primary,
+  },
+  sliderThumb: {
+    position: 'absolute',
+    right: 0,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: SAMURAI_COLORS.text.primary,
+    top: -5,
+  },
+  backupButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: SAMURAI_COLORS.text.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  backupButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: SAMURAI_COLORS.text.primary,
+    color: SAMURAI_COLORS.background.primary,
   },
-  footer: {
+  checkboxRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: 32,
+    gap: 12,
   },
-  footerText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: SAMURAI_COLORS.text.primary,
-    marginBottom: 4,
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: SAMURAI_COLORS.border.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: SAMURAI_COLORS.background.surface,
   },
-  footerSubtext: {
-    fontSize: 12,
-    color: SAMURAI_COLORS.text.tertiary,
+  checkboxChecked: {
+    width: 12,
+    height: 12,
+    borderRadius: 2,
+    backgroundColor: SAMURAI_COLORS.accent.red,
   },
 });

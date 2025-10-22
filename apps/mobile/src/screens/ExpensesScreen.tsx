@@ -8,14 +8,17 @@ import {
   RefreshControl,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
   getEntries,
   deleteEntry,
   getExpenseTypeStats,
+  getEntryTotals,
   Entry,
   ExpenseTypeStats,
+  EntryTotals,
 } from "../api/entries";
 import { ExpenseType } from "../api/categories";
 
@@ -24,14 +27,12 @@ type FilterType = "all" | ExpenseType;
 export default function ExpensesScreen({ navigation }: any) {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [stats, setStats] = useState<ExpenseTypeStats | null>(null);
+  const [totals, setTotals] = useState<EntryTotals | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<FilterType>("all");
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-
-  const ITEMS_PER_PAGE = 10;
+  const [showDateDropdown, setShowDateDropdown] = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
   // Date range for "this month"
   const getThisMonthRange = () => {
@@ -47,28 +48,26 @@ export default function ExpensesScreen({ navigation }: any) {
   const loadData = async (reset: boolean = false) => {
     try {
       const monthRange = getThisMonthRange();
-      const currentPage = reset ? 0 : page;
 
       // Load entries (expense only)
       const entriesData = await getEntries({
         type: "expense",
         ...monthRange,
-        limit: ITEMS_PER_PAGE,
-        offset: currentPage * ITEMS_PER_PAGE,
+        limit: 100,
       });
 
       // Load stats for this month
       const statsData = await getExpenseTypeStats(monthRange);
 
-      if (reset) {
-        setEntries(entriesData);
-        setPage(0);
-      } else {
-        setEntries((prev) => [...prev, ...entriesData]);
-      }
+      // Load totals for income
+      const totalsData = await getEntryTotals({
+        type: "income",
+        ...monthRange,
+      });
 
+      setEntries(entriesData);
       setStats(statsData);
-      setHasMore(entriesData.length === ITEMS_PER_PAGE);
+      setTotals(totalsData);
     } catch (error: any) {
       console.error("Failed to load expense data:", error);
       Alert.alert(
@@ -78,7 +77,6 @@ export default function ExpensesScreen({ navigation }: any) {
     } finally {
       setLoading(false);
       setRefreshing(false);
-      setLoadingMore(false);
     }
   };
 
@@ -90,14 +88,6 @@ export default function ExpensesScreen({ navigation }: any) {
     setRefreshing(true);
     loadData(true);
   }, []);
-
-  const loadMore = () => {
-    if (!loadingMore && hasMore) {
-      setLoadingMore(true);
-      setPage((prev) => prev + 1);
-      loadData(false);
-    }
-  };
 
   const handleDelete = (entry: Entry) => {
     Alert.alert(
@@ -138,234 +128,164 @@ export default function ExpensesScreen({ navigation }: any) {
     });
   };
 
-  const getExpenseTypeBadgeColor = (expenseType: ExpenseType | null) => {
-    switch (expenseType) {
-      case "mandatory":
-        return "#F44336";
-      case "neutral":
-        return "#FF9800";
-      case "excess":
-        return "#9C27B0";
-      default:
-        return "#999";
-    }
-  };
-
-  const getExpenseTypeLabel = (expenseType: ExpenseType | null) => {
-    if (!expenseType) return "Other";
-    return expenseType.charAt(0).toUpperCase() + expenseType.slice(1);
-  };
-
   const filteredEntries = entries.filter((entry) => {
     if (selectedFilter === "all") return true;
     return entry.category?.expense_type === selectedFilter;
   });
 
-  const renderEntry = ({ item }: { item: Entry }) => (
-    <View style={styles.entryCard}>
-      <View style={styles.entryLeft}>
-        <View
-          style={[
-            styles.categoryIcon,
-            { backgroundColor: item.category?.color || "#F44336" },
-          ]}
-        >
-          <Text style={styles.categoryEmoji}>
-            {item.category?.icon || "💸"}
-          </Text>
-        </View>
-        <View style={styles.entryInfo}>
-          <Text style={styles.categoryName}>
-            {item.category?.name || "Uncategorized"}
-          </Text>
-          <Text style={styles.entryDate}>{formatDate(item.booked_at)}</Text>
-          {item.category?.expense_type && (
-            <View
-              style={[
-                styles.typeBadge,
-                {
-                  backgroundColor: getExpenseTypeBadgeColor(
-                    item.category.expense_type
-                  ),
-                },
-              ]}
-            >
-              <Text style={styles.typeBadgeText}>
-                {getExpenseTypeLabel(item.category.expense_type)}
-              </Text>
-            </View>
-          )}
-          {item.note && <Text style={styles.entryNote}>{item.note}</Text>}
-        </View>
-      </View>
-      <View style={styles.entryRight}>
-        <Text style={styles.entryAmount}>-${item.amount.toFixed(2)}</Text>
-        <View style={styles.entryActions}>
-          <TouchableOpacity
-            onPress={() => handleEdit(item)}
-            style={styles.actionButton}
-          >
-            <Ionicons name="pencil" size={18} color="#2196F3" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => handleDelete(item)}
-            style={styles.actionButton}
-          >
-            <Ionicons name="trash" size={18} color="#F44336" />
-          </TouchableOpacity>
-        </View>
-      </View>
+  const getCategoryTotals = () => {
+    const categoryTotals: Record<string, { amount: number; count: number }> = {};
+    entries.forEach((entry) => {
+      const categoryName = entry.category?.name || "Other";
+      if (!categoryTotals[categoryName]) {
+        categoryTotals[categoryName] = { amount: 0, count: 0 };
+      }
+      categoryTotals[categoryName].amount += entry.amount;
+      categoryTotals[categoryName].count += 1;
+    });
+    return categoryTotals;
+  };
+
+  const categoryTotals = getCategoryTotals();
+
+  const renderRecentTransaction = ({ item }: { item: Entry }) => (
+    <View style={styles.transactionItem}>
+      <Text style={styles.transactionName}>
+        {item.category?.name || "Other"}
+      </Text>
+      <Text style={styles.transactionDate}>{formatDate(item.booked_at)}</Text>
+      <Text style={styles.transactionAmount}>${item.amount.toFixed(2)}</Text>
+    </View>
+  );
+
+  const renderCategoryItem = ({ item: [categoryName, data] }: any) => (
+    <View style={styles.categoryRow}>
+      <Text style={styles.categoryLabel}>{categoryName}</Text>
+      <Text style={styles.categoryTotal}>
+        ${data.amount.toFixed(2)}
+      </Text>
     </View>
   );
 
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#EF5350" />
-        <Text style={styles.loadingText}>Loading expenses...</Text>
+        <ActivityIndicator size="large" color="#FF5722" />
+        <Text style={styles.loadingText}>Loading dashboard...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header with Stats */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Expenses This Month</Text>
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Mandatory</Text>
-            <Text style={styles.statAmount}>
-              ${stats?.mandatory.total.toFixed(2) || "0.00"}
-            </Text>
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={["#FF5722"]}
+          tintColor="#FF5722"
+        />
+      }
+    >
+      {/* Expense Summary Card */}
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={styles.cardTitleContainer}>
+            <Ionicons name="folder" size={20} color="#000" />
+            <Text style={styles.cardTitle}>Expense Summary</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Neutral</Text>
-            <Text style={styles.statAmount}>
-              ${stats?.neutral.total.toFixed(2) || "0.00"}
-            </Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Excess</Text>
-            <Text style={styles.statAmount}>
-              ${stats?.excess.total.toFixed(2) || "0.00"}
-            </Text>
-          </View>
+          <TouchableOpacity onPress={() => setShowDateDropdown(!showDateDropdown)}>
+            <Text style={styles.filterDropdown}>Filter by Date: Select Date Range</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}>
+            <Text style={styles.filterDropdown}>Filter by Category: Select Category</Text>
+          </TouchableOpacity>
         </View>
-        <View style={styles.totalCard}>
-          <Text style={styles.totalLabel}>Total</Text>
-          <Text style={styles.totalAmount}>
-            ${stats?.total.toFixed(2) || "0.00"}
-          </Text>
-          <Text style={styles.totalCount}>
-            {stats?.count || 0} {stats?.count === 1 ? "entry" : "entries"}
-          </Text>
-        </View>
-      </View>
 
-      {/* Segmented Control */}
-      <View style={styles.segmentedControl}>
-        <TouchableOpacity
-          style={[
-            styles.segment,
-            selectedFilter === "all" && styles.segmentActive,
-          ]}
-          onPress={() => setSelectedFilter("all")}
-        >
-          <Text
-            style={[
-              styles.segmentText,
-              selectedFilter === "all" && styles.segmentTextActive,
-            ]}
-          >
-            All
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.segment,
-            selectedFilter === "mandatory" && styles.segmentActive,
-          ]}
-          onPress={() => setSelectedFilter("mandatory")}
-        >
-          <Text
-            style={[
-              styles.segmentText,
-              selectedFilter === "mandatory" && styles.segmentTextActive,
-            ]}
-          >
-            Mandatory
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.segment,
-            selectedFilter === "neutral" && styles.segmentActive,
-          ]}
-          onPress={() => setSelectedFilter("neutral")}
-        >
-          <Text
-            style={[
-              styles.segmentText,
-              selectedFilter === "neutral" && styles.segmentTextActive,
-            ]}
-          >
-            Neutral
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.segment,
-            selectedFilter === "excess" && styles.segmentActive,
-          ]}
-          onPress={() => setSelectedFilter("excess")}
-        >
-          <Text
-            style={[
-              styles.segmentText,
-              selectedFilter === "excess" && styles.segmentTextActive,
-            ]}
-          >
-            Excess
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Expense List */}
-      <FlatList
-        data={filteredEntries}
-        renderItem={renderEntry}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={["#EF5350"]}
-            tintColor="#EF5350"
+        {/* Categories List */}
+        <View style={styles.categoriesContainer}>
+          <FlatList
+            data={Object.entries(categoryTotals)}
+            renderItem={renderCategoryItem}
+            keyExtractor={([name]) => name}
+            scrollEnabled={false}
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>No expenses this month</Text>
+            }
           />
-        }
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
-        ListFooterComponent={
-          loadingMore ? (
-            <View style={styles.loadingMore}>
-              <ActivityIndicator size="small" color="#EF5350" />
-            </View>
-          ) : null
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="wallet-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>No expense entries yet</Text>
-            <Text style={styles.emptySubtext}>
-              Tap the + button to add your first expense
+        </View>
+
+        {/* Add Correction Button (placeholder) */}
+        {Object.keys(categoryTotals).length > 0 && (
+          <TouchableOpacity style={styles.addCorrectionButton}>
+            <Text style={styles.addCorrectionText}>Add Correction</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Budget Overview Card */}
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={styles.cardTitleContainer}>
+            <Ionicons name="analytics" size={20} color="#000" />
+            <Text style={styles.cardTitle}>Budget Overview</Text>
+          </View>
+          <TouchableOpacity style={styles.settingsButton}>
+            <Ionicons name="settings" size={20} color="#000" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Chart Placeholder */}
+        <View style={styles.chartPlaceholder}>
+          <View style={styles.pieChart} />
+          <Text style={styles.chartLabel}>Pie Chart</Text>
+        </View>
+
+        {/* Budget Stats */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statRow}>
+            <Text style={styles.statLabel}>Total Income</Text>
+            <Text style={styles.statValue}>${totals?.total.toFixed(2) || "0"}</Text>
+          </View>
+          <View style={styles.statRow}>
+            <Text style={styles.statLabel}>Total Expenses</Text>
+            <Text style={styles.statValue}>${stats?.total.toFixed(2) || "0"}</Text>
+          </View>
+          <View style={styles.statRow}>
+            <Text style={styles.statLabel}>Remaining Budget</Text>
+            <Text style={[styles.statValue, styles.remainingPositive]}>
+              ${((totals?.total || 0) - (stats?.total || 0)).toFixed(2)}
             </Text>
           </View>
-        }
-      />
+        </View>
 
-      {/* Add Button */}
+        {/* Recent Transactions */}
+        <View style={styles.recentTransactionsContainer}>
+          <Text style={styles.recentTitle}>Recent Transactions</Text>
+          <FlatList
+            data={entries.slice(0, 3)}
+            renderItem={renderRecentTransaction}
+            keyExtractor={(item) => item.id.toString()}
+            scrollEnabled={false}
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>No recent transactions</Text>
+            }
+          />
+        </View>
+
+        {/* Add New Entry Button */}
+        <TouchableOpacity
+          style={styles.addNewEntryButton}
+          onPress={() =>
+            navigation.navigate("AddExpense", { onSave: () => loadData(true) })
+          }
+        >
+          <Text style={styles.addNewEntryText}>Add New Entry</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Add Expense FAB */}
       <TouchableOpacity
         style={styles.fab}
         onPress={() =>
@@ -374,241 +294,209 @@ export default function ExpensesScreen({ navigation }: any) {
       >
         <Ionicons name="add" size={32} color="#fff" />
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0B0B0E",
+    backgroundColor: "#f8f8f8",
+    paddingVertical: 16,
+    paddingHorizontal: 12,
   },
   centerContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#0B0B0E",
+    backgroundColor: "#f8f8f8",
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: "#BDBDBD",
+    color: "#666",
   },
-  header: {
-    backgroundColor: "#111217",
-    paddingTop: 60,
-    paddingBottom: 24,
-    paddingHorizontal: 20,
-    borderBottomWidth: 2,
-    borderBottomColor: "#EF5350",
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#F4F4F5",
-    marginBottom: 16,
-    letterSpacing: 1,
-  },
-  statsContainer: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: "rgba(239, 83, 80, 0.1)",
-    borderRadius: 8,
-    padding: 12,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(239, 83, 80, 0.3)",
-  },
-  statLabel: {
-    fontSize: 11,
-    color: "#BDBDBD",
-    opacity: 0.9,
-    marginBottom: 4,
-  },
-  statAmount: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#EF5350",
-  },
-  totalCard: {
-    backgroundColor: "rgba(239, 83, 80, 0.12)",
-    borderRadius: 12,
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
     padding: 16,
-    alignItems: "center",
-    borderLeftWidth: 4,
-    borderLeftColor: "#EF5350",
-  },
-  totalLabel: {
-    fontSize: 12,
-    color: "#BDBDBD",
-    opacity: 0.9,
-    marginBottom: 4,
-  },
-  totalAmount: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#EF5350",
-    marginBottom: 4,
-  },
-  totalCount: {
-    fontSize: 14,
-    color: "#BDBDBD",
-    opacity: 0.9,
-  },
-  segmentedControl: {
-    flexDirection: "row",
-    backgroundColor: "#111217",
-    margin: 16,
-    borderRadius: 8,
-    padding: 4,
-    borderWidth: 1,
-    borderColor: "#1A1A1F",
+    marginBottom: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  segment: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    borderRadius: 6,
+  cardHeader: {
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+    paddingBottom: 12,
+  },
+  cardTitleContainer: {
+    flexDirection: "row",
     alignItems: "center",
-  },
-  segmentActive: {
-    backgroundColor: "#EF5350",
-  },
-  segmentText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#757575",
-  },
-  segmentTextActive: {
-    color: "#F4F4F5",
-  },
-  listContent: {
-    padding: 16,
-    paddingBottom: 80,
-  },
-  entryCard: {
-    backgroundColor: "#111217",
-    borderRadius: 12,
-    padding: 16,
+    gap: 8,
     marginBottom: 12,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#000",
+  },
+  filterDropdown: {
+    fontSize: 12,
+    color: "#999",
+    marginVertical: 4,
+  },
+  settingsButton: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+  },
+  categoriesContainer: {
+    marginBottom: 12,
+  },
+  categoryRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderLeftWidth: 3,
-    borderLeftColor: "#EF5350",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
   },
-  entryLeft: {
-    flexDirection: "row",
+  categoryLabel: {
+    fontSize: 14,
+    color: "#333",
+  },
+  categoryTotal: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#000",
+  },
+  addCorrectionButton: {
+    backgroundColor: "#f5f5f5",
+    borderRadius: 8,
+    paddingVertical: 10,
     alignItems: "center",
-    flex: 1,
+    marginTop: 12,
+    opacity: 0.5,
   },
-  categoryIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  addCorrectionText: {
+    fontSize: 14,
+    color: "#999",
+  },
+  chartPlaceholder: {
+    alignItems: "center",
     justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
+    marginBottom: 16,
+    paddingVertical: 20,
   },
-  categoryEmoji: {
-    fontSize: 24,
-  },
-  entryInfo: {
-    flex: 1,
-  },
-  categoryName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#F4F4F5",
-    marginBottom: 2,
-  },
-  entryDate: {
-    fontSize: 13,
-    color: "#BDBDBD",
-    marginBottom: 4,
-  },
-  typeBadge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-    marginBottom: 4,
-  },
-  typeBadgeText: {
-    fontSize: 10,
-    fontWeight: "600",
-    color: "#F4F4F5",
-  },
-  entryNote: {
-    fontSize: 12,
-    color: "#757575",
-    fontStyle: "italic",
-  },
-  entryRight: {
-    alignItems: "flex-end",
-  },
-  entryAmount: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#EF5350",
+  pieChart: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: "#f0f0f0",
+    borderWidth: 8,
+    borderColor: "#ddd",
     marginBottom: 8,
   },
-  entryActions: {
+  chartLabel: {
+    fontSize: 12,
+    color: "#999",
+  },
+  statsContainer: {
+    marginBottom: 16,
+  },
+  statRow: {
     flexDirection: "row",
-    gap: 8,
-  },
-  actionButton: {
-    padding: 4,
-  },
-  loadingMore: {
-    paddingVertical: 20,
+    justifyContent: "space-between",
     alignItems: "center",
+    paddingVertical: 8,
   },
-  emptyContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 60,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#757575",
-    marginTop: 16,
-  },
-  emptySubtext: {
+  statLabel: {
     fontSize: 14,
-    color: "#424242",
-    marginTop: 8,
+    color: "#666",
+  },
+  statValue: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#000",
+  },
+  remainingPositive: {
+    color: "#4CAF50",
+  },
+  recentTransactionsContainer: {
+    marginBottom: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+    paddingTop: 12,
+  },
+  recentTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#000",
+    marginBottom: 12,
+  },
+  transactionItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  transactionName: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#333",
+    flex: 1,
+  },
+  transactionDate: {
+    fontSize: 12,
+    color: "#999",
+    flex: 1,
     textAlign: "center",
   },
+  transactionAmount: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#000",
+    flex: 0.5,
+    textAlign: "right",
+  },
+  emptyText: {
+    fontSize: 14,
+    color: "#ccc",
+    textAlign: "center",
+    paddingVertical: 12,
+  },
+  addNewEntryButton: {
+    backgroundColor: "#000",
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginTop: 12,
+  },
+  addNewEntryText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#fff",
+  },
   fab: {
-    position: "absolute",
+    position: "fixed",
     right: 20,
     bottom: 20,
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: "#EF5350",
+    backgroundColor: "#FF5722",
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 12,
+    elevation: 6,
   },
 });

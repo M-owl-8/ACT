@@ -9,13 +9,15 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  Modal,
+  FlatList,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createEntry } from "../api/entries";
-import { getCategories, Category, ExpenseType } from "../api/categories";
-import { SAMURAI_COLORS, SAMURAI_PATTERNS } from "../theme/SAMURAI_COLORS";
+import { getCategories, Category } from "../api/categories";
+import { SAMURAI_COLORS } from "../theme/SAMURAI_COLORS";
 
 const LAST_CATEGORY_KEY = "@last_expense_category";
 
@@ -27,11 +29,10 @@ export default function AddExpenseScreen({ navigation, route }: any) {
   const [date, setDate] = useState(new Date());
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
-    null
-  );
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
   useEffect(() => {
     loadCategories();
@@ -40,7 +41,7 @@ export default function AddExpenseScreen({ navigation, route }: any) {
   const loadCategories = async () => {
     try {
       const data = await getCategories({ type: "expense" });
-      
+
       if (!data || data.length === 0) {
         Alert.alert(
           "No Categories",
@@ -48,9 +49,10 @@ export default function AddExpenseScreen({ navigation, route }: any) {
           [{ text: "OK" }]
         );
         setCategories([]);
+        setLoadingCategories(false);
         return;
       }
-      
+
       setCategories(data);
 
       // Load last used category
@@ -65,13 +67,14 @@ export default function AddExpenseScreen({ navigation, route }: any) {
       }
     } catch (error: any) {
       console.error("Failed to load categories:", error);
-      const errorMessage = error.response?.data?.detail || error.message || "Failed to load categories";
+      const errorMessage =
+        error.response?.data?.detail || error.message || "Failed to load categories";
       Alert.alert(
         "Error Loading Categories",
         errorMessage + "\n\nPlease check your internet connection and try again.",
         [
           { text: "Retry", onPress: () => loadCategories() },
-          { text: "Cancel", onPress: () => navigation.goBack() }
+          { text: "Cancel", onPress: () => navigation.goBack() },
         ]
       );
     } finally {
@@ -80,14 +83,12 @@ export default function AddExpenseScreen({ navigation, route }: any) {
   };
 
   const handleSave = async () => {
-    // Validate amount
     const amountNum = parseFloat(amount);
     if (!amount || isNaN(amountNum) || amountNum <= 0) {
       Alert.alert("Invalid Amount", "Please enter a valid positive amount");
       return;
     }
 
-    // Validate category
     if (!selectedCategory) {
       Alert.alert("Category Required", "Please select a category");
       return;
@@ -130,19 +131,8 @@ export default function AddExpenseScreen({ navigation, route }: any) {
     }
   };
 
-  const formatDateForDisplay = (date: Date) => {
-    return date.toLocaleDateString("en-US", {
-      weekday: "short",
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  const adjustDate = (days: number) => {
-    const newDate = new Date(date);
-    newDate.setDate(newDate.getDate() + days);
-    setDate(newDate);
+  const formatDate = (d: Date) => {
+    return d.toISOString().split('T')[0];
   };
 
   const onDateChange = (event: any, selectedDate?: Date) => {
@@ -152,465 +142,303 @@ export default function AddExpenseScreen({ navigation, route }: any) {
     }
   };
 
-  const getExpenseTypeBadgeColor = (expenseType: ExpenseType | null) => {
-    switch (expenseType) {
-      case "mandatory":
-        return "#F44336";
-      case "neutral":
-        return "#FF9800";
-      case "excess":
-        return "#9C27B0";
-      default:
-        return "#999";
-    }
-  };
-
-  const getExpenseTypeLabel = (expenseType: ExpenseType | null) => {
-    if (!expenseType) return "Other";
-    return expenseType.charAt(0).toUpperCase() + expenseType.slice(1);
-  };
-
-  const groupedCategories = categories.reduce((acc, category) => {
-    const type = category.expense_type || "other";
-    if (!acc[type]) acc[type] = [];
-    acc[type].push(category);
-    return acc;
-  }, {} as Record<string, Category[]>);
-
-  const renderCategoryPicker = () => {
-    if (loadingCategories) {
-      return (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color={SAMURAI_COLORS.semantic.expense} />
-        </View>
-      );
-    }
-
-    return (
-      <View style={styles.categoryGrid}>
-        {["mandatory", "neutral", "excess", "other"].map((type) => {
-          const typedType = type as ExpenseType | "other";
-          const cats = groupedCategories[typedType] || [];
-          if (cats.length === 0) return null;
-
-          return (
-            <View key={type} style={styles.categoryGroup}>
-              <View style={styles.categoryGroupHeader}>
-                <View
-                  style={[
-                    styles.typeIndicator,
-                    {
-                      backgroundColor: getExpenseTypeBadgeColor(
-                        type === "other" ? null : (type as ExpenseType)
-                      ),
-                    },
-                  ]}
-                />
-                <Text style={styles.categoryGroupTitle}>
-                  {getExpenseTypeLabel(
-                    type === "other" ? null : (type as ExpenseType)
-                  )}
-                </Text>
-              </View>
-              <View style={styles.categoryRow}>
-                {cats.map((category) => (
-                  <TouchableOpacity
-                    key={category.id}
-                    style={[
-                      styles.categoryButton,
-                      selectedCategory?.id === category.id &&
-                        styles.categoryButtonSelected,
-                      {
-                        borderColor:
-                          selectedCategory?.id === category.id
-                            ? category.color || "#F44336"
-                            : "#ddd",
-                      },
-                    ]}
-                    onPress={() => setSelectedCategory(category)}
-                  >
-                    <View
-                      style={[
-                        styles.categoryIconSmall,
-                        { backgroundColor: category.color || "#F44336" },
-                      ]}
-                    >
-                      <Text style={styles.categoryEmojiSmall}>
-                        {category.icon || "💸"}
-                      </Text>
-                    </View>
-                    <Text
-                      style={styles.categoryButtonText}
-                      numberOfLines={1}
-                      ellipsizeMode="tail"
-                    >
-                      {category.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          );
-        })}
+  const renderCategoryItem = ({ item }: { item: Category }) => (
+    <TouchableOpacity
+      style={styles.categoryOption}
+      onPress={() => {
+        setSelectedCategory(item);
+        setShowCategoryDropdown(false);
+      }}
+    >
+      <View
+        style={[
+          styles.categoryIconSmall,
+          { backgroundColor: item.color || "#F44336" },
+        ]}
+      >
+        <Text style={styles.categoryEmoji}>{item.icon || "💸"}</Text>
       </View>
-    );
-  };
+      <Text style={styles.categoryName}>{item.name}</Text>
+    </TouchableOpacity>
+  );
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <Ionicons name="arrow-back" size={24} color={SAMURAI_COLORS.text.primary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Add Expense</Text>
-          <View style={{ width: 24 }} />
-        </View>
-
-        {/* Amount Input */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Amount ($)</Text>
-          <View style={styles.amountContainer}>
-            <Text style={styles.currencySymbol}>$</Text>
-            <TextInput
-              style={styles.amountInput}
-              value={amount}
-              onChangeText={setAmount}
-              placeholder="0.00"
-              keyboardType="decimal-pad"
-              autoFocus
-            />
-          </View>
-        </View>
-
-        {/* Category Picker */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Category *</Text>
-          {renderCategoryPicker()}
-        </View>
-
-        {/* Date Selector */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Date</Text>
-          
-          {/* Calendar Picker Button */}
-          <TouchableOpacity
-            onPress={() => setShowDatePicker(true)}
-            style={styles.datePickerButton}
-          >
-            <Ionicons name="calendar-outline" size={24} color={SAMURAI_COLORS.semantic.expense} />
-            <Text style={styles.datePickerText}>{formatDateForDisplay(date)}</Text>
-            <Ionicons name="chevron-down" size={20} color={SAMURAI_COLORS.text.secondary} />
-          </TouchableOpacity>
-
-          {/* Date Picker Modal */}
-          {showDatePicker && (
-            <DateTimePicker
-              value={date}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={onDateChange}
-              maximumDate={new Date()}
-            />
-          )}
-
-          {/* Navigation Buttons */}
-          <View style={styles.dateNavigation}>
+    <Modal visible={true} transparent={true} animationType="fade">
+      <View style={styles.overlay}>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <View style={styles.card}>
+            {/* Close Button */}
             <TouchableOpacity
-              onPress={() => adjustDate(-1)}
-              style={styles.dateNavButton}
+              style={styles.closeButton}
+              onPress={() => navigation.goBack()}
             >
-              <Ionicons name="chevron-back" size={20} color={SAMURAI_COLORS.semantic.expense} />
-              <Text style={styles.dateNavText}>Previous Day</Text>
+              <Ionicons name="close" size={28} color="#000" />
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => adjustDate(1)}
-              style={[styles.dateNavButton, date >= new Date() && { opacity: 0.5 }]}
-              disabled={date >= new Date()}
-            >
-              <Text style={styles.dateNavText}>Next Day</Text>
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={date >= new Date() ? SAMURAI_COLORS.text.tertiary : SAMURAI_COLORS.semantic.expense}
+
+            {/* Header with Icon and Title */}
+            <View style={styles.header}>
+              <Ionicons name="folder" size={20} color="#000" />
+              <Text style={styles.title}>Add Expense</Text>
+            </View>
+
+            {/* Category Dropdown */}
+            <View style={styles.section}>
+              <Text style={styles.label}>Category</Text>
+              <TouchableOpacity
+                style={styles.dropdownButton}
+                onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                disabled={loadingCategories}
+              >
+                {selectedCategory ? (
+                  <View style={styles.selectedCategoryView}>
+                    <Text style={styles.selectedCategoryText}>
+                      {selectedCategory.name}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={styles.placeholderText}>Select a category</Text>
+                )}
+                <Ionicons name="chevron-down" size={20} color="#999" />
+              </TouchableOpacity>
+
+              {showCategoryDropdown && !loadingCategories && (
+                <View style={styles.dropdownMenu}>
+                  <FlatList
+                    data={categories}
+                    renderItem={renderCategoryItem}
+                    keyExtractor={(item) => item.id.toString()}
+                    scrollEnabled={false}
+                  />
+                </View>
+              )}
+            </View>
+
+            {/* Amount */}
+            <View style={styles.section}>
+              <Text style={styles.label}>Amount</Text>
+              <View style={styles.amountInputContainer}>
+                <TextInput
+                  style={styles.amountInput}
+                  placeholder="138"
+                  placeholderTextColor="#999"
+                  value={amount}
+                  onChangeText={setAmount}
+                  keyboardType="decimal-pad"
+                />
+                <Ionicons name="swap-vertical" size={24} color="#999" />
+              </View>
+            </View>
+
+            {/* Date */}
+            <View style={styles.section}>
+              <Text style={styles.label}>Date</Text>
+              <TouchableOpacity
+                style={styles.input}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Text style={styles.dateText}>{formatDate(date)}</Text>
+              </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={date}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={onDateChange}
+                  maximumDate={new Date()}
+                />
+              )}
+            </View>
+
+            {/* Notes */}
+            <View style={styles.section}>
+              <Text style={styles.label}>Notes</Text>
+              <TextInput
+                style={[styles.input, styles.notesInput]}
+                placeholder="Optional notes"
+                placeholderTextColor="#999"
+                value={note}
+                onChangeText={setNote}
+                multiline
+                numberOfLines={3}
               />
+            </View>
+
+            {/* Submit Button */}
+            <TouchableOpacity
+              style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+              onPress={handleSave}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.submitButtonText}>Submit</Text>
+              )}
             </TouchableOpacity>
           </View>
-
-          {/* Quick Date Buttons */}
-          <View style={styles.quickDateButtons}>
-            <TouchableOpacity
-              onPress={() => setDate(new Date())}
-              style={styles.quickDateButton}
-            >
-              <Text style={styles.quickDateText}>Today</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => {
-                const yesterday = new Date();
-                yesterday.setDate(yesterday.getDate() - 1);
-                setDate(yesterday);
-              }}
-              style={styles.quickDateButton}
-            >
-              <Text style={styles.quickDateText}>Yesterday</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Note Input */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Note (Optional)</Text>
-          <TextInput
-            style={styles.noteInput}
-            value={note}
-            onChangeText={setNote}
-            placeholder="Add a note..."
-            multiline
-            numberOfLines={3}
-            maxLength={500}
-          />
-        </View>
-
-        {/* Save Button */}
-        <TouchableOpacity
-          style={[styles.saveButton, loading && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <>
-              <Ionicons name="checkmark" size={24} color="#fff" />
-              <Text style={styles.saveButtonText}>Save Expense</Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </ScrollView>
-    </View>
+        </ScrollView>
+      </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  overlay: {
     flex: 1,
-    backgroundColor: SAMURAI_COLORS.background.primary,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  content: {
-    padding: 20,
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 40,
+  },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 24,
+    width: "100%",
+    maxWidth: 400,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  closeButton: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    padding: 8,
+    zIndex: 10,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 32,
-    marginTop: Platform.OS === "ios" ? 40 : 20,
+    justifyContent: "center",
+    marginBottom: 24,
+    gap: 8,
   },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: SAMURAI_COLORS.text.primary,
+  title: {
+    fontSize: 24,
+    fontWeight: "600",
+    color: "#000",
+    textAlign: "center",
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   label: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
-    color: SAMURAI_COLORS.text.primary,
+    color: "#000",
     marginBottom: 8,
   },
-  amountContainer: {
+  input: {
+    backgroundColor: "#f5f5f5",
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: "#000",
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  dropdownButton: {
+    backgroundColor: "#f5f5f5",
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: SAMURAI_COLORS.background.surface,
-    borderRadius: 12,
-    padding: 16,
-    ...SAMURAI_PATTERNS.shadowSmall,
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
   },
-  currencySymbol: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: SAMURAI_COLORS.semantic.expense,
-    marginRight: 8,
+  selectedCategoryView: {
+    flex: 1,
+  },
+  selectedCategoryText: {
+    fontSize: 14,
+    color: "#000",
+  },
+  placeholderText: {
+    fontSize: 14,
+    color: "#999",
+  },
+  dropdownMenu: {
+    backgroundColor: "#f9f9f9",
+    borderRadius: 8,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    maxHeight: 250,
+  },
+  categoryOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  categoryIconSmall: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  categoryEmoji: {
+    fontSize: 16,
+  },
+  categoryName: {
+    fontSize: 14,
+    color: "#000",
+    flex: 1,
+  },
+  amountInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
   },
   amountInput: {
     flex: 1,
-    fontSize: 32,
-    fontWeight: "bold",
-    color: SAMURAI_COLORS.text.primary,
-  },
-  loadingContainer: {
-    padding: 20,
-    alignItems: "center",
-  },
-  categoryGrid: {
-    gap: 16,
-  },
-  categoryGroup: {
-    marginBottom: 8,
-  },
-  categoryGroupHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  typeIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 8,
-  },
-  categoryGroupTitle: {
+    paddingVertical: 12,
     fontSize: 14,
-    fontWeight: "600",
-    color: SAMURAI_COLORS.text.secondary,
-  },
-  categoryRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  categoryButton: {
-    backgroundColor: SAMURAI_COLORS.background.surface,
-    borderRadius: 8,
-    padding: 8,
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: SAMURAI_COLORS.border.primary,
-    width: "31%",
-    ...SAMURAI_PATTERNS.shadowSmall,
-  },
-  categoryButtonSelected: {
-    borderWidth: 2,
-    ...SAMURAI_PATTERNS.shadowMedium,
-  },
-  categoryIconSmall: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  categoryEmojiSmall: {
-    fontSize: 18,
-  },
-  categoryButtonText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: SAMURAI_COLORS.text.primary,
-    textAlign: "center",
-  },
-  dateContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: SAMURAI_COLORS.background.surface,
-    borderRadius: 12,
-    padding: 16,
-    ...SAMURAI_PATTERNS.shadowSmall,
-  },
-  dateButton: {
-    padding: 8,
+    color: "#000",
   },
   dateText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: SAMURAI_COLORS.text.primary,
-  },
-  quickDateButtons: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 12,
-  },
-  quickDateButton: {
-    flex: 1,
-    backgroundColor: SAMURAI_COLORS.background.surface,
-    borderRadius: 8,
-    padding: 12,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: SAMURAI_COLORS.semantic.expense,
-  },
-  quickDateText: {
     fontSize: 14,
-    fontWeight: "600",
-    color: SAMURAI_COLORS.semantic.expense,
+    color: "#000",
   },
-  noteInput: {
-    backgroundColor: SAMURAI_COLORS.background.surface,
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: SAMURAI_COLORS.text.primary,
-    minHeight: 100,
+  notesInput: {
+    minHeight: 80,
     textAlignVertical: "top",
-    ...SAMURAI_PATTERNS.shadowSmall,
+    paddingVertical: 12,
   },
-  saveButton: {
-    backgroundColor: SAMURAI_COLORS.semantic.expense,
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: "row",
+  submitButton: {
+    backgroundColor: "#000",
+    borderRadius: 8,
+    paddingVertical: 14,
+    marginTop: 24,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 16,
-    ...SAMURAI_PATTERNS.shadowMedium,
   },
-  saveButtonDisabled: {
+  submitButtonDisabled: {
     opacity: 0.6,
   },
-  saveButtonText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#fff",
-    marginLeft: 8,
-  },
-  datePickerButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: SAMURAI_COLORS.background.surface,
-    borderRadius: 12,
-    padding: 16,
-    ...SAMURAI_PATTERNS.shadowSmall,
-    gap: 12,
-  },
-  datePickerText: {
-    flex: 1,
+  submitButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: SAMURAI_COLORS.text.primary,
-  },
-  dateNavigation: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 12,
-    gap: 12,
-  },
-  dateNavButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: SAMURAI_COLORS.background.surface,
-    borderRadius: 8,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: SAMURAI_COLORS.border.primary,
-    gap: 6,
-  },
-  dateNavText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: SAMURAI_COLORS.semantic.expense,
+    color: "#fff",
   },
 });

@@ -1,0 +1,111 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                 ACT Gen-1: 502 Bad Gateway - QUICK FIX                     ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+🔴 THE PROBLEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❌ Login Error: [AxiosError: Request failed with status code 502]
+
+Root Cause: Backend not binding to correct host interface
+            Backend binds to 127.0.0.1 (localhost only)
+            Emulator needs 0.0.0.0 (all interfaces) to connect
+
+
+✅ THE FIX
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OPTION 1: AUTOMATED (RECOMMENDED)
+  1. Run: .\FIX_502_FOREVER.ps1
+  2. Waits for completion
+  3. Run: .\START_BACKEND_AND_MOBILE.ps1
+
+OPTION 2: MANUAL
+  Terminal 1:
+  ├─ cd c:\Users\user\Desktop\Bitway\Programs\act-gen1\apps\api
+  ├─ .\.venv\Scripts\Activate.ps1
+  └─ uvicorn main:app --reload --host 0.0.0.0 --port 8000
+                                        ^^^^^^^^ KEY: NOT 127.0.0.1!
+
+  Terminal 2:
+  ├─ cd c:\Users\user\Desktop\Bitway\Programs\act-gen1\apps\mobile
+  └─ npm run android
+
+
+🔑 KEY POINTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. MUST use: --host 0.0.0.0  (NOT 127.0.0.1)
+2. MUST see: "✅ ACT Gen-1 API is ready!" message
+3. MUST wait for backend to fully start before launching app
+4. MUST check: http://localhost:8000/health returns {"status": "ok"}
+
+
+📡 NETWORKING REFERENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+From Your Computer:         http://localhost:8000
+From Android Emulator:      http://10.0.2.2:8000  ← App uses this
+API Docs (Your Computer):   http://localhost:8000/docs
+Database File:              apps/api/dev.db
+
+
+✅ SUCCESS INDICATORS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Backend Terminal:
+  ✓ "🚀 Starting ACT Gen-1 API..."
+  ✓ "✓ Database tables ready"
+  ✓ "✓ Default data seeded"
+  ✓ "✅ ACT Gen-1 API is ready!"
+  ✓ "INFO: Uvicorn running on http://0.0.0.0:8000"
+
+Browser (http://localhost:8000/docs):
+  ✓ Shows Swagger UI with all endpoints
+  ✓ Can test endpoints directly
+
+App:
+  ✓ No 502 errors
+  ✓ Can register new account
+  ✓ Can login successfully
+
+
+❌ STILL GETTING 502?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Check backend command has: --host 0.0.0.0
+2. Check port 8000 is free: Get-NetTCPConnection -LocalPort 8000
+3. Check http://localhost:8000/health works
+4. Check Windows Firewall allowing port 8000
+5. Run: .\FIX_502_FOREVER.ps1 for full diagnostic
+
+
+🚀 QUICK START COMMANDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Diagnose Issues:
+  .\FIX_502_FOREVER.ps1
+
+Start Backend Only:
+  .\START_BACKEND_FIXED.ps1
+
+Start Both Backend + App:
+  .\START_BACKEND_AND_MOBILE.ps1
+
+Test Health Endpoint:
+  Invoke-RestMethod -Uri http://localhost:8000/health
+
+
+📝 FILES FOR REFERENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FIX_502_FOREVER.ps1              ← Comprehensive diagnostic and fix
+START_BACKEND_FIXED.ps1          ← Correct backend startup
+START_BACKEND_AND_MOBILE.ps1     ← Start both (fixed)
+FIX_502_EXPLANATION.md           ← Detailed explanation
+502_FIX_QUICK_REFERENCE.txt      ← This file
+
+Mobile Config:
+  apps/mobile/src/api/client.ts  (uses http://10.0.2.2:8000 for emulator)
+
+Backend Config:
+  apps/api/.env                  (DATABASE_URL, JWT_SECRET)
+  apps/api/main.py              (CORS, host binding)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+Last Updated: 2025-01-22
+For more info, see: FIX_502_EXPLANATION.md
+═══════════════════════════════════════════════════════════════════════════════

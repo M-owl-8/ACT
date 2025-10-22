@@ -1,4 +1,4 @@
-import client from './client';
+import { api } from './client';
 
 export interface Book {
   id: number;
@@ -34,7 +34,7 @@ export const booksApi = {
    * Get all books with user progress
    */
   async getBooks(): Promise<Book[]> {
-    const response = await client.get('/books/');
+    const response = await api.get('/books/');
     return response.data;
   },
 
@@ -42,7 +42,7 @@ export const booksApi = {
    * Get a specific book with user progress
    */
   async getBook(bookId: number): Promise<Book> {
-    const response = await client.get(`/books/${bookId}`);
+    const response = await api.get(`/books/${bookId}`);
     return response.data;
   },
 
@@ -50,7 +50,7 @@ export const booksApi = {
    * Update user's reading progress for a book
    */
   async updateProgress(bookId: number, data: ProgressUpdate): Promise<any> {
-    const response = await client.post(`/books/${bookId}/progress`, data);
+    const response = await api.post(`/books/${bookId}/progress`, data);
     return response.data;
   },
 
@@ -58,7 +58,7 @@ export const booksApi = {
    * Get user's reading statistics
    */
   async getReadingStats(): Promise<ReadingStats> {
-    const response = await client.get('/books/progress/stats');
+    const response = await api.get('/books/progress/stats');
     return response.data;
   },
 };
