@@ -5,12 +5,12 @@ node_modules/
 dist/
 build/
 # Native build artifacts (we won't commit these)
-android/
-ios/
+apps/mobile/android/
+apps/mobile/ios/
 # BUT include gradle wrapper (needed for builds)
-!android/gradlew
-!android/gradlew.bat
-!android/gradle/
+!apps/mobile/android/gradlew
+!apps/mobile/android/gradlew.bat
+!apps/mobile/android/gradle/
 # AND include source manifests for Expo (critical for build configuration)
 !apps/mobile/android/app/src/
 !apps/mobile/android/app/src/main/
