@@ -15,7 +15,8 @@ export default ({ config }) => {
     },
     permissions: [
       "INTERNET",
-      "ACCESS_NETWORK_STATE"
+      "ACCESS_NETWORK_STATE",
+      "POST_NOTIFICATIONS"
     ],
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false
@@ -53,7 +54,8 @@ export default ({ config }) => {
           color: "#ffffff",
           sounds: []
         }
-      ]
+      ],
+      "./plugins/android-manifest-fix.js"
     ],
     extra: {
       eas: {

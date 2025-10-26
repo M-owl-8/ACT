@@ -4,33 +4,46 @@ module.exports = function (config) {
   return withAndroidManifest(config, async (config) => {
     const manifest = config.modResults;
     
-    // Ensure tools namespace is added
+    // Ensure manifest root attributes exist
     if (!manifest.manifest.$) {
       manifest.manifest.$ = {};
     }
+    
+    // Add tools namespace
     manifest.manifest.$["xmlns:tools"] = "http://schemas.android.com/tools";
-
+    
+    // Get or create application element
     const application = manifest.manifest.application?.[0];
-    if (application && application["meta-data"]) {
-      // Find and fix the Firebase notification metadata elements
-      application["meta-data"].forEach((metaData) => {
-        if (!metaData.$) {
-          metaData.$ = {};
-        }
-        
-        const name = metaData.$["android:name"];
-        
-        // Fix the notification color conflict
-        if (name === "com.google.firebase.messaging.default_notification_color") {
-          metaData.$["tools:replace"] = "android:resource";
-        }
-        
-        // Fix the notification icon conflict if it exists
-        if (name === "com.google.firebase.messaging.default_notification_icon") {
-          metaData.$["tools:replace"] = "android:resource";
-        }
-      });
+    if (!application) {
+      return config;
     }
+    
+    // Ensure meta-data array exists
+    if (!application["meta-data"]) {
+      application["meta-data"] = [];
+    }
+    
+    // Process all metadata elements
+    application["meta-data"] = application["meta-data"].map((metaData) => {
+      if (!metaData.$) {
+        metaData.$ = {};
+      }
+      
+      const name = metaData.$["android:name"];
+      
+      // Fix Firebase notification conflicts by using tools:replace
+      if (
+        name === "com.google.firebase.messaging.default_notification_color" ||
+        name === "com.google.firebase.messaging.default_notification_icon"
+      ) {
+        // Only add tools:replace if it doesn't already exist
+        if (!metaData.$["tools:replace"]) {
+          metaData.$["tools:replace"] = "android:resource";
+        }
+      }
+      
+      return metaData;
+    });
 
     return config;
   });
