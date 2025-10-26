@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Notification icon color - must match the color specified in app.json expo-notifications config -->
+    <color name="notification_icon_color">#ffffff</color>
+</resources>
