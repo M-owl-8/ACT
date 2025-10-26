@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from 'react-i18next';
 import {
   getEntries,
   deleteEntry,
@@ -19,14 +20,27 @@ import {
 } from "../api/entries";
 
 export default function IncomeScreen({ navigation }: any) {
+  const { t, i18n } = useTranslation();
+  const [languageChangeKey, setLanguageChangeKey] = useState(0);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [totals, setTotals] = useState<EntryTotals | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showDateDropdown, setShowDateDropdown] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-  const [selectedDateRange, setSelectedDateRange] = useState("This Month");
-  const [selectedCategory, setSelectedCategory] = useState("All Categories");
+  const [selectedDateRange, setSelectedDateRange] = useState(t('thisMonth'));
+  const [selectedCategory, setSelectedCategory] = useState(t('all'));
+
+  // Listen for language changes and force re-render
+  useEffect(() => {
+    const handleLanguageChange = () => {
+      setLanguageChangeKey(prev => prev + 1);
+    };
+    i18n.on('languageChanged', handleLanguageChange);
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+    };
+  }, [i18n]);
 
   // Date range for "this month"
   const getThisMonthRange = () => {
@@ -61,8 +75,8 @@ export default function IncomeScreen({ navigation }: any) {
     } catch (error: any) {
       console.error("Failed to load income data:", error);
       Alert.alert(
-        "Error",
-        error.response?.data?.detail || "Failed to load income data"
+        t('error'),
+        error.response?.data?.detail || t('failedToSaveChanges')
       );
     } finally {
       setLoading(false);
@@ -81,22 +95,22 @@ export default function IncomeScreen({ navigation }: any) {
 
   const handleDelete = (entry: Entry) => {
     Alert.alert(
-      "Delete Income",
-      `Are you sure you want to delete this income entry of $${entry.amount}?`,
+      t('delete'),
+      `${t('confirmDelete')} $${entry.amount}?`,
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t('cancel'), style: "cancel" },
         {
-          text: "Delete",
+          text: t('delete'),
           style: "destructive",
           onPress: async () => {
             try {
               await deleteEntry(entry.id);
-              Alert.alert("Success", "Income entry deleted");
+              Alert.alert(t('success'), t('settingUpdated'));
               loadData();
             } catch (error: any) {
               Alert.alert(
-                "Error",
-                error.response?.data?.detail || "Failed to delete entry"
+                t('error'),
+                error.response?.data?.detail || t('failedToSaveChanges')
               );
             }
           },
@@ -134,19 +148,19 @@ export default function IncomeScreen({ navigation }: any) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#4CAF50" />
-        <Text style={styles.loadingText}>Loading income...</Text>
+        <Text style={styles.loadingText}>{t('loading')}</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View key={languageChangeKey} style={styles.container}>
       {/* Header with Logo and Title */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <Ionicons name="folder" size={24} color="#000" />
-          <Text style={styles.headerTitle}>Income</Text>
-          <Text style={styles.headerSubtitle}>Summary</Text>
+          <Text style={styles.headerTitle}>{t('income')}</Text>
+          <Text style={styles.headerSubtitle}>{t('summary')}</Text>
         </View>
 
         {/* Filters */}
@@ -171,7 +185,7 @@ export default function IncomeScreen({ navigation }: any) {
         {/* Chart placeholder */}
         <View style={styles.chartContainer}>
           <View style={styles.chart}>
-            <Text style={styles.chartLabel}>Income Trend</Text>
+            <Text style={styles.chartLabel}>{t('trend')}</Text>
             {/* Placeholder for chart - can be replaced with actual chart library */}
             <View style={styles.chartArea} />
           </View>
@@ -196,7 +210,7 @@ export default function IncomeScreen({ navigation }: any) {
           <>
             {totals && (
               <View style={styles.totalsHeader}>
-                <Text style={styles.totalsLabel}>Total Income</Text>
+                <Text style={styles.totalsLabel}>{t('totalIncome')}</Text>
                 <Text style={styles.totalsAmount}>
                   ${totals?.total.toFixed(2) || "0.00"}
                 </Text>
@@ -207,9 +221,9 @@ export default function IncomeScreen({ navigation }: any) {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="cash-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>No income entries yet</Text>
+            <Text style={styles.emptyText}>{t('noIncomeEntriesYet')}</Text>
             <Text style={styles.emptySubtext}>
-              Tap the + button to add your first income
+              {t('tapAddButtonToAddFirstIncome')}
             </Text>
           </View>
         }

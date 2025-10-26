@@ -5,13 +5,15 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Text,
+  ActivityIndicator,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedView, ThemedText, ThemedCard, ThemedButton } from '../components/themed';
 import { useTheme } from '../theme';
-import { booksApi } from '../api/books';
+import { booksApi, ReadingSession } from '../api/books';
 
 interface Book {
   id: number;
@@ -32,18 +34,25 @@ interface Book {
 export default function BookDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const { bookId } = route.params as { bookId: number };
+  const [languageChangeKey, setLanguageChangeKey] = React.useState(0);
   
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [sessions, setSessions] = useState<ReadingSession[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
 
   const loadBook = async () => {
     try {
-      const data = await booksApi.getBook(bookId);
+      const [data, sessionsData] = await Promise.all([
+        booksApi.getBook(bookId),
+        booksApi.getReadingSessions(bookId).catch(() => []),
+      ]);
       setBook(data);
+      setSessions(sessionsData || []);
     } catch (error) {
       console.error('Failed to load book:', error);
       Alert.alert(t('error'), t('failedToLoadBook'));
@@ -56,6 +65,23 @@ export default function BookDetailScreen() {
   useEffect(() => {
     loadBook();
   }, [bookId]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadBook();
+    }, [bookId])
+  );
+
+  // Listen for language changes and force re-render
+  React.useEffect(() => {
+    const handleLanguageChange = () => {
+      setLanguageChangeKey(prev => prev + 1);
+    };
+    i18n.on('languageChanged', handleLanguageChange);
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+    };
+  }, [i18n]);
 
   const updateProgress = async (status: 'not_started' | 'in_progress' | 'done', progress?: number) => {
     if (!book) return;
@@ -117,6 +143,68 @@ export default function BookDetailScreen() {
       'plain-text',
       currentProgress.toString()
     );
+  };
+
+  const handleAddReadingSession = () => {
+    Alert.prompt(
+      'Log Reading Session',
+      'How many pages did you read?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Next',
+          onPress: (pages) => {
+            if (pages && parseInt(pages) > 0) {
+              Alert.prompt(
+                'Time Spent',
+                'How many minutes did you spend reading?',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Add Session',
+                    onPress: async (minutes) => {
+                      if (minutes && parseInt(minutes) > 0) {
+                        try {
+                          setUpdating(true);
+                          await booksApi.addReadingSession(bookId, {
+                            pages_read: parseInt(pages),
+                            time_spent_minutes: parseInt(minutes),
+                          });
+                          Alert.alert('Success', 'Reading session logged!');
+                          loadBook();
+                        } catch (error) {
+                          Alert.alert(t('error'), 'Failed to log session');
+                        } finally {
+                          setUpdating(false);
+                        }
+                      }
+                    },
+                  },
+                ],
+                'plain-text'
+              );
+            }
+          },
+        },
+      ],
+      'plain-text'
+    );
+  };
+
+  const formatTime = (minutes: number) => {
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (mins === 0) return `${hours}h`;
+    return `${hours}h ${mins}m`;
+  };
+
+  const getTotalTimeSpent = () => {
+    return sessions.reduce((total, session) => total + session.time_spent_minutes, 0);
+  };
+
+  const getTotalPagesRead = () => {
+    return sessions.reduce((total, session) => total + session.pages_read, 0);
   };
 
   if (loading || !book) {

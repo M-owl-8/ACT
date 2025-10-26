@@ -1,0 +1,9 @@
+{
+  "include": ["apps/api", "apps/mobile"],
+  "pythonVersion": "3.13",
+  "pythonPlatform": "Windows",
+  "venvPath": "apps/api",
+  "typeCheckingMode": "basic",
+  "reportMissingTypeStubs": false,
+  "reportMissingImports": false
+}

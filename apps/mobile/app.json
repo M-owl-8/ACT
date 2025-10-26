@@ -45,13 +45,14 @@
           "color": "#ffffff",
           "sounds": []
         }
-      ]
+      ],
+      "./plugins/android-manifest-fix.js"
     ],
     "extra": {
       "eas": {
-        "projectId": "YOUR_PROJECT_ID_WILL_BE_SET_BY_EAS"
+        "projectId": "0d2ff065-1b12-4766-b547-3bdeea01cb0a"
       }
     },
-    "owner": "YOUR_EXPO_USERNAME"
+    "owner": "owl_wilde"
   }
 }

@@ -3,20 +3,34 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
 type NavigationProp = NativeStackNavigationProp<any>;
 
 export default function AddScreen() {
+  const { t, i18n } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
+  const [languageChangeKey, setLanguageChangeKey] = React.useState(0);
+
+  // Listen for language changes and force re-render
+  React.useEffect(() => {
+    const handleLanguageChange = () => {
+      setLanguageChangeKey(prev => prev + 1);
+    };
+    i18n.on('languageChanged', handleLanguageChange);
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+    };
+  }, [i18n]);
 
   const openAddIncome = () => {
     navigation.navigate('AddIncome');
@@ -27,12 +41,11 @@ export default function AddScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView key={languageChangeKey} style={styles.container}>
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Add Entry</Text>
-          <Ionicons name="add-circle" size={32} color="#000" />
+          <Text style={styles.title}>{t('add')}</Text>
         </View>
 
         {/* Add Options */}
@@ -45,11 +58,11 @@ export default function AddScreen() {
           >
             <View style={styles.cardHeader}>
               <Ionicons name="arrow-up-circle" size={48} color="#4caf50" />
-              <Text style={styles.cardTitle}>Add Income</Text>
+              <Text style={styles.cardTitle}>{t('addIncome')}</Text>
             </View>
-            <Text style={styles.cardDescription}>Record a new income source</Text>
+            <Text style={styles.cardDescription}>{t('recordNewIncomeSource') || 'Record a new income source'}</Text>
             <View style={styles.cardFooter}>
-              <Text style={styles.cardSubtext}>Quick and easy</Text>
+              <Text style={styles.cardSubtext}>{t('quickAndEasy') || 'Quick and easy'}</Text>
               <Ionicons name="arrow-forward" size={20} color="#4caf50" />
             </View>
           </TouchableOpacity>
@@ -62,29 +75,14 @@ export default function AddScreen() {
           >
             <View style={styles.cardHeader}>
               <Ionicons name="arrow-down-circle" size={48} color="#f44336" />
-              <Text style={styles.cardTitle}>Add Expense</Text>
+              <Text style={styles.cardTitle}>{t('addExpense')}</Text>
             </View>
-            <Text style={styles.cardDescription}>Log a new expense</Text>
+            <Text style={styles.cardDescription}>{t('logNewExpense') || 'Log a new expense'}</Text>
             <View style={styles.cardFooter}>
-              <Text style={styles.cardSubtext}>Track your spending</Text>
+              <Text style={styles.cardSubtext}>{t('trackYourSpending') || 'Track your spending'}</Text>
               <Ionicons name="arrow-forward" size={20} color="#f44336" />
             </View>
           </TouchableOpacity>
-        </View>
-
-        {/* Quick Stats */}
-        <View style={styles.statsContainer}>
-          <Text style={styles.statsTitle}>Quick Actions</Text>
-          <View style={styles.statsGrid}>
-            <TouchableOpacity style={styles.statCard}>
-              <Ionicons name="calendar" size={28} color="#2196f3" />
-              <Text style={styles.statLabel}>View Calendar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.statCard}>
-              <Ionicons name="document-text" size={28} color="#ff9800" />
-              <Text style={styles.statLabel}>Reports</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -162,38 +160,5 @@ const styles = StyleSheet.create({
   cardSubtext: {
     fontSize: 12,
     color: '#999',
-  },
-  statsContainer: {
-    marginTop: 16,
-  },
-  statsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 12,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
-    textAlign: 'center',
   },
 });

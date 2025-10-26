@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { API } from '../api/client';
 import { useAuthStore } from '../store/auth';
 import { useTheme } from '../theme';
 import { ThemedView } from '../components/themed';
+import { SAMURAI_COLORS } from '../theme/SAMURAI_COLORS';
 
 export default function RegisterScreen({ navigation }: any) {
+  const { t, i18n } = useTranslation();
+  const [languageChangeKey, setLanguageChangeKey] = React.useState(0);
   const { control, handleSubmit, formState: { errors }, watch } = useForm({
     defaultValues: {
       email: '',
       password: '',
-      confirmPassword: ''
+      confirmPassword: '',
+      recovery_keyword: ''
     }
   });
   const { setTokens, fetchProfile } = useAuthStore();
@@ -19,13 +24,25 @@ export default function RegisterScreen({ navigation }: any) {
   const [isLoading, setIsLoading] = useState(false);
   const password = watch('password');
 
+  // Listen for language changes and force re-render
+  React.useEffect(() => {
+    const handleLanguageChange = () => {
+      setLanguageChangeKey(prev => prev + 1);
+    };
+    i18n.on('languageChanged', handleLanguageChange);
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+    };
+  }, [i18n]);
+
   const onSubmit = async (data: any) => {
     setIsLoading(true);
     try {
       console.log('📝 Attempting registration for:', data.email);
       const res = await API.post('/auth/register', {
         email: data.email,
-        password: data.password
+        password: data.password,
+        recovery_keyword: data.recovery_keyword
       });
       console.log('✅ Registration successful, saving tokens...');
       await setTokens(res.data.access_token, res.data.refresh_token);
@@ -41,17 +58,19 @@ export default function RegisterScreen({ navigation }: any) {
         code: error.code,
       });
       
-      let errorMessage = 'Registration failed. Please try again.';
-      let errorTitle = 'Registration Failed';
+      let errorMessage = t('registrationFailed');
+      let errorTitle = t('registrationFailed');
       
       if (error.code === 'ECONNABORTED') {
-        errorTitle = 'Connection Timeout';
-        errorMessage = 'The server is taking too long to respond. Please check if the API server is running and try again.';
+        errorTitle = t('connectionTimeout');
+        errorMessage = t('serverTimeoutMessage');
       } else if (error.code === 'ERR_NETWORK' || error.message === 'Network Error' || !error.response) {
-        errorTitle = 'Network Error';
-        errorMessage = 'Cannot connect to the server. Please ensure:\n\n1. The API server is running\n2. Your device has network access\n3. For physical devices: Set EXPO_PUBLIC_API_BASE_URL to your computer\'s IP address\n\nCurrent API URL: ' + (process.env.EXPO_PUBLIC_API_BASE_URL || 'default');
+        errorTitle = t('networkError');
+        errorMessage = t('networkErrorMessage') + (process.env.EXPO_PUBLIC_API_BASE_URL || 'default');
       } else if (error.response?.status === 400) {
-        errorMessage = error.response?.data?.detail || 'Email already registered.';
+        errorMessage = error.response?.data?.detail || t('emailAlreadyRegistered');
+      } else if (error.response?.status === 422) {
+        errorMessage = t('requiredFieldsError');
       } else if (error.response?.data?.detail) {
         errorMessage = error.response.data.detail;
       }
@@ -63,28 +82,37 @@ export default function RegisterScreen({ navigation }: any) {
   };
 
   return (
-    <ThemedView variant="background" style={styles.container}>
-      <View style={styles.content}>
-        <View style={[styles.card, { backgroundColor: '#FFFFFF' }]}>
-          {/* Title with blue underline */}
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+    >
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <ThemedView variant="background" style={styles.container}>
+          <View style={styles.content}>
+            <View style={styles.card}>
+          {/* Title with red underline */}
           <View style={styles.titleContainer}>
-            <Text style={styles.welcomeTitle}>Create Account</Text>
-            <Text style={styles.subtitleText}>Join ACT</Text>
+            <Text style={styles.welcomeTitle}>{t('createAccount')}</Text>
+            <Text style={styles.subtitleText}>{t('joinACT')}</Text>
             <View style={styles.underline} />
           </View>
         <Controller 
           name="email" 
           control={control}
           rules={{ 
-            required: 'Email is required',
+            required: t('emailRequired'),
             pattern: {
               value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-              message: 'Invalid email address'
+              message: t('invalidEmail')
             }
           }}
           render={({ field: { onChange, value } }) => (
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>{t('email')}</Text>
               <TextInput 
                 placeholder="user@actgen1.com" 
                 style={[styles.input, errors.email && styles.inputError]}
@@ -105,17 +133,17 @@ export default function RegisterScreen({ navigation }: any) {
           name="password" 
           control={control}
           rules={{ 
-            required: 'Password is required',
+            required: t('passwordRequired'),
             minLength: {
               value: 8,
-              message: 'Password must be at least 8 characters'
+              message: t('passwordMinLength')
             }
           }}
           render={({ field: { onChange, value } }) => (
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>{t('password')}</Text>
               <TextInput 
-                placeholder="At least 8 characters" 
+                placeholder={t('atLeast8Characters')} 
                 style={[styles.input, errors.password && styles.inputError]}
                 secureTextEntry 
                 value={value} 
@@ -133,14 +161,14 @@ export default function RegisterScreen({ navigation }: any) {
           name="confirmPassword" 
           control={control}
           rules={{ 
-            required: 'Please confirm your password',
-            validate: (value) => value === password || 'Passwords do not match'
+            required: t('confirmPasswordRequired'),
+            validate: (value) => value === password || t('passwordsDoNotMatch')
           }}
           render={({ field: { onChange, value } }) => (
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Confirm Password</Text>
+              <Text style={styles.label}>{t('confirmPassword')}</Text>
               <TextInput 
-                placeholder="Re-enter your password" 
+                placeholder={t('reEnterPassword')} 
                 style={[styles.input, errors.confirmPassword && styles.inputError]}
                 secureTextEntry 
                 value={value} 
@@ -149,6 +177,37 @@ export default function RegisterScreen({ navigation }: any) {
               />
               {errors.confirmPassword && (
                 <Text style={styles.errorText}>{errors.confirmPassword.message}</Text>
+              )}
+            </View>
+          )} 
+        />
+
+        <Controller 
+          name="recovery_keyword" 
+          control={control}
+          rules={{ 
+            required: t('recoveryKeywordRequired'),
+            minLength: {
+              value: 3,
+              message: t('recoveryKeywordMinLength')
+            }
+          }}
+          render={({ field: { onChange, value } }) => (
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>{t('recoveryKeyword')}</Text>
+              <Text style={styles.helperText}>
+                {t('recoveryKeywordHelper')}
+              </Text>
+              <TextInput 
+                placeholder={t('favoriteAnimalExample')} 
+                style={[styles.input, errors.recovery_keyword && styles.inputError]}
+                value={value} 
+                onChangeText={onChange}
+                autoCapitalize="none"
+                editable={!isLoading}
+              />
+              {errors.recovery_keyword && (
+                <Text style={styles.errorText}>{errors.recovery_keyword.message}</Text>
               )}
             </View>
           )} 
@@ -163,7 +222,7 @@ export default function RegisterScreen({ navigation }: any) {
             {isLoading ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.registerButtonText}>Create Account</Text>
+              <Text style={styles.registerButtonText}>{t('createAccount')}</Text>
             )}
           </TouchableOpacity>
 
@@ -173,16 +232,23 @@ export default function RegisterScreen({ navigation }: any) {
               onPress={() => navigation.navigate('Login')}
               disabled={isLoading}
             >
-              <Text style={styles.link}>Already have an account? Sign In</Text>
+              <Text style={styles.link}>{t('alreadyHaveAccount')}</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </View>
-    </ThemedView>
+            </View>
+          </View>
+        </ThemedView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
   container: { 
     flex: 1,
     justifyContent: 'center',
@@ -194,13 +260,14 @@ const styles = StyleSheet.create({
     maxWidth: 450,
   },
   card: {
-    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
     padding: 28,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
   titleContainer: {
     marginBottom: 32,
@@ -221,7 +288,7 @@ const styles = StyleSheet.create({
   underline: {
     width: 140,
     height: 3,
-    backgroundColor: '#2196F3',
+    backgroundColor: '#000000',
     borderRadius: 2,
   },
   inputContainer: {
@@ -235,19 +302,19 @@ const styles = StyleSheet.create({
   },
   input: { 
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#CCCCCC',
     padding: 12, 
     borderRadius: 8,
     fontSize: 16,
     color: '#000000',
-    backgroundColor: '#F9F9F9',
+    backgroundColor: '#FFFFFF',
   },
   inputError: {
-    borderColor: '#D32F2F',
+    borderColor: '#FF0000',
   },
   errorText: {
     fontSize: 12,
-    color: '#D32F2F',
+    color: '#FF0000',
     marginTop: 4,
   },
   registerButton: {
@@ -276,5 +343,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#000000',
     fontWeight: '500',
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#666666',
+    marginBottom: 4,
   },
 });

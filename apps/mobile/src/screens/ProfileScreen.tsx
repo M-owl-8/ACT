@@ -1,15 +1,29 @@
 import React, { useState } from 'react';
 import { View, Text, Button, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/auth';
 import { API } from '../api/client';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 
 export default function ProfileScreen() {
+  const { t, i18n } = useTranslation();
   const { user, logout, fetchProfile } = useAuthStore();
   const [name, setName] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [languageChangeKey, setLanguageChangeKey] = useState(0);
+
+  // Listen for language changes and force re-render
+  React.useEffect(() => {
+    const handleLanguageChange = () => {
+      setLanguageChangeKey(prev => prev + 1);
+    };
+    i18n.on('languageChanged', handleLanguageChange);
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+    };
+  }, [i18n]);
 
   const handleSaveName = async () => {
     if (!name.trim()) return;
@@ -22,33 +36,33 @@ export default function ProfileScreen() {
       setName('');
     } catch (error) {
       console.error('Failed to update name:', error);
-      alert('Failed to update name. Please try again.');
+      alert(t('failedToSaveChanges'));
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView key={languageChangeKey} style={styles.container}>
       <View style={styles.topBar}>
         <View style={styles.topBarLeft}>
           <Text style={styles.emoji}>👤</Text>
-          <Text style={styles.title}>Profile</Text>
+          <Text style={styles.title}>{t('profile')}</Text>
         </View>
         <LanguageSwitcher />
       </View>
 
       <View style={styles.header}>
-        <Text style={styles.welcomeText}>Welcome!</Text>
+        <Text style={styles.welcomeText}>{t('welcome')}</Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.label}>Email</Text>
+        <Text style={styles.label}>{t('email')}</Text>
         <Text style={styles.value}>{user?.email}</Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.label}>What is your name?</Text>
+        <Text style={styles.label}>{t('name')}</Text>
         {user?.name ? (
           <View>
             <Text style={styles.value}>{user.name}</Text>
@@ -56,14 +70,14 @@ export default function ProfileScreen() {
               style={styles.editButton} 
               onPress={() => setIsEditing(true)}
             >
-              <Text style={styles.editButtonText}>Change Name</Text>
+              <Text style={styles.editButtonText}>{t('edit')}</Text>
             </TouchableOpacity>
           </View>
         ) : isEditing ? (
           <View>
             <TextInput
               style={styles.input}
-              placeholder="Enter your name"
+              placeholder={t('fullNameLabel')}
               value={name}
               onChangeText={setName}
               autoFocus
@@ -75,7 +89,7 @@ export default function ProfileScreen() {
                 disabled={isSaving || !name.trim()}
               >
                 <Text style={styles.buttonText}>
-                  {isSaving ? 'Saving...' : 'Save'}
+                  {isSaving ? t('loading') : t('save')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity 
@@ -85,7 +99,7 @@ export default function ProfileScreen() {
                   setName('');
                 }}
               >
-                <Text style={styles.buttonText}>Cancel</Text>
+                <Text style={styles.buttonText}>{t('cancel')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -94,25 +108,25 @@ export default function ProfileScreen() {
             style={styles.addButton} 
             onPress={() => setIsEditing(true)}
           >
-            <Text style={styles.addButtonText}>+ Add Your Name</Text>
+            <Text style={styles.addButtonText}>+ {t('add')}</Text>
           </TouchableOpacity>
         )}
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.label}>Account Type</Text>
+        <Text style={styles.label}>{t('accountType')}</Text>
         <Text style={styles.value}>
-          {user?.is_admin ? '👑 Admin' : '✨ User'}
+          {user?.is_admin ? '👑 ' + t('accountType') : '✨ ' + t('name')}
         </Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.label}>Language</Text>
+        <Text style={styles.label}>{t('language')}</Text>
         <Text style={styles.value}>{user?.language?.toUpperCase() || 'EN'}</Text>
       </View>
 
       <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-        <Text style={styles.logoutButtonText}>🚪 Logout</Text>
+        <Text style={styles.logoutButtonText}>🚪 {t('logout')}</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );

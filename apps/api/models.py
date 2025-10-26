@@ -25,6 +25,7 @@ class GoalKind(str, Enum):
     streak = "streak"
     spend_under = "spend_under"
     log_n_days = "log_n_days"
+    savings = "savings"
 
 
 class GoalStatus(str, Enum):
@@ -60,6 +61,9 @@ class User(Base):
     is_admin = Column(Boolean, default=False, nullable=False)
     name = Column(String, nullable=True)  # User's display name
     
+    # Password recovery with keyword system
+    recovery_keyword = Column(String, nullable=False)  # Secret keyword for password reset
+    
     # User preferences
     language = Column(String, default="en", nullable=False)  # en, ru, uz
     theme = Column(String, default="light", nullable=False)  # light, dark
@@ -77,6 +81,7 @@ class User(Base):
     book_progress = relationship("UserBookProgress", back_populates="user", cascade="all, delete-orphan")
     reminders = relationship("Reminder", back_populates="user", cascade="all, delete-orphan")
     push_tokens = relationship("PushToken", back_populates="user", cascade="all, delete-orphan")
+    devices = relationship("UserDevice", back_populates="user", cascade="all, delete-orphan")
 
 
 class Token(Base):
@@ -92,6 +97,22 @@ class Token(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     user = relationship("User", back_populates="tokens")
+
+
+class UserDevice(Base):
+    """Track devices where user has logged in"""
+    __tablename__ = "user_devices"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    device_name = Column(String, nullable=False)  # e.g., "iPhone 13", "Samsung Galaxy", "Chrome Web"
+    device_type = Column(String, nullable=False)  # e.g., "mobile", "web", "tablet"
+    os = Column(String, nullable=True)  # e.g., "iOS", "Android", "Windows"
+    last_login = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    
+    user = relationship("User", back_populates="devices")
 
 
 class Category(Base):
@@ -168,30 +189,49 @@ class Goal(Base):
 
 
 class Book(Base):
-    """Financial literacy books library"""
+    """Books with comprehensive tracking for reading progress"""
     __tablename__ = "books"
     
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)  # NULL = library book, NOT NULL = user-created
     title = Column(String, nullable=False)
     author = Column(String, nullable=True)
     cover_url = Column(String, nullable=True)
     summary = Column(Text, nullable=True)
     key_takeaways = Column(Text, nullable=True)  # JSON array of strings
+    genre = Column(String, nullable=True)
+    isbn = Column(String, nullable=True, index=True)
+    
+    # Comprehensive tracking
+    total_pages = Column(Integer, nullable=True)
+    total_chapters = Column(Integer, nullable=True)
+    is_user_created = Column(Boolean, default=False, nullable=False)
+    
+    # Multi-language support for PDF uploads
+    language_code = Column(String, default="en", nullable=False, index=True)  # en, ru, uz
+    file_path = Column(String, nullable=True, index=True)  # e.g., "en/book_1.pdf"
+    file_size = Column(Integer, nullable=True)  # bytes
+    
+    # Ordering for library books
     order_index = Column(Integer, default=0, nullable=False, index=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     # Relationships
     user_progress = relationship("UserBookProgress", back_populates="book", cascade="all, delete-orphan")
+    reading_sessions = relationship("ReadingSession", back_populates="book", cascade="all, delete-orphan")
 
 
 class UserBookProgress(Base):
-    """Track user's reading progress"""
+    """Track user's reading progress for each book"""
     __tablename__ = "user_book_progress"
     
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), primary_key=True)
     status = Column(SQLEnum(BookStatus), default=BookStatus.not_started, nullable=False)
     progress_percent = Column(Integer, default=0, nullable=False)  # 0-100
+    pages_read = Column(Integer, default=0, nullable=False)
+    chapters_read = Column(Integer, default=0, nullable=False)
+    total_time_minutes = Column(Integer, default=0, nullable=False)
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
@@ -199,6 +239,32 @@ class UserBookProgress(Base):
     # Relationships
     user = relationship("User", back_populates="book_progress")
     book = relationship("Book", back_populates="user_progress")
+
+
+class ReadingSession(Base):
+    """Individual reading sessions for tracking time and progress"""
+    __tablename__ = "reading_sessions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Session tracking
+    pages_read = Column(Integer, default=0, nullable=False)
+    chapters_read = Column(Integer, default=0, nullable=False)
+    time_minutes = Column(Integer, nullable=False)  # Duration of reading session
+    
+    # Session type
+    session_type = Column(String, default="manual", nullable=False)  # manual, timer
+    notes = Column(Text, nullable=True)
+    
+    # Timestamps
+    started_at = Column(DateTime, nullable=True)
+    ended_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    
+    # Relationships
+    book = relationship("Book", back_populates="reading_sessions")
 
 
 class Reminder(Base):

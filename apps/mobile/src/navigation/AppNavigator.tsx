@@ -4,8 +4,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import JapaneseLoginScreen from '../screens/JapaneseLoginScreen';
-import JapaneseRegisterScreen from '../screens/JapaneseRegisterScreen';
+import LoginScreen from '../screens/LoginScreen';
+import RegisterScreen from '../screens/RegisterScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import IncomeScreen from '../screens/IncomeScreen';
@@ -16,11 +16,12 @@ import AddExpenseScreen from '../screens/AddExpenseScreen';
 import EditExpenseScreen from '../screens/EditExpenseScreen';
 import AddScreen from '../screens/AddScreen';
 import ReportsScreen from '../screens/ReportsScreen';
-import CalendarScreen from '../screens/CalendarScreen';
 import MotivationScreen from '../screens/MotivationScreen';
+import ReminderScreen from '../screens/ReminderScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import BooksScreen from '../screens/BooksScreen';
 import BookDetailScreen from '../screens/BookDetailScreen';
+import PDFReaderScreen from '../screens/PDFReaderScreen';
 import { useAuthStore } from '../store/auth';
 import { useTheme } from '../theme';
 
@@ -30,10 +31,23 @@ const Tab = createBottomTabNavigator();
 // Main tabs for authenticated users
 function MainTabs() {
   const { theme, mode } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  // Force re-render when language changes
+  const [languageKey, setLanguageKey] = React.useState(i18n.language);
+
+  React.useEffect(() => {
+    const handleLanguageChange = (lng: string) => {
+      setLanguageKey(lng);
+    };
+    i18n.on('languageChanged', handleLanguageChange);
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+    };
+  }, [i18n]);
   
   return (
     <Tab.Navigator
+      key={languageKey}
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: any;
@@ -42,8 +56,14 @@ function MainTabs() {
             iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'AddTab') {
             iconName = focused ? 'add-circle' : 'add-circle-outline';
-          } else if (route.name === 'OverviewTab') {
-            iconName = focused ? 'stats-chart' : 'stats-chart-outline';
+          } else if (route.name === 'ReportsTab') {
+            iconName = focused ? 'bar-chart' : 'bar-chart-outline';
+          } else if (route.name === 'ReminderTab') {
+            iconName = focused ? 'notifications' : 'notifications-outline';
+          } else if (route.name === 'GoalsTab') {
+            iconName = focused ? 'flag' : 'flag-outline';
+          } else if (route.name === 'BooksTab') {
+            iconName = focused ? 'book' : 'book-outline';
           } else if (route.name === 'SettingsTab') {
             iconName = focused ? 'settings' : 'settings-outline';
           }
@@ -62,16 +82,22 @@ function MainTabs() {
         headerShown: false,
         tabBarLabel: ({ focused }) => {
           let label = '';
-          if (route.name === 'HomeTab') label = 'Home';
-          else if (route.name === 'AddTab') label = 'Add';
-          else if (route.name === 'OverviewTab') label = 'Overview';
-          else if (route.name === 'SettingsTab') label = 'Settings';
+          if (route.name === 'HomeTab') label = t('home');
+          else if (route.name === 'AddTab') label = t('add');
+          else if (route.name === 'ReportsTab') label = t('reports');
+          else if (route.name === 'ReminderTab') label = t('reminders');
+          else if (route.name === 'GoalsTab') label = t('goals');
+          else if (route.name === 'BooksTab') label = t('books');
+          else if (route.name === 'SettingsTab') label = t('settings');
           
           return (
             <Ionicons 
               name={route.name === 'HomeTab' ? 'home' : 
                      route.name === 'AddTab' ? 'add-circle' :
-                     route.name === 'OverviewTab' ? 'stats-chart' :
+                     route.name === 'ReportsTab' ? 'bar-chart' :
+                     route.name === 'ReminderTab' ? 'notifications' :
+                     route.name === 'GoalsTab' ? 'flag' :
+                     route.name === 'BooksTab' ? 'book' :
                      'settings'}
               size={0}
               color="transparent"
@@ -84,7 +110,7 @@ function MainTabs() {
         name="HomeTab" 
         component={ExpensesScreen}
         options={{ 
-          tabBarLabel: 'Home',
+          tabBarLabel: t('home'),
           tabBarLabelStyle: { fontSize: 12, fontWeight: '500', marginTop: 4 },
         }}
       />
@@ -92,15 +118,39 @@ function MainTabs() {
         name="AddTab" 
         component={AddScreen}
         options={{ 
-          tabBarLabel: 'Add',
+          tabBarLabel: t('add'),
           tabBarLabelStyle: { fontSize: 12, fontWeight: '500', marginTop: 4 },
         }}
       />
       <Tab.Screen 
-        name="OverviewTab" 
-        component={CalendarScreen}
+        name="ReportsTab" 
+        component={ReportsScreen}
         options={{ 
-          tabBarLabel: 'Overview',
+          tabBarLabel: t('reports'),
+          tabBarLabelStyle: { fontSize: 12, fontWeight: '500', marginTop: 4 },
+        }}
+      />
+      <Tab.Screen 
+        name="ReminderTab" 
+        component={ReminderScreen}
+        options={{ 
+          tabBarLabel: t('reminders'),
+          tabBarLabelStyle: { fontSize: 12, fontWeight: '500', marginTop: 4 },
+        }}
+      />
+      <Tab.Screen 
+        name="GoalsTab" 
+        component={MotivationScreen}
+        options={{ 
+          tabBarLabel: t('goals'),
+          tabBarLabelStyle: { fontSize: 12, fontWeight: '500', marginTop: 4 },
+        }}
+      />
+      <Tab.Screen 
+        name="BooksTab" 
+        component={BooksScreen}
+        options={{ 
+          tabBarLabel: t('books'),
           tabBarLabelStyle: { fontSize: 12, fontWeight: '500', marginTop: 4 },
         }}
       />
@@ -108,7 +158,7 @@ function MainTabs() {
         name="SettingsTab" 
         component={SettingsScreen}
         options={{ 
-          tabBarLabel: 'Settings',
+          tabBarLabel: t('settings'),
           tabBarLabelStyle: { fontSize: 12, fontWeight: '500', marginTop: 4 },
         }}
       />
@@ -173,17 +223,25 @@ export default function AppNavigator() {
                 headerShown: false,
               }}
             />
+            <Stack.Screen 
+              name="PDFReader" 
+              component={PDFReaderScreen}
+              options={{
+                presentation: 'modal',
+                headerShown: false,
+              }}
+            />
           </>
         ) : (
-          // Auth screens - Japanese themed
+          // Auth screens - Clean white/black theme
           <>
             <Stack.Screen 
               name="Login" 
-              component={JapaneseLoginScreen}
+              component={LoginScreen}
             />
             <Stack.Screen 
               name="Register" 
-              component={JapaneseRegisterScreen}
+              component={RegisterScreen}
             />
             <Stack.Screen 
               name="ForgotPassword" 

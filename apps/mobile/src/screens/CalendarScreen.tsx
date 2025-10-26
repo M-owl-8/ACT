@@ -6,10 +6,10 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
-  SafeAreaView,
   Dimensions,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { api } from '../api/client';
 
@@ -95,7 +95,8 @@ export default function CalendarScreen() {
     try {
       setLoading(true);
       const response = await api.get('/entries');
-      setTransactions(response.data.entries || []);
+      // API returns array directly, not wrapped in object
+      setTransactions(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error loading transactions:', error);
     } finally {
@@ -143,7 +144,7 @@ export default function CalendarScreen() {
 
   const getTransactionsForDate = (date: Date) => {
     const dateStr = date.toISOString().split('T')[0];
-    return transactions.filter(t => t.date.startsWith(dateStr));
+    return transactions.filter(t => t.date && typeof t.date === 'string' && t.date.startsWith(dateStr));
   };
 
   return (
@@ -167,8 +168,8 @@ export default function CalendarScreen() {
 
           {/* Weekday Headers */}
           <View style={styles.weekdayRow}>
-            {weekDays.map(day => (
-              <View key={day} style={styles.weekdayCell}>
+            {weekDays.map((day, index) => (
+              <View key={`weekday-${index}`} style={styles.weekdayCell}>
                 <Text style={styles.weekdayText}>{day}</Text>
               </View>
             ))}
@@ -176,14 +177,15 @@ export default function CalendarScreen() {
 
           {/* Calendar Grid */}
           {Array.from({ length: Math.ceil(calendarDays.length / 7) }).map((_, weekIndex) => (
-            <View key={weekIndex} style={styles.calendarRow}>
-              {calendarDays.slice(weekIndex * 7, (weekIndex + 1) * 7).map((day, dayIndex) => {
+            <View key={`week-${weekIndex}`} style={styles.calendarRow}>
+              {calendarDays.slice(weekIndex * 7, (weekIndex + 1) * 7).map((day) => {
                 const dayTransactions = getTransactionsForDate(day.date);
                 const hasTransactions = dayTransactions.length > 0;
+                const dayKey = `${day.date.getFullYear()}-${day.date.getMonth()}-${day.date.getDate()}`;
 
                 return (
                   <TouchableOpacity
-                    key={dayIndex}
+                    key={dayKey}
                     style={[
                       styles.dayCell,
                       !day.isCurrentMonth && styles.otherMonthDay,

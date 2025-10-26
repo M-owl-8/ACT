@@ -11,8 +11,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
-import { SAMURAI_COLORS, SAMURAI_PATTERNS } from '../theme/SAMURAI_COLORS';
+import { ExpenseTypeColors } from '../constants/colors';
 
 const { width } = Dimensions.get('window');
 
@@ -48,15 +49,17 @@ interface ReportData {
   };
 }
 
-const TABS: Array<{ key: ReportRange; label: string }> = [
-  { key: 'day', label: 'Daily' },
-  { key: 'week', label: 'Weekly' },
-  { key: '15d', label: '15 Days' },
-  { key: 'month', label: 'Monthly' },
-  { key: 'last3m', label: 'Last 3m' },
-];
-
 export default function ReportsScreen() {
+  const { t, i18n } = useTranslation();
+  const [languageChangeKey, setLanguageChangeKey] = useState(0);
+  
+  const TABS: Array<{ key: ReportRange; label: string }> = [
+    { key: 'day', label: t('daily') || 'Daily' },
+    { key: 'week', label: t('week') },
+    { key: '15d', label: t('fifteenDays') || '15 Days' },
+    { key: 'month', label: t('month') },
+    { key: 'last3m', label: t('last3Months') || 'Last 3m' },
+  ];
   const [activeTab, setActiveTab] = useState<ReportRange>('month');
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -64,6 +67,17 @@ export default function ReportsScreen() {
   useEffect(() => {
     fetchReport();
   }, [activeTab]);
+
+  // Listen for language changes and force re-render
+  useEffect(() => {
+    const handleLanguageChange = () => {
+      setLanguageChangeKey(prev => prev + 1);
+    };
+    i18n.on('languageChanged', handleLanguageChange);
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+    };
+  }, [i18n]);
 
   const fetchReport = async () => {
     try {
@@ -82,28 +96,28 @@ export default function ReportsScreen() {
       console.error('Failed to fetch report:', error);
       console.error('Error response:', error.response?.data);
       
-      let errorMessage = 'Failed to load report data. ';
+      let errorMessage = t('failedToLoadReportData') || 'Failed to load report data. ';
       
       if (error.response) {
         errorMessage += error.response.data?.detail || 
                        error.response.data?.message || 
                        `Server error: ${error.response.status}`;
       } else if (error.request) {
-        errorMessage += 'No response from server. Please check your internet connection.';
+        errorMessage += t('networkErrorMessage');
       } else {
-        errorMessage += error.message || 'Unknown error occurred';
+        errorMessage += error.message || t('unknownError') || 'Unknown error occurred';
       }
       
       Alert.alert(
-        'Error Loading Report',
+        t('errorLoadingReport') || 'Error Loading Report',
         errorMessage,
         [
           {
-            text: 'Retry',
+            text: t('retry') || 'Retry',
             onPress: () => fetchReport(),
           },
           {
-            text: 'Cancel',
+            text: t('cancel'),
             style: 'cancel',
           },
         ]
@@ -155,7 +169,7 @@ export default function ReportsScreen() {
 
     return (
       <View style={styles.alertBanner}>
-        <Ionicons name="warning" size={24} color="#FF6B6B" />
+        <Ionicons name="warning" size={24} color="#333" />
         <View style={styles.alertTextContainer}>
           <Text style={styles.alertTitle}>⚠️ Excess Spending Alert</Text>
           <Text style={styles.alertMessage}>
@@ -174,14 +188,14 @@ export default function ReportsScreen() {
       <View style={styles.summaryContainer}>
         {/* Income Card */}
         <View style={[styles.summaryCard, styles.incomeCard]}>
-          <Ionicons name="arrow-down-circle" size={32} color="#4CAF50" />
+          <Ionicons name="arrow-down-circle" size={32} color="#666" />
           <Text style={styles.summaryLabel}>Income</Text>
           <Text style={styles.summaryAmount}>{formatCurrency(reportData.income_total)}</Text>
         </View>
 
         {/* Expense Card */}
         <View style={[styles.summaryCard, styles.expenseCard]}>
-          <Ionicons name="arrow-up-circle" size={32} color="#FF6B6B" />
+          <Ionicons name="arrow-up-circle" size={32} color="#333" />
           <Text style={styles.summaryLabel}>Expenses</Text>
           <Text style={styles.summaryAmount}>{formatCurrency(reportData.expense_total)}</Text>
         </View>
@@ -191,7 +205,7 @@ export default function ReportsScreen() {
           <Ionicons 
             name={reportData.net >= 0 ? "trending-up" : "trending-down"} 
             size={32} 
-            color={reportData.net >= 0 ? "#4CAF50" : "#FF6B6B"} 
+            color={reportData.net >= 0 ? "#4CAF50" : "#F44336"} 
           />
           <Text style={styles.summaryLabel}>Net Balance</Text>
           <Text style={[
@@ -256,17 +270,17 @@ export default function ReportsScreen() {
         {/* Legend */}
         <View style={styles.legendContainer}>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#2196F3' }]} />
+            <View style={[styles.legendDot, { backgroundColor: ExpenseTypeColors.MANDATORY }]} />
             <Text style={styles.legendText}>Mandatory</Text>
             <Text style={styles.legendAmount}>{formatCurrency(mandatory)}</Text>
           </View>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#FFC107' }]} />
+            <View style={[styles.legendDot, { backgroundColor: ExpenseTypeColors.NEUTRAL }]} />
             <Text style={styles.legendText}>Neutral</Text>
             <Text style={styles.legendAmount}>{formatCurrency(neutral)}</Text>
           </View>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#FF6B6B' }]} />
+            <View style={[styles.legendDot, { backgroundColor: ExpenseTypeColors.EXCESS }]} />
             <Text style={styles.legendText}>Excess</Text>
             <Text style={styles.legendAmount}>{formatCurrency(excess)}</Text>
           </View>
@@ -321,11 +335,11 @@ export default function ReportsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView key={languageChangeKey} style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Reports</Text>
         <TouchableOpacity onPress={fetchReport}>
-          <Ionicons name="refresh" size={24} color={SAMURAI_COLORS.accent.red} />
+          <Ionicons name="refresh" size={24} color="#000" />
         </TouchableOpacity>
       </View>
 
@@ -334,12 +348,12 @@ export default function ReportsScreen() {
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={SAMURAI_COLORS.accent.red} />
+          <ActivityIndicator size="large" color="#000" />
           <Text style={styles.loadingText}>Loading report...</Text>
         </View>
       ) : !reportData ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="bar-chart-outline" size={80} color={SAMURAI_COLORS.text.tertiary} />
+          <Ionicons name="bar-chart-outline" size={80} color="#ccc" />
           <Text style={styles.emptyTitle}>No Data Available</Text>
           <Text style={styles.emptyMessage}>
             Start tracking your income and expenses to see reports here.
@@ -348,7 +362,7 @@ export default function ReportsScreen() {
             style={styles.retryButton}
             onPress={fetchReport}
           >
-            <Ionicons name="refresh" size={20} color={SAMURAI_COLORS.text.primary} />
+            <Ionicons name="refresh" size={20} color="#fff" />
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -368,7 +382,7 @@ export default function ReportsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: SAMURAI_COLORS.background.primary,
+    backgroundColor: '#f8f8f8',
   },
   header: {
     flexDirection: 'row',
@@ -376,19 +390,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: SAMURAI_COLORS.background.surface,
-    borderBottomWidth: 2,
-    borderBottomColor: SAMURAI_COLORS.accent.red,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: SAMURAI_COLORS.text.primary,
+    color: '#000',
   },
   tabsContainer: {
-    backgroundColor: SAMURAI_COLORS.background.surface,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: SAMURAI_COLORS.border.primary,
+    borderBottomColor: '#eee',
   },
   tab: {
     paddingHorizontal: 20,
@@ -397,15 +411,15 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 3,
-    borderBottomColor: SAMURAI_COLORS.accent.red,
+    borderBottomColor: '#000',
   },
   tabText: {
     fontSize: 14,
-    color: SAMURAI_COLORS.text.secondary,
+    color: '#999',
     fontWeight: '500',
   },
   activeTabText: {
-    color: SAMURAI_COLORS.accent.red,
+    color: '#000',
     fontWeight: 'bold',
   },
   dateRangeContainer: {
@@ -413,12 +427,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
-    backgroundColor: SAMURAI_COLORS.background.surface,
+    backgroundColor: '#fff',
     gap: 6,
   },
   dateRangeText: {
     fontSize: 12,
-    color: SAMURAI_COLORS.text.secondary,
+    color: '#666',
   },
   content: {
     flex: 1,
@@ -431,7 +445,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: SAMURAI_COLORS.text.secondary,
+    color: '#666',
   },
   emptyContainer: {
     flex: 1,
@@ -442,35 +456,35 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: SAMURAI_COLORS.text.primary,
+    color: '#000',
     marginTop: 16,
     marginBottom: 8,
   },
   emptyMessage: {
     fontSize: 14,
-    color: SAMURAI_COLORS.text.secondary,
+    color: '#666',
     textAlign: 'center',
     marginBottom: 24,
   },
   retryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: SAMURAI_COLORS.accent.red,
+    backgroundColor: '#000',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
     gap: 8,
   },
   retryButtonText: {
-    color: SAMURAI_COLORS.text.primary,
+    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
   alertBanner: {
     flexDirection: 'row',
-    backgroundColor: SAMURAI_COLORS.opacity.redSubtle,
+    backgroundColor: '#f0f0f0',
     borderLeftWidth: 4,
-    borderLeftColor: SAMURAI_COLORS.accent.red,
+    borderLeftColor: '#333',
     padding: 16,
     margin: 16,
     borderRadius: 8,
@@ -482,12 +496,12 @@ const styles = StyleSheet.create({
   alertTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: SAMURAI_COLORS.accent.red,
+    color: '#333',
     marginBottom: 4,
   },
   alertMessage: {
     fontSize: 14,
-    color: SAMURAI_COLORS.accent.red,
+    color: '#555',
     lineHeight: 20,
   },
   summaryContainer: {
@@ -499,54 +513,62 @@ const styles = StyleSheet.create({
   summaryCard: {
     flex: 1,
     minWidth: (width - 48) / 2,
-    backgroundColor: SAMURAI_COLORS.background.surface,
+    backgroundColor: '#fff',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
-    ...SAMURAI_PATTERNS.shadowSmall,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   incomeCard: {
     borderTopWidth: 3,
-    borderTopColor: SAMURAI_COLORS.semantic.income,
+    borderTopColor: '#333',
   },
   expenseCard: {
     borderTopWidth: 3,
-    borderTopColor: SAMURAI_COLORS.accent.red,
+    borderTopColor: '#000',
   },
   netCard: {
     width: '100%',
     borderTopWidth: 3,
-    borderTopColor: SAMURAI_COLORS.semantic.info,
+    borderTopColor: '#555',
   },
   summaryLabel: {
     fontSize: 14,
-    color: SAMURAI_COLORS.text.secondary,
+    color: '#666',
     marginTop: 8,
     marginBottom: 4,
   },
   summaryAmount: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: SAMURAI_COLORS.text.primary,
+    color: '#000',
   },
   positiveAmount: {
-    color: SAMURAI_COLORS.semantic.income,
+    color: '#4CAF50',
   },
   negativeAmount: {
-    color: SAMURAI_COLORS.accent.red,
+    color: '#F44336',
   },
   section: {
-    backgroundColor: SAMURAI_COLORS.background.surface,
+    backgroundColor: '#fff',
     marginHorizontal: 16,
     marginBottom: 16,
     padding: 16,
     borderRadius: 12,
-    ...SAMURAI_PATTERNS.shadowSmall,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: SAMURAI_COLORS.text.primary,
+    color: '#000',
     marginBottom: 16,
   },
   barChartContainer: {
@@ -562,13 +584,13 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   mandatoryBar: {
-    backgroundColor: SAMURAI_COLORS.semantic.info,
+    backgroundColor: ExpenseTypeColors.MANDATORY,
   },
   neutralBar: {
-    backgroundColor: SAMURAI_COLORS.semantic.neutral,
+    backgroundColor: ExpenseTypeColors.NEUTRAL,
   },
   excessBar: {
-    backgroundColor: SAMURAI_COLORS.accent.red,
+    backgroundColor: ExpenseTypeColors.EXCESS,
   },
   legendContainer: {
     gap: 8,
@@ -586,33 +608,33 @@ const styles = StyleSheet.create({
   legendText: {
     flex: 1,
     fontSize: 14,
-    color: SAMURAI_COLORS.text.secondary,
+    color: '#666',
   },
   legendAmount: {
     fontSize: 14,
     fontWeight: '600',
-    color: SAMURAI_COLORS.text.primary,
+    color: '#000',
   },
   categoryItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: SAMURAI_COLORS.border.primary,
+    borderBottomColor: '#eee',
     gap: 12,
   },
   categoryRank: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: SAMURAI_COLORS.accent.red,
+    backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
   },
   rankText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: SAMURAI_COLORS.text.primary,
+    color: '#fff',
   },
   categoryInfo: {
     flex: 1,
@@ -629,20 +651,20 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 16,
     fontWeight: '600',
-    color: SAMURAI_COLORS.text.primary,
+    color: '#000',
   },
   categoryCount: {
     fontSize: 12,
-    color: SAMURAI_COLORS.text.tertiary,
+    color: '#999',
   },
   categoryAmount: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: SAMURAI_COLORS.accent.red,
+    color: '#000',
   },
   emptyText: {
     fontSize: 14,
-    color: SAMURAI_COLORS.text.tertiary,
+    color: '#999',
     textAlign: 'center',
     paddingVertical: 20,
   },

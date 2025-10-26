@@ -11,15 +11,23 @@ import {
   Platform,
   Modal,
   FlatList,
+  SectionList,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createEntry } from "../api/entries";
-import { getCategories, Category } from "../api/categories";
+import { getCategories, Category, ExpenseType } from "../api/categories";
 import { SAMURAI_COLORS } from "../theme/SAMURAI_COLORS";
 
 const LAST_CATEGORY_KEY = "@last_expense_category";
+
+interface CategorySection {
+  title: string;
+  expenseType: ExpenseType;
+  data: Category[];
+  color: string;
+}
 
 export default function AddExpenseScreen({ navigation, route }: any) {
   const { onSave } = route.params || {};
@@ -29,6 +37,7 @@ export default function AddExpenseScreen({ navigation, route }: any) {
   const [date, setDate] = useState(new Date());
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [categorySections, setCategorySections] = useState<CategorySection[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -37,6 +46,57 @@ export default function AddExpenseScreen({ navigation, route }: any) {
   useEffect(() => {
     loadCategories();
   }, []);
+
+  const organizeCategoriesBySections = (categoryList: Category[]): CategorySection[] => {
+    const sections: CategorySection[] = [];
+
+    // Define section configurations with new colors
+    const sectionConfig = [
+      { type: "mandatory", title: "💪 Mandatory", color: "#2196F3" }, // Blue
+      { type: "neutral", title: "⚖️ Neutral", color: "#757575" }, // Grey
+      { type: "excess", title: "🎉 Excess", color: "#F44336" }, // Red
+    ] as const;
+
+    // Create "Others" category that appears in all sections
+    const createOthersCategory = (expenseType: ExpenseType): Category => ({
+      id: -1, // Negative ID to distinguish from real categories
+      name: "Others",
+      icon: "🛒",
+      color: "#999",
+      expense_type: expenseType,
+      type: "expense",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+
+    sectionConfig.forEach(({ type, title, color }) => {
+      const sectionCategories = categoryList.filter(
+        (cat) => cat.expense_type === type
+      );
+      
+      // Check if "Others" category already exists for this type
+      const hasOthersCategory = sectionCategories.some(cat => cat.name.toLowerCase() === "others");
+      
+      // Add "Others" category to each section if it doesn't already exist
+      const categoriesWithOthers = hasOthersCategory
+        ? sectionCategories
+        : [
+            ...sectionCategories,
+            createOthersCategory(type as ExpenseType),
+          ];
+
+      if (categoriesWithOthers.length > 0) {
+        sections.push({
+          title,
+          expenseType: type as ExpenseType,
+          data: categoriesWithOthers,
+          color,
+        });
+      }
+    });
+
+    return sections;
+  };
 
   const loadCategories = async () => {
     try {
@@ -49,11 +109,16 @@ export default function AddExpenseScreen({ navigation, route }: any) {
           [{ text: "OK" }]
         );
         setCategories([]);
+        setCategorySections([]);
         setLoadingCategories(false);
         return;
       }
 
       setCategories(data);
+      
+      // Organize categories into sections
+      const sections = organizeCategoriesBySections(data);
+      setCategorySections(sections);
 
       // Load last used category
       const lastCategoryId = await AsyncStorage.getItem(LAST_CATEGORY_KEY);
@@ -91,6 +156,16 @@ export default function AddExpenseScreen({ navigation, route }: any) {
 
     if (!selectedCategory) {
       Alert.alert("Category Required", "Please select a category");
+      return;
+    }
+
+    // Handle placeholder "Others" category
+    if (selectedCategory.id === -1) {
+      Alert.alert(
+        "Others Category Required",
+        "Please create an 'Others' category for this expense type in your settings, or select a specific category.",
+        [{ text: "OK" }]
+      );
       return;
     }
 
@@ -162,6 +237,12 @@ export default function AddExpenseScreen({ navigation, route }: any) {
     </TouchableOpacity>
   );
 
+  const renderSectionHeader = ({ section }: { section: CategorySection }) => (
+    <View style={[styles.sectionHeader, { borderLeftColor: section.color }]}>
+      <Text style={styles.sectionHeaderText}>{section.title}</Text>
+    </View>
+  );
+
   return (
     <Modal visible={true} transparent={true} animationType="fade">
       <View style={styles.overlay}>
@@ -203,12 +284,22 @@ export default function AddExpenseScreen({ navigation, route }: any) {
 
               {showCategoryDropdown && !loadingCategories && (
                 <View style={styles.dropdownMenu}>
-                  <FlatList
-                    data={categories}
-                    renderItem={renderCategoryItem}
-                    keyExtractor={(item) => item.id.toString()}
-                    scrollEnabled={false}
-                  />
+                  {categorySections.length > 0 ? (
+                    <SectionList
+                      sections={categorySections}
+                      keyExtractor={(item) => item.id.toString()}
+                      renderItem={renderCategoryItem}
+                      renderSectionHeader={renderSectionHeader}
+                      scrollEnabled={true}
+                      nestedScrollEnabled={true}
+                    />
+                  ) : (
+                    <View style={styles.emptyMessage}>
+                      <Text style={styles.emptyMessageText}>
+                        No categories available
+                      </Text>
+                    </View>
+                  )}
                 </View>
               )}
             </View>
@@ -293,7 +384,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: 0,
     paddingVertical: 40,
   },
   card: {
@@ -301,7 +392,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 24,
     width: "100%",
-    maxWidth: 400,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -375,7 +465,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderWidth: 1,
     borderColor: "#e0e0e0",
-    maxHeight: 250,
+    maxHeight: 350,
   },
   categoryOption: {
     flexDirection: "row",
@@ -440,5 +530,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#fff",
+  },
+  sectionHeader: {
+    backgroundColor: "#f0f0f0",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: "#2196F3", // Default color (will be overridden by section.color)
+  },
+  sectionHeaderText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#333",
+  },
+  emptyMessage: {
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyMessageText: {
+    fontSize: 14,
+    color: "#999",
   },
 });

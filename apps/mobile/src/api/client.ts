@@ -118,7 +118,12 @@ api.interceptors.response.use(
       try {
         const refreshToken = await SecureStore.getItemAsync("refresh");
         if (!refreshToken) {
-          throw new Error("No refresh token available");
+          // Clear access token as well since we can't refresh
+          await SecureStore.deleteItemAsync("access");
+          console.log("⚠️ No refresh token found - session expired");
+          const error = new Error("No refresh token available - user session expired");
+          error.name = "SessionExpiredError";
+          throw error;
         }
 
         // Call refresh endpoint

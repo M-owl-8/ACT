@@ -16,6 +16,21 @@ from security import get_current_user
 router = APIRouter()
 
 
+async def update_goals_after_entry_change(user_id: int, entry_date: datetime, db: AsyncSession):
+    """
+    Update user goals after an entry is created or updated.
+    This is called automatically to keep goals in sync with entries.
+    """
+    try:
+        # Import here to avoid circular imports
+        from routers.motivation import update_goals_for_user
+        await update_goals_for_user(user_id, db, entry_date)
+    except Exception as e:
+        # Log but don't fail - goals should not block entry operations
+        print(f"Warning: Failed to update goals: {str(e)}")
+        pass
+
+
 @router.get("/", response_model=List[EntryOut])
 async def list_entries(
     type: Optional[EntryType] = None,
@@ -136,6 +151,10 @@ async def create_entry(
     # Load category relationship
     await db.refresh(entry, ["category"])
     
+    # Update goals based on this new entry
+    # This must happen AFTER the entry is committed to the database
+    await update_goals_after_entry_change(current_user.id, entry.booked_at, db)
+    
     return entry
 
 
@@ -196,6 +215,9 @@ async def update_entry(
     await db.refresh(entry)
     await db.refresh(entry, ["category"])
     
+    # Update goals based on the modified entry
+    await update_goals_after_entry_change(current_user.id, entry.booked_at, db)
+    
     return entry
 
 
@@ -220,8 +242,14 @@ async def delete_entry(
             detail="Entry not found"
         )
     
+    # Store the date before deleting
+    entry_date = entry.booked_at
+    
     await db.delete(entry)
     await db.commit()
+    
+    # Update goals after deletion
+    await update_goals_after_entry_change(current_user.id, entry_date, db)
     
     return None
 

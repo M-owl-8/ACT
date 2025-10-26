@@ -68,9 +68,13 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS for mobile app - PRODUCTION SECURED
-# Only allows requests from the production Railway domain
+# CORS for mobile app - DEV + PRODUCTION
 ALLOWED = [
+    # Local Development (for testing on phone/emulator)
+    "http://10.21.69.205:8000",
+    "http://10.0.2.2:8000",      # Android Emulator
+    "http://localhost:8000",      # iOS Simulator
+    "http://localhost:3000",      # Web development
     # Production URL (CRITICAL: Only your app!)
     "https://act-production-8080.up.railway.app",
 ]

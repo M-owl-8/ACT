@@ -10,134 +10,63 @@ import {
   Alert,
   ActivityIndicator,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { api } from '../api/client';
 import { useTranslation } from 'react-i18next';
-import { SAMURAI_COLORS, SAMURAI_PATTERNS } from '../theme/SAMURAI_COLORS';
+import { useGoalsStore, Goal } from '../store/goals';
+import { addSyncListener } from '../services/syncService';
 
 const { width } = Dimensions.get('window');
 
-interface Streak {
-  current_count: number;
-  best_count: number;
-  last_check_date: string;
-}
-
-interface Goal {
-  id: number;
-  kind: string;
-  title: string;
-  description: string | null;
-  target_value: number;
-  current_value: number;
-  status: string;
-  start_date: string;
-  end_date: string;
-  progress_percentage: number | null;
-}
-
 interface Challenge {
-  id: string;
-  title: string;
-  description: string;
-  type: 'no_spend_day' | 'three_day_no_spend';
-  days_required: number;
-  current_days: number;
-  is_active: boolean;
-  completed: boolean;
+  consecutive_no_spend_days: number;
+  last_no_spend_date: string | null;
+  days_with_discretionary_spending: number;
+  personal_record: number;
 }
 
 export default function MotivationScreen() {
-  const { t } = useTranslation();
-  const [loading, setLoading] = useState(true);
-  const [streak, setStreak] = useState<Streak | null>(null);
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const { t, i18n } = useTranslation();
   const [showAddGoalModal, setShowAddGoalModal] = useState(false);
+  const [languageChangeKey, setLanguageChangeKey] = useState(0);
   
   // Goal form state
   const [goalTitle, setGoalTitle] = useState('');
   const [goalDescription, setGoalDescription] = useState('');
-  const [goalType, setGoalType] = useState<'spend_under' | 'log_n_days'>('spend_under');
+  const [goalType, setGoalType] = useState<'spend_under' | 'log_n_days' | 'savings'>('spend_under');
   const [targetValue, setTargetValue] = useState('');
   const [goalDays, setGoalDays] = useState('7'); // Default to 7 days
 
+  // Use the auto-save goals store
+  const { goals, loading, loadGoals, syncGoalsToBackend } = useGoalsStore();
+
   useEffect(() => {
-    loadData();
-  }, []);
+    // Load goals on mount
+    loadGoals();
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      await Promise.all([
-        loadStreak(),
-        loadGoals(),
-        loadChallenges(),
-      ]);
-    } catch (error) {
-      console.error('Error loading motivation data:', error);
-      Alert.alert('Error', 'Failed to load motivation data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadStreak = async () => {
-    try {
-      const response = await api.get('/motivation/streak');
-      setStreak(response.data);
-    } catch (error) {
-      console.error('Error loading streak:', error);
-    }
-  };
-
-  const loadGoals = async () => {
-    try {
-      const response = await api.get('/motivation/goals');
-      console.log('Goals loaded:', response.data);
-      
-      if (Array.isArray(response.data)) {
-        setGoals(response.data);
-      } else {
-        console.warn('Goals response is not an array:', response.data);
-        setGoals([]);
-      }
-    } catch (error: any) {
-      console.error('Error loading goals:', error);
-      console.error('Error response:', error.response?.data);
-      // Set empty array on error to prevent UI issues
-      setGoals([]);
-    }
-  };
-
-  const loadChallenges = async () => {
-    // Mock challenges for now - can be extended with backend support
-    const mockChallenges: Challenge[] = [
-      {
-        id: '1',
-        title: 'No-Spend Day',
-        description: 'Complete one day without any expenses',
-        type: 'no_spend_day',
-        days_required: 1,
-        current_days: 0,
-        is_active: true,
-        completed: false,
-      },
-      {
-        id: '2',
-        title: '3-Day No-Spend Challenge',
-        description: 'Complete three consecutive days without expenses',
-        type: 'three_day_no_spend',
-        days_required: 3,
-        current_days: 0,
-        is_active: false,
-        completed: false,
-      },
-    ];
-    setChallenges(mockChallenges);
-  };
+    // Register for sync events when network comes back online
+    const unsubscribe = addSyncListener('goals', syncGoalsToBackend);
+    
+    return () => {
+      unsubscribe?.();
+    };
+  }, [loadGoals, syncGoalsToBackend]);
+  
+  // Listen for language changes to force re-render
+  useEffect(() => {
+    const handleLanguageChange = (lng: string) => {
+      console.log(`🌐 MotivationScreen detected language change to: ${lng}`);
+      setLanguageChangeKey(prev => prev + 1);
+    };
+    
+    i18n.on('languageChanged', handleLanguageChange);
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+    };
+  }, [i18n]);
 
   const handleCreateGoal = async () => {
     if (!goalTitle.trim()) {
@@ -171,8 +100,9 @@ export default function MotivationScreen() {
       };
 
       console.log('Creating goal with data:', goalData);
-      const response = await api.post('/motivation/goals', goalData);
-      console.log('Goal created successfully:', response.data);
+      
+      // Use the store to create goal - automatically saves and syncs
+      await useGoalsStore.getState().createGoal(goalData);
 
       // Reset form
       setGoalTitle('');
@@ -181,42 +111,31 @@ export default function MotivationScreen() {
       setGoalDays('7');
       setShowAddGoalModal(false);
 
-      // Reload goals
-      await loadGoals();
-      Alert.alert('Success', 'Goal created successfully!');
+      Alert.alert('Success', 'Goal created successfully! ✓');
     } catch (error: any) {
       console.error('Error creating goal:', error);
-      console.error('Error response:', error.response?.data);
       
       let errorMessage = 'Failed to create goal. ';
+      let errorTitle = 'Error Creating Goal';
       
-      if (error.response) {
-        // Server responded with error
-        errorMessage += error.response.data?.detail || 
-                       error.response.data?.message || 
-                       `Server error: ${error.response.status}`;
+      // Check for session expiration
+      if (error.message?.includes('No refresh token available') || 
+          error.message?.includes('session expired')) {
+        errorTitle = 'Session Expired';
+        errorMessage = 'Your session has expired. Please log in again to continue.';
+      } else if (error.response?.data?.detail) {
+        errorMessage += error.response.data.detail;
+      } else if (error.response?.data?.message) {
+        errorMessage += error.response.data.message;
+      } else if (error.response?.status) {
+        errorMessage += `Server error: ${error.response.status}`;
       } else if (error.request) {
-        // Request made but no response
         errorMessage += 'No response from server. Please check your internet connection.';
       } else {
-        // Error in request setup
         errorMessage += error.message || 'Unknown error occurred';
       }
       
-      Alert.alert(
-        'Error Creating Goal',
-        errorMessage,
-        [
-          {
-            text: 'Retry',
-            onPress: () => handleCreateGoal(),
-          },
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-        ]
-      );
+      Alert.alert(errorTitle, errorMessage);
     }
   };
 
@@ -231,9 +150,9 @@ export default function MotivationScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await api.delete(`/motivation/goals/${goalId}`);
-              await loadGoals();
-              Alert.alert('Success', 'Goal deleted');
+              // Use the store to delete goal - automatically saves and syncs
+              await useGoalsStore.getState().deleteGoal(goalId);
+              Alert.alert('Success', 'Goal deleted ✓');
             } catch (error) {
               console.error('Error deleting goal:', error);
               Alert.alert('Error', 'Failed to delete goal');
@@ -244,47 +163,59 @@ export default function MotivationScreen() {
     );
   };
 
-  const handleStartChallenge = (challengeId: string) => {
+  const handleCompleteGoal = async (goalId: number, title: string) => {
     Alert.alert(
-      'Start Challenge',
-      'Are you ready to start this challenge?',
+      'Complete Goal',
+      `Mark "${title}" as completed?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Start',
-          onPress: () => {
-            setChallenges(prev =>
-              prev.map(c =>
-                c.id === challengeId ? { ...c, is_active: true } : c
-              )
-            );
-            Alert.alert('Challenge Started!', 'Good luck! 🎯');
+          text: 'Complete',
+          style: 'default',
+          onPress: async () => {
+            try {
+              // Use the store to complete goal - automatically saves and syncs
+              await useGoalsStore.getState().completeGoal(goalId);
+              Alert.alert('Success', 'Goal marked as completed! 🎉');
+            } catch (error) {
+              console.error('Error completing goal:', error);
+              Alert.alert('Error', 'Failed to complete goal');
+            }
           },
         },
       ]
     );
   };
 
-  const getStreakColor = (count: number) => {
-    if (count === 0) return '#9E9E9E';
-    if (count < 7) return '#FF9800';
-    if (count < 30) return '#FF5722';
-    return '#F44336';
+  const handleAddSavings = async (goalId: number, amount: number) => {
+    try {
+      // Use the store to add savings - automatically saves and syncs
+      const updatedGoal = await useGoalsStore.getState().addSavings(goalId, amount);
+      
+      // Check if goal was auto-completed
+      if (updatedGoal?.status === 'completed') {
+        Alert.alert('Success', `Added $${amount}! Goal completed! 🎉`);
+      } else {
+        const progress = updatedGoal?.progress_percentage || 0;
+        Alert.alert('Success', `Added $${amount}! Progress: ${progress.toFixed(0)}%`);
+      }
+    } catch (error: any) {
+      console.error('Error adding savings:', error);
+      const errorMsg = error.response?.data?.detail || 'Failed to add savings';
+      Alert.alert('Error', errorMsg);
+    }
   };
 
-  const getStreakEmoji = (count: number) => {
-    if (count === 0) return '💤';
-    if (count < 7) return '🔥';
-    if (count < 30) return '🔥🔥';
-    return '🔥🔥🔥';
-  };
+
+
+
 
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={SAMURAI_COLORS.accent.red} />
-          <Text style={styles.loadingText}>Loading motivation...</Text>
+          <ActivityIndicator size="large" color="#000" />
+          <Text style={styles.loadingText}>Loading goals...</Text>
         </View>
       </SafeAreaView>
     );
@@ -295,31 +226,8 @@ export default function MotivationScreen() {
       <ScrollView style={styles.scrollView}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Motivation</Text>
-          <Text style={styles.headerSubtitle}>Stay consistent, achieve your goals</Text>
-        </View>
-
-        {/* Streak Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Streak</Text>
-          <View style={styles.streakCard}>
-            <View style={styles.streakMain}>
-              <Text style={[styles.streakEmoji, { color: getStreakColor(streak?.current_count || 0) }]}>
-                {getStreakEmoji(streak?.current_count || 0)}
-              </Text>
-              <View style={styles.streakInfo}>
-                <Text style={styles.streakCount}>{streak?.current_count || 0}</Text>
-                <Text style={styles.streakLabel}>Day Streak</Text>
-              </View>
-            </View>
-            <View style={styles.streakBest}>
-              <Text style={styles.streakBestLabel}>Best Streak</Text>
-              <Text style={styles.streakBestCount}>{streak?.best_count || 0} days</Text>
-            </View>
-            <Text style={styles.streakDescription}>
-              Log at least one entry each day to maintain your streak!
-            </Text>
-          </View>
+          <Text style={styles.headerTitle}>Goals</Text>
+          <Text style={styles.headerSubtitle}>Track and achieve your financial goals</Text>
         </View>
 
         {/* Goals Section */}
@@ -330,7 +238,7 @@ export default function MotivationScreen() {
               style={styles.addButton}
               onPress={() => setShowAddGoalModal(true)}
             >
-              <Ionicons name="add-circle" size={28} color={SAMURAI_COLORS.accent.red} />
+              <Ionicons name="add-circle" size={28} color="#000" />
             </TouchableOpacity>
           </View>
 
@@ -343,7 +251,9 @@ export default function MotivationScreen() {
               </Text>
             </View>
           ) : (
-            goals.map(goal => (
+            goals
+              .filter(g => g.status === 'active')
+              .map(goal => (
               <View key={goal.id} style={styles.goalCard}>
                 <View style={styles.goalHeader}>
                   <View style={styles.goalTitleContainer}>
@@ -352,9 +262,20 @@ export default function MotivationScreen() {
                       <Text style={styles.goalDescription}>{goal.description}</Text>
                     )}
                   </View>
-                  <TouchableOpacity onPress={() => handleDeleteGoal(goal.id)}>
-                    <Ionicons name="trash-outline" size={20} color="#F44336" />
-                  </TouchableOpacity>
+                  <View style={styles.goalHeaderButtons}>
+                    <TouchableOpacity 
+                      style={styles.goalHeaderButton}
+                      onPress={() => handleCompleteGoal(goal.id, goal.title)}
+                    >
+                      <Ionicons name="checkmark-circle-outline" size={20} color="#4CAF50" />
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={styles.goalHeaderButton}
+                      onPress={() => handleDeleteGoal(goal.id)}
+                    >
+                      <Ionicons name="trash-outline" size={20} color="#000" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 {/* Progress Bar */}
@@ -377,7 +298,7 @@ export default function MotivationScreen() {
                   <View style={styles.goalStat}>
                     <Text style={styles.goalStatLabel}>Current</Text>
                     <Text style={styles.goalStatValue}>
-                      {goal.kind === 'spend_under' ? '$' : ''}
+                      {goal.kind === 'spend_under' || goal.kind === 'savings' ? '$' : ''}
                       {goal.current_value}
                       {goal.kind === 'log_n_days' ? ' days' : ''}
                     </Text>
@@ -385,7 +306,7 @@ export default function MotivationScreen() {
                   <View style={styles.goalStat}>
                     <Text style={styles.goalStatLabel}>Target</Text>
                     <Text style={styles.goalStatValue}>
-                      {goal.kind === 'spend_under' ? '$' : ''}
+                      {goal.kind === 'spend_under' || goal.kind === 'savings' ? '$' : ''}
                       {goal.target_value}
                       {goal.kind === 'log_n_days' ? ' days' : ''}
                     </Text>
@@ -402,77 +323,100 @@ export default function MotivationScreen() {
                     </Text>
                   </View>
                 </View>
+
+                {/* Add Savings Button for Savings Goals */}
+                {goal.kind === 'savings' && goal.status === 'active' && (
+                  <TouchableOpacity
+                    style={styles.addSavingsButton}
+                    onPress={() => {
+                      Alert.prompt(
+                        'Add Savings',
+                        'Enter amount to add:',
+                        (amount) => {
+                          const parsedAmount = parseFloat(amount);
+                          if (!isNaN(parsedAmount) && parsedAmount > 0) {
+                            handleAddSavings(goal.id, parsedAmount);
+                          } else {
+                            Alert.alert('Invalid', 'Please enter a valid amount');
+                          }
+                        },
+                        'plain-text',
+                        '',
+                        'decimal-pad'
+                      );
+                    }}
+                  >
+                    <Ionicons name="add-circle-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+                    <Text style={styles.addSavingsButtonText}>Add Savings</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             ))
           )}
         </View>
 
-        {/* Challenges Section */}
+        {/* Accomplishments Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Challenges</Text>
-          {challenges.map(challenge => (
-            <View key={challenge.id} style={styles.challengeCard}>
-              <View style={styles.challengeHeader}>
-                <View style={styles.challengeIcon}>
-                  <Ionicons
-                    name={challenge.completed ? 'checkmark-circle' : 'trophy-outline'}
-                    size={32}
-                    color={challenge.completed ? '#4CAF50' : '#FF9800'}
-                  />
-                </View>
-                <View style={styles.challengeInfo}>
-                  <Text style={styles.challengeTitle}>{challenge.title}</Text>
-                  <Text style={styles.challengeDescription}>{challenge.description}</Text>
-                </View>
-              </View>
-
-              {/* Challenge Progress */}
-              <View style={styles.challengeProgress}>
-                <View style={styles.challengeDays}>
-                  {Array.from({ length: challenge.days_required }).map((_, index) => (
-                    <View
-                      key={index}
-                      style={[
-                        styles.challengeDay,
-                        index < challenge.current_days && styles.challengeDayComplete,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.challengeDayText,
-                          index < challenge.current_days && styles.challengeDayTextComplete,
-                        ]}
-                      >
-                        {index + 1}
+          <Text style={styles.sectionTitle}>🏆 Accomplishments</Text>
+          {goals.filter(g => g.status === 'completed').length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="star-outline" size={48} color="#BDBDBD" />
+              <Text style={styles.emptyStateText}>No completed goals yet</Text>
+              <Text style={styles.emptyStateSubtext}>
+                Complete your active goals to see them here
+              </Text>
+            </View>
+          ) : (
+            goals
+              .filter(g => g.status === 'completed')
+              .map(goal => (
+                <View key={goal.id} style={styles.accomplishmentCard}>
+                  <View style={styles.accomplishmentHeader}>
+                    <Ionicons name="checkmark-circle" size={24} color="#4CAF50" style={styles.accomplishmentIcon} />
+                    <View style={styles.accomplishmentTitleContainer}>
+                      <Text style={styles.accomplishmentTitle}>{goal.title}</Text>
+                      {goal.description && (
+                        <Text style={styles.accomplishmentDescription}>{goal.description}</Text>
+                      )}
+                    </View>
+                  </View>
+                  
+                  <View style={styles.accomplishmentStats}>
+                    <View style={styles.accomplishmentStat}>
+                      <Text style={styles.accomplishmentStatLabel}>Achieved</Text>
+                      <Text style={styles.accomplishmentStatValue}>
+                        {goal.kind === 'spend_under' || goal.kind === 'savings' ? '$' : ''}
+                        {goal.current_value}
+                        {goal.kind === 'log_n_days' ? ' days' : ''}
                       </Text>
                     </View>
-                  ))}
-                </View>
-              </View>
+                    <View style={styles.accomplishmentStat}>
+                      <Text style={styles.accomplishmentStatLabel}>Target</Text>
+                      <Text style={styles.accomplishmentStatValue}>
+                        {goal.kind === 'spend_under' || goal.kind === 'savings' ? '$' : ''}
+                        {goal.target_value}
+                        {goal.kind === 'log_n_days' ? ' days' : ''}
+                      </Text>
+                    </View>
+                    <View style={styles.accomplishmentStat}>
+                      <Text style={styles.accomplishmentStatLabel}>Completion</Text>
+                      <Text style={styles.accomplishmentStatValue}>
+                        {goal.progress_percentage?.toFixed(0) || 100}%
+                      </Text>
+                    </View>
+                  </View>
 
-              {/* Challenge Action */}
-              {!challenge.completed && (
-                <TouchableOpacity
-                  style={[
-                    styles.challengeButton,
-                    challenge.is_active && styles.challengeButtonActive,
-                  ]}
-                  onPress={() => !challenge.is_active && handleStartChallenge(challenge.id)}
-                  disabled={challenge.is_active}
-                >
-                  <Text
-                    style={[
-                      styles.challengeButtonText,
-                      challenge.is_active && styles.challengeButtonTextActive,
-                    ]}
-                  >
-                    {challenge.is_active ? 'In Progress...' : 'Start Challenge'}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          ))}
+                  <View style={styles.accomplishmentDateContainer}>
+                    <Text style={styles.accomplishmentDate}>
+                      Completed: {new Date(goal.end_date).toLocaleDateString()}
+                    </Text>
+                  </View>
+                </View>
+              ))
+          )}
         </View>
+
+
 
         {/* Weekly Summary */}
         <View style={styles.section}>
@@ -503,16 +447,20 @@ export default function MotivationScreen() {
         transparent={true}
         onRequestClose={() => setShowAddGoalModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Create Goal</Text>
-              <TouchableOpacity onPress={() => setShowAddGoalModal(false)}>
-                <Ionicons name="close" size={28} color="#333" />
-              </TouchableOpacity>
-            </View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardAvoidingView}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Create Goal</Text>
+                <TouchableOpacity onPress={() => setShowAddGoalModal(false)}>
+                  <Ionicons name="close" size={28} color="#333" />
+                </TouchableOpacity>
+              </View>
 
-            <ScrollView style={styles.modalBody}>
+              <ScrollView style={styles.modalBody} keyboardShouldPersistTaps="handled">
               {/* Goal Type */}
               <Text style={styles.inputLabel}>Goal Type</Text>
               <View style={styles.goalTypeContainer}>
@@ -548,6 +496,22 @@ export default function MotivationScreen() {
                     Log N Days
                   </Text>
                 </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.goalTypeButton,
+                    goalType === 'savings' && styles.goalTypeButtonActive,
+                  ]}
+                  onPress={() => setGoalType('savings')}
+                >
+                  <Text
+                    style={[
+                      styles.goalTypeButtonText,
+                      goalType === 'savings' && styles.goalTypeButtonTextActive,
+                    ]}
+                  >
+                    Savings
+                  </Text>
+                </TouchableOpacity>
               </View>
 
               {/* Title */}
@@ -574,13 +538,13 @@ export default function MotivationScreen() {
 
               {/* Target Value */}
               <Text style={styles.inputLabel}>
-                Target {goalType === 'spend_under' ? 'Amount' : 'Days'} *
+                Target {goalType === 'spend_under' ? 'Amount' : goalType === 'savings' ? 'Savings Amount' : 'Days'} *
               </Text>
               <TextInput
                 style={styles.input}
                 value={targetValue}
                 onChangeText={setTargetValue}
-                placeholder={goalType === 'spend_under' ? '500' : '7'}
+                placeholder={goalType === 'spend_under' || goalType === 'savings' ? '500' : '7'}
                 placeholderTextColor="#999"
                 keyboardType="numeric"
               />
@@ -597,23 +561,26 @@ export default function MotivationScreen() {
               />
             </ScrollView>
 
-            <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={styles.modalButtonSecondary}
-                onPress={() => setShowAddGoalModal(false)}
-              >
-                <Text style={styles.modalButtonSecondaryText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalButtonPrimary}
-                onPress={handleCreateGoal}
-              >
-                <Text style={styles.modalButtonPrimaryText}>Create Goal</Text>
-              </TouchableOpacity>
+              <View style={styles.modalFooter}>
+                <TouchableOpacity
+                  style={styles.modalButtonSecondary}
+                  onPress={() => setShowAddGoalModal(false)}
+                >
+                  <Text style={styles.modalButtonSecondaryText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modalButtonPrimary}
+                  onPress={handleCreateGoal}
+                >
+                  <Text style={styles.modalButtonPrimaryText}>Create Goal</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
+
+
     </SafeAreaView>
   );
 }
@@ -621,7 +588,7 @@ export default function MotivationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: SAMURAI_COLORS.background.primary,
+    backgroundColor: '#f8f8f8',
   },
   loadingContainer: {
     flex: 1,
@@ -631,26 +598,26 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: SAMURAI_COLORS.text.secondary,
+    color: '#333',
   },
   scrollView: {
     flex: 1,
   },
   header: {
     padding: 20,
-    backgroundColor: SAMURAI_COLORS.background.surface,
-    borderBottomWidth: 2,
-    borderBottomColor: SAMURAI_COLORS.accent.red,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: SAMURAI_COLORS.text.primary,
+    color: '#000',
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: SAMURAI_COLORS.text.secondary,
+    color: '#333',
   },
   section: {
     padding: 16,
@@ -664,87 +631,45 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: SAMURAI_COLORS.text.primary,
+    color: '#000',
     marginBottom: 12,
   },
   addButton: {
     padding: 4,
   },
 
-  // Streak Styles
-  streakCard: {
-    ...SAMURAI_PATTERNS.cardWithAccent,
-    padding: 20,
-    ...SAMURAI_PATTERNS.shadowMedium,
-  },
-  streakMain: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  streakEmoji: {
-    fontSize: 64,
-    marginRight: 20,
-  },
-  streakInfo: {
-    flex: 1,
-  },
-  streakCount: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: SAMURAI_COLORS.accent.red,
-  },
-  streakLabel: {
-    fontSize: 16,
-    color: SAMURAI_COLORS.text.secondary,
-  },
-  streakBest: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: SAMURAI_COLORS.border.primary,
-    marginBottom: 12,
-  },
-  streakBestLabel: {
-    fontSize: 14,
-    color: SAMURAI_COLORS.text.secondary,
-  },
-  streakBestCount: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: SAMURAI_COLORS.semantic.neutral,
-  },
-  streakDescription: {
-    fontSize: 12,
-    color: SAMURAI_COLORS.text.tertiary,
-    fontStyle: 'italic',
-  },
-
   // Goal Styles
   emptyState: {
     alignItems: 'center',
     padding: 40,
-    backgroundColor: SAMURAI_COLORS.background.surface,
+    backgroundColor: '#fff',
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
   },
   emptyStateText: {
     fontSize: 18,
     fontWeight: '600',
-    color: SAMURAI_COLORS.text.secondary,
+    color: '#333',
     marginTop: 12,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: SAMURAI_COLORS.text.tertiary,
+    color: '#666',
     marginTop: 4,
   },
   goalCard: {
-    ...SAMURAI_PATTERNS.cardWithAccent,
+    backgroundColor: '#fff',
+    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    ...SAMURAI_PATTERNS.shadowSmall,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
   },
   goalHeader: {
     flexDirection: 'row',
@@ -756,15 +681,22 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 12,
   },
+  goalHeaderButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  goalHeaderButton: {
+    padding: 4,
+  },
   goalTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: SAMURAI_COLORS.text.primary,
+    color: '#000',
     marginBottom: 4,
   },
   goalDescription: {
     fontSize: 14,
-    color: SAMURAI_COLORS.text.secondary,
+    color: '#333',
   },
   progressContainer: {
     flexDirection: 'row',
@@ -774,20 +706,20 @@ const styles = StyleSheet.create({
   progressBar: {
     flex: 1,
     height: 8,
-    backgroundColor: SAMURAI_COLORS.border.primary,
+    backgroundColor: '#ddd',
     borderRadius: 4,
     overflow: 'hidden',
     marginRight: 12,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: SAMURAI_COLORS.semantic.income,
+    backgroundColor: '#000',
     borderRadius: 4,
   },
   progressText: {
     fontSize: 14,
     fontWeight: '600',
-    color: SAMURAI_COLORS.semantic.income,
+    color: '#000',
     minWidth: 45,
     textAlign: 'right',
   },
@@ -796,99 +728,34 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: SAMURAI_COLORS.border.primary,
+    borderTopColor: '#ddd',
   },
   goalStat: {
     alignItems: 'center',
   },
   goalStatLabel: {
     fontSize: 12,
-    color: SAMURAI_COLORS.text.tertiary,
+    color: '#666',
     marginBottom: 4,
   },
   goalStatValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: SAMURAI_COLORS.text.primary,
-  },
-
-  // Challenge Styles
-  challengeCard: {
-    ...SAMURAI_PATTERNS.cardWithAccent,
-    padding: 16,
-    marginBottom: 12,
-    ...SAMURAI_PATTERNS.shadowSmall,
-  },
-  challengeHeader: {
-    flexDirection: 'row',
-    marginBottom: 16,
-  },
-  challengeIcon: {
-    marginRight: 12,
-  },
-  challengeInfo: {
-    flex: 1,
-  },
-  challengeTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: SAMURAI_COLORS.text.primary,
-    marginBottom: 4,
-  },
-  challengeDescription: {
-    fontSize: 14,
-    color: SAMURAI_COLORS.text.secondary,
-  },
-  challengeProgress: {
-    marginBottom: 16,
-  },
-  challengeDays: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  challengeDay: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: SAMURAI_COLORS.border.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 4,
-  },
-  challengeDayComplete: {
-    backgroundColor: SAMURAI_COLORS.semantic.income,
-  },
-  challengeDayText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: SAMURAI_COLORS.text.tertiary,
-  },
-  challengeDayTextComplete: {
-    color: SAMURAI_COLORS.text.primary,
-  },
-  challengeButton: {
-    backgroundColor: SAMURAI_COLORS.accent.red,
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-  },
-  challengeButtonActive: {
-    backgroundColor: SAMURAI_COLORS.border.primary,
-  },
-  challengeButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: SAMURAI_COLORS.text.primary,
-  },
-  challengeButtonTextActive: {
-    color: SAMURAI_COLORS.text.tertiary,
+    color: '#000',
   },
 
   // Summary Styles
   summaryCard: {
-    ...SAMURAI_PATTERNS.cardWithAccent,
+    backgroundColor: '#fff',
+    borderRadius: 12,
     padding: 16,
-    ...SAMURAI_PATTERNS.shadowSmall,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -896,26 +763,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: SAMURAI_COLORS.border.primary,
+    borderBottomColor: '#ddd',
   },
   summaryLabel: {
     fontSize: 14,
-    color: SAMURAI_COLORS.text.secondary,
+    color: '#333',
   },
   summaryValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: SAMURAI_COLORS.text.primary,
+    color: '#000',
   },
 
   // Modal Styles
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   modalOverlay: {
     flex: 1,
-    backgroundColor: SAMURAI_COLORS.opacity.subtle,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: SAMURAI_COLORS.background.surface,
+    backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '90%',
@@ -925,13 +795,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    borderBottomWidth: 2,
-    borderBottomColor: SAMURAI_COLORS.accent.red,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: SAMURAI_COLORS.text.primary,
+    color: '#000',
   },
   modalBody: {
     padding: 20,
@@ -939,12 +809,19 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: SAMURAI_COLORS.text.primary,
+    color: '#000',
     marginBottom: 8,
     marginTop: 12,
   },
   input: {
-    ...SAMURAI_PATTERNS.inputField,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: '#000',
   },
   textArea: {
     height: 80,
@@ -960,26 +837,26 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: SAMURAI_COLORS.border.primary,
+    borderColor: '#ddd',
     alignItems: 'center',
   },
   goalTypeButtonActive: {
-    borderColor: SAMURAI_COLORS.accent.red,
-    backgroundColor: SAMURAI_COLORS.opacity.redSubtle,
+    borderColor: '#000',
+    backgroundColor: '#f0f0f0',
   },
   goalTypeButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: SAMURAI_COLORS.text.secondary,
+    color: '#666',
   },
   goalTypeButtonTextActive: {
-    color: SAMURAI_COLORS.accent.red,
+    color: '#000',
   },
   modalFooter: {
     flexDirection: 'row',
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: SAMURAI_COLORS.border.primary,
+    borderTopColor: '#ddd',
     gap: 12,
   },
   modalButtonSecondary: {
@@ -987,24 +864,317 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: SAMURAI_COLORS.border.primary,
+    borderColor: '#ddd',
     alignItems: 'center',
   },
   modalButtonSecondaryText: {
     fontSize: 16,
     fontWeight: '600',
-    color: SAMURAI_COLORS.text.secondary,
+    color: '#666',
   },
   modalButtonPrimary: {
     flex: 1,
     padding: 16,
     borderRadius: 8,
-    backgroundColor: SAMURAI_COLORS.accent.red,
+    backgroundColor: '#000',
     alignItems: 'center',
   },
   modalButtonPrimaryText: {
     fontSize: 16,
     fontWeight: '600',
-    color: SAMURAI_COLORS.text.primary,
+    color: '#fff',
+  },
+
+  // Hide Toggle Styles
+  hideToggle: {
+    padding: 8,
+  },
+
+  // Accomplishment Styles
+  accomplishmentCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+    borderLeftWidth: 4,
+    borderLeftColor: '#4CAF50',
+  },
+  accomplishmentHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  accomplishmentIcon: {
+    marginRight: 12,
+    marginTop: 2,
+  },
+  accomplishmentTitleContainer: {
+    flex: 1,
+  },
+  accomplishmentTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 4,
+  },
+  accomplishmentDescription: {
+    fontSize: 14,
+    color: '#333',
+  },
+  accomplishmentStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingTop: 12,
+    paddingBottom: 12,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#ddd',
+    marginBottom: 12,
+  },
+  accomplishmentStat: {
+    alignItems: 'center',
+  },
+  accomplishmentStatLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  accomplishmentStatValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4CAF50',
+  },
+  accomplishmentDateContainer: {
+    paddingTop: 8,
+  },
+  accomplishmentDate: {
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
+  },
+
+  // Add Savings Button Styles
+  addSavingsButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addSavingsButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+
+  // Books Section Styles
+  bookFilterContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  bookFilterButton: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    backgroundColor: '#f5f5f5',
+    alignItems: 'center',
+  },
+  bookFilterButtonActive: {
+    backgroundColor: '#000',
+    borderColor: '#000',
+  },
+  bookFilterButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+  },
+  bookFilterButtonTextActive: {
+    color: '#fff',
+  },
+
+  // Book Card Styles
+  bookCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  bookCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+    gap: 12,
+  },
+  bookCardTitle: {
+    flex: 1,
+  },
+  bookTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 4,
+  },
+  bookAuthor: {
+    fontSize: 13,
+    color: '#666',
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#fff',
+  },
+
+  // Book Stats
+  bookStats: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  bookStatItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+  },
+  bookStatLabel: {
+    fontSize: 11,
+    color: '#999',
+    marginBottom: 2,
+  },
+  bookStatValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+  },
+  logSessionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FF9800',
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  logSessionButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
+  },
+
+  // Book Date
+  bookDate: {
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
+  },
+
+  // Book Tab Styles
+  bookTabContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  bookTab: {
+    flex: 1,
+    paddingBottom: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: '#000',
+  },
+  bookTabInactive: {
+    borderBottomColor: 'transparent',
+  },
+  bookTabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#999',
+    textAlign: 'center',
+  },
+  bookTabTextActive: {
+    color: '#000',
+  },
+
+  // Search Results Styles
+  searchLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 16,
+    justifyContent: 'center',
+  },
+  searchLoadingText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  searchResultsContainer: {
+    marginTop: 12,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  searchResultContent: {
+    flex: 1,
+  },
+  searchResultTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 2,
+  },
+  searchResultAuthor: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 2,
+  },
+  searchResultPages: {
+    fontSize: 11,
+    color: '#999',
+  },
+  emptySearchResults: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptySearchText: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 12,
   },
 });

@@ -23,6 +23,7 @@ class GoalKind(str, Enum):
     streak = "streak"
     spend_under = "spend_under"
     log_n_days = "log_n_days"
+    savings = "savings"
 
 
 class GoalStatus(str, Enum):
@@ -51,6 +52,7 @@ class Theme(str, Enum):
 class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=100)
+    recovery_keyword: str = Field(min_length=3, max_length=100)  # Secret keyword for password recovery
 
 
 class UserOut(BaseModel):
@@ -90,12 +92,23 @@ class RefreshRequest(BaseModel):
 
 
 class PasswordResetRequest(BaseModel):
+    """Request to verify recovery keyword"""
     email: EmailStr
+    recovery_keyword: str
 
 
 class PasswordResetConfirm(BaseModel):
-    token: str
+    """Reset password after keyword verification"""
+    email: EmailStr
+    recovery_keyword: str
     new_password: str = Field(min_length=8, max_length=100)
+
+
+class DeviceInfo(BaseModel):
+    """Device information for tracking logins"""
+    device_name: str  # e.g., "iPhone 13", "Samsung Galaxy"
+    device_type: str  # e.g., "mobile", "web", "tablet"
+    os: Optional[str] = None  # e.g., "iOS", "Android", "Windows"
 
 
 class MessageResponse(BaseModel):
@@ -235,6 +248,7 @@ class GoalCreate(BaseModel):
     title: str = Field(min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
     target_value: Optional[float] = Field(None, gt=0)
+    status: Optional[GoalStatus] = GoalStatus.active
     start_date: datetime
     end_date: Optional[datetime] = None
 
@@ -268,6 +282,18 @@ class GoalOut(BaseModel):
 
 
 # ===== BOOK SCHEMAS =====
+class BookCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    author: Optional[str] = Field(None, max_length=100)
+    cover_url: Optional[str] = None
+    summary: Optional[str] = Field(None, max_length=2000)
+    genre: Optional[str] = Field(None, max_length=50)
+    isbn: Optional[str] = Field(None, max_length=20)
+    total_pages: Optional[int] = Field(None, gt=0, le=10000)
+    total_chapters: Optional[int] = Field(None, gt=0)
+    language_code: Language = Field(default=Language.en)  # en, ru, uz
+
+
 class BookOut(BaseModel):
     id: int
     title: str
@@ -275,8 +301,44 @@ class BookOut(BaseModel):
     cover_url: Optional[str]
     summary: Optional[str]
     key_takeaways: Optional[str]
+    genre: Optional[str]
+    isbn: Optional[str]
+    total_pages: Optional[int]
+    total_chapters: Optional[int]
+    is_user_created: bool
+    language_code: str  # en, ru, uz
+    file_path: Optional[str] = None
+    file_size: Optional[int] = None
     order_index: int
+    created_at: datetime
     user_progress: Optional['UserBookProgressOut'] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ReadingSessionCreate(BaseModel):
+    pages_read: int = Field(default=0, ge=0)
+    chapters_read: int = Field(default=0, ge=0)
+    time_minutes: int = Field(gt=0, le=1440)  # Max 24 hours
+    session_type: str = Field(default="manual")
+    notes: Optional[str] = Field(None, max_length=500)
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
+
+
+class ReadingSessionOut(BaseModel):
+    id: int
+    user_id: int
+    book_id: int
+    pages_read: int
+    chapters_read: int
+    time_minutes: int
+    session_type: str
+    notes: Optional[str]
+    started_at: Optional[datetime]
+    ended_at: Optional[datetime]
+    created_at: datetime
 
     class Config:
         from_attributes = True
@@ -287,6 +349,9 @@ class UserBookProgressOut(BaseModel):
     book_id: int
     status: BookStatus
     progress_percent: int
+    pages_read: int
+    chapters_read: int
+    total_time_minutes: int
     started_at: Optional[datetime]
     completed_at: Optional[datetime]
     updated_at: datetime
@@ -298,6 +363,30 @@ class UserBookProgressOut(BaseModel):
 class UserBookProgressUpdate(BaseModel):
     status: Optional[BookStatus] = None
     progress_percent: Optional[int] = Field(None, ge=0, le=100)
+    pages_read: Optional[int] = Field(None, ge=0)
+    chapters_read: Optional[int] = Field(None, ge=0)
+
+
+class BookSearchResult(BaseModel):
+    title: str
+    author: Optional[str]
+    cover_url: Optional[str]
+    description: Optional[str]
+    isbn: Optional[str]
+    pages: Optional[int]
+
+
+class BookStatsOut(BaseModel):
+    total_books: int
+    not_started: int
+    in_progress: int
+    completed: int
+    completion_rate: float
+    average_progress: float
+    total_time_minutes: int
+    reading_streak: int
+    recent_activity: Optional[dict]
+    achievements: List[str]
 
 
 # ===== EXPORT SCHEMAS =====

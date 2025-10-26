@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { API } from '../api/client';
 import { useAuthStore } from '../store/auth';
 import { useTheme } from '../theme';
 import { ThemedView, ThemedText, ThemedButton, ThemedInput } from '../components/themed';
+import { SAMURAI_COLORS } from '../theme/SAMURAI_COLORS';
 
 export default function LoginScreen({ navigation }: any) {
+  const { t, i18n } = useTranslation();
+  const [languageChangeKey, setLanguageChangeKey] = React.useState(0);
   const { control, handleSubmit, formState: { errors } } = useForm({
     defaultValues: {
       email: '',
@@ -17,10 +21,22 @@ export default function LoginScreen({ navigation }: any) {
   const { theme } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
 
+  // Listen for language changes and force re-render
+  React.useEffect(() => {
+    const handleLanguageChange = () => {
+      setLanguageChangeKey(prev => prev + 1);
+    };
+    i18n.on('languageChanged', handleLanguageChange);
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+    };
+  }, [i18n]);
+
   const onSubmit = async (data: any) => {
     setIsLoading(true);
     try {
       console.log('🔐 Attempting login for:', data.email);
+      console.log('📤 Login payload:', JSON.stringify(data, null, 2));
       const res = await API.post('/auth/login', data);
       console.log('✅ Login successful, saving tokens...');
       await setTokens(res.data.access_token, res.data.refresh_token);
@@ -36,17 +52,19 @@ export default function LoginScreen({ navigation }: any) {
         code: error.code,
       });
       
-      let errorMessage = 'Invalid email/username or password. Please try again.';
-      let errorTitle = 'Login Failed';
+      let errorMessage = t('invalidEmailOrPassword');
+      let errorTitle = t('loginFailed');
       
       if (error.code === 'ECONNABORTED') {
-        errorTitle = 'Connection Timeout';
-        errorMessage = 'The server is taking too long to respond. Please check if the API server is running and try again.';
+        errorTitle = t('connectionTimeout');
+        errorMessage = t('serverTimeoutMessage');
       } else if (error.code === 'ERR_NETWORK' || error.message === 'Network Error' || !error.response) {
-        errorTitle = 'Network Error';
-        errorMessage = 'Cannot connect to the server. Please ensure:\n\n1. The API server is running\n2. Your device has network access\n3. For physical devices: Set EXPO_PUBLIC_API_BASE_URL to your computer\'s IP address\n\nCurrent API URL: ' + (process.env.EXPO_PUBLIC_API_BASE_URL || 'default');
+        errorTitle = t('networkError');
+        errorMessage = t('networkErrorMessage') + (process.env.EXPO_PUBLIC_API_BASE_URL || 'default');
       } else if (error.response?.status === 401) {
-        errorMessage = error.response?.data?.detail || 'Invalid email/username or password.';
+        errorMessage = error.response?.data?.detail || t('registrationRequiredMessage');
+      } else if (error.response?.status === 422) {
+        errorMessage = t('invalidEmailFormat');
       } else if (error.response?.data?.detail) {
         errorMessage = error.response.data.detail;
       }
@@ -58,26 +76,35 @@ export default function LoginScreen({ navigation }: any) {
   };
 
   return (
-    <ThemedView variant="background" style={styles.container}>
-      <View style={styles.content}>
-        <View style={[styles.card, { backgroundColor: '#FFFFFF' }]}>
-          {/* Title with blue underline */}
+    <KeyboardAvoidingView 
+      key={languageChangeKey}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+    >
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <ThemedView variant="background" style={styles.container}>
+          <View style={styles.content}>
+            <View style={styles.card}>
+          {/* Title with red underline */}
           <View style={styles.titleContainer}>
-            <Text style={styles.welcomeTitle}>Welcome to ACT</Text>
-            <Text style={styles.subtitleText}>BudgetWise</Text>
+            <Text style={styles.welcomeTitle}>{t('welcomeToACT')}</Text>
             <View style={styles.underline} />
           </View>
 
-          {/* Email/Username Input */}
+          {/* Email Input */}
           <Controller 
             name="email" 
             control={control}
-            rules={{ required: 'Email or Username is required' }}
+            rules={{ required: t('emailRequired') }}
             render={({ field: { onChange, value } }) => (
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>Username</Text>
+                <Text style={styles.label}>{t('email')}</Text>
                 <TextInput 
-                  placeholder="Enter your username or email" 
+                  placeholder={t('emailPlaceholder')} 
                   style={[styles.input, errors.email && styles.inputError]}
                   value={value} 
                   onChangeText={onChange}
@@ -96,12 +123,12 @@ export default function LoginScreen({ navigation }: any) {
           <Controller 
             name="password" 
             control={control}
-            rules={{ required: 'Password is required' }}
+            rules={{ required: t('passwordRequired') }}
             render={({ field: { onChange, value } }) => (
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>Password</Text>
+                <Text style={styles.label}>{t('password')}</Text>
                 <TextInput 
-                  placeholder="Enter your password" 
+                  placeholder={t('passwordPlaceholder')} 
                   style={[styles.input, errors.password && styles.inputError]}
                   secureTextEntry 
                   value={value} 
@@ -125,33 +152,33 @@ export default function LoginScreen({ navigation }: any) {
             {isLoading ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.loginButtonText}>Login</Text>
+              <Text style={styles.loginButtonText}>{t('login')}</Text>
             )}
           </TouchableOpacity>
 
           {/* Bottom Links */}
           <View style={styles.linksContainer}>
             <TouchableOpacity 
-              onPress={() => navigation.navigate('ForgotPassword')}
-              disabled={isLoading}
-            >
-              <Text style={styles.link}>Forgot Password?</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
               onPress={() => navigation.navigate('Register')}
               disabled={isLoading}
             >
-              <Text style={styles.link}>Create New Account</Text>
+              <Text style={styles.link}>{t('createNewAccount')}</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </View>
-    </ThemedView>
+            </View>
+          </View>
+        </ThemedView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
   container: { 
     flex: 1,
     justifyContent: 'center',
@@ -163,13 +190,14 @@ const styles = StyleSheet.create({
     maxWidth: 450,
   },
   card: {
-    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
     padding: 28,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
   titleContainer: {
     marginBottom: 32,
@@ -190,7 +218,7 @@ const styles = StyleSheet.create({
   underline: {
     width: 140,
     height: 3,
-    backgroundColor: '#2196F3',
+    backgroundColor: '#000000',
     borderRadius: 2,
   },
   inputContainer: {
@@ -204,19 +232,19 @@ const styles = StyleSheet.create({
   },
   input: { 
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#CCCCCC',
     padding: 12, 
     borderRadius: 8,
     fontSize: 16,
     color: '#000000',
-    backgroundColor: '#F9F9F9',
+    backgroundColor: '#FFFFFF',
   },
   inputError: {
-    borderColor: '#D32F2F',
+    borderColor: '#FF0000',
   },
   errorText: {
     fontSize: 12,
-    color: '#D32F2F',
+    color: '#FF0000',
     marginTop: 4,
   },
   loginButton: {
@@ -238,7 +266,7 @@ const styles = StyleSheet.create({
   },
   linksContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
   },
   link: {

@@ -18,11 +18,16 @@ const resources = {
       signUp: 'Sign Up',
       
       // Navigation
+      home: 'Home',
+      add: 'Add',
       income: 'Income',
       expenses: 'Expenses',
       calendar: 'Calendar',
       motivation: 'Motivation',
       reports: 'Reports',
+      reminders: 'Reminder',
+      goals: 'Goals',
+      books: 'Books',
       settings: 'Settings',
       profile: 'Profile',
       
@@ -40,7 +45,6 @@ const resources = {
       selectDate: 'Select Date',
       
       // Calendar & Reminders
-      reminders: 'Reminders',
       addReminder: 'Add Reminder',
       reminderTitle: 'Reminder Title',
       reminderTime: 'Reminder Time',
@@ -112,7 +116,6 @@ const resources = {
       confirmPasswordPlaceholder: 'Confirm password',
 
       // Books
-      books: 'Books',
       financialLiteracy: 'Financial Literacy',
       booksSubtitle: 'Learn and grow your financial knowledge',
       bookLibrary: 'Book Library',
@@ -126,7 +129,6 @@ const resources = {
       bookStatus_done: 'Completed',
       startReading: 'Start Reading',
       updateProgress: 'Update Progress',
-      markComplete: 'Mark as Complete',
       markAsComplete: 'Mark as Complete',
       markAsCompleteConfirm: 'Are you sure you want to mark this book as complete?',
       bookCompleted: 'Book Completed!',
@@ -140,12 +142,13 @@ const resources = {
 
       // Common
       loading: 'Loading...',
+      loadingDashboard: 'Loading dashboard...',
       save: 'Save',
       cancel: 'Cancel',
       edit: 'Edit',
       delete: 'Delete',
       back: 'Back',
-      add: 'Add',
+      addNewEntry: 'Add New Entry',
       update: 'Update',
       confirm: 'Confirm',
       yes: 'Yes',
@@ -163,7 +166,181 @@ const resources = {
       year: 'Year',
       all: 'All',
       none: 'None',
+      
+      // Expense-specific
+      deleteExpense: 'Delete Expense',
+      areYouSureDeleteExpense: 'Are you sure you want to delete this expense of ',
+      expenseDeleted: 'Expense entry deleted',
+      failedToDeleteEntry: 'Failed to delete entry',
+      remainingBudget: 'Remaining Budget',
+      noExpenseData: 'No expense data available',
       total: 'Total',
+      
+      // Settings Screen
+      accountDetails: 'Account Details',
+      fullNameLabel: 'Full Name',
+      emailLabel: 'Email',
+      emailCannotBeChanged: 'Email cannot be changed',
+      selectLanguage: 'Select Language',
+      selectCurrency: 'Select Currency',
+      languageAndCurrency: 'Language & Currency',
+      notificationSettings: 'Notification Settings',
+      emailNotifications: 'Email Notifications',
+      pushNotifications: 'Push Notifications',
+      upgradePlan: 'UPGRADE PLAN',
+      appPreferences: 'App Preferences',
+      fontSize: 'Font Size',
+      failedToSaveChanges: 'Failed to save changes. Please try again.',
+      
+      // Income Screen
+      noIncomeEntriesYet: 'No income entries yet',
+      tapAddButtonToAddFirstIncome: 'Tap the + button to add your first income',
+      
+      // Auth Screen
+      welcomeToACT: 'Welcome to ACT',
+      username: 'Username',
+      enterUsernameOrEmail: 'Enter your username or email',
+      joinACT: 'Join ACT',
+      recoveryKeyword: 'Recovery Keyword',
+      enterRecoveryKeyword: 'Enter recovery keyword (will be used to reset password)',
+      createNewAccount: 'Create New Account',
+      alreadyHaveAccount: 'Already have an account? Sign In',
+      invalidEmailOrPassword: 'Invalid email or password. Please try again.',
+      registrationRequiredMessage: 'Invalid email or password. Make sure you have registered first.',
+      invalidEmailFormat: 'Invalid email format. Please use a valid email address.',
+      emailAlreadyRegistered: 'Email already registered.',
+      requiredFieldsError: 'Please fill all required fields correctly. Make sure password is at least 8 characters and recovery keyword is 3+ characters.',
+      connectionTimeout: 'Connection Timeout',
+      serverTimeoutMessage: 'The server is taking too long to respond. Please check if the API server is running and try again.',
+      networkErrorMessage: 'Cannot connect to the server. Please ensure:\n\n1. The API server is running\n2. Your device has network access\n3. For physical devices: Set EXPO_PUBLIC_API_BASE_URL to your computer\'s IP address\n\nCurrent API URL: ',
+      emailOrUsernameRequired: 'Email or Username is required',
+      confirmPasswordRequired: 'Please confirm your password',
+      recoveryKeywordRequired: 'Recovery keyword is required',
+      passwordsMustMatch: 'Passwords do not match',
+      recoveryKeywordMinLength: 'Recovery keyword must be at least 3 characters',
+      atLeast8Characters: 'At least 8 characters',
+      reEnterPassword: 'Re-enter your password',
+      favoriteAnimalExample: 'e.g., FavoriteAnimal2024',
+      recoveryKeywordHelper: 'A secret word you\'ll use to reset your password if needed (3+ characters)',
+      
+      // Add Income/Expense Screens
+      incomeSource: 'Income Source',
+      enterSourceOfIncome: 'Enter source of income',
+      selectACategory: 'Select a category',
+      noCategoriesAvailable: 'No categories available',
+      submit: 'Submit',
+      incomeSourceRequired: 'Income Source Required',
+      pleaseEnterIncomeSource: 'Please enter an income source',
+      invalidAmount: 'Invalid Amount',
+      pleaseEnterValidPositiveAmount: 'Please enter a valid positive amount',
+      categoryRequired: 'Category Required',
+      pleaseSelectCategory: 'Please select a category',
+      expenseAddedSuccessfully: 'Expense added successfully',
+      incomeAddedSuccessfully: 'Income added successfully',
+      failedToAddExpense: 'Failed to add expense',
+      failedToAddIncome: 'Failed to add income',
+      optionalNotes: 'Notes (Optional)',
+      addAnyAdditionalNotes: 'Add any additional notes',
+      notes: 'Notes',
+      optional: 'Optional',
+      pleaseEnterValidAmount: 'Please enter a valid amount',
+      futureDate: 'Invalid Date',
+      pleaseSelectFutureDate: 'Please select a future date',
+      
+      // Reminder Screen
+      logDailyExpenses: 'Log Daily Expenses',
+      rememberToTrackDailyExpenses: 'Remember to track your daily expenses',
+      weeklyBudgetReview: 'Weekly Budget Review',
+      checkYourSpendingAgainstBudget: 'Check your spending against budget',
+      monthlyFinancialReport: 'Monthly Financial Report',
+      reviewYourMonthlyFinances: 'Review your monthly finances',
+      addExpenseReminder: 'Add Expense Reminder',
+      invalidDateMessage: 'Please select a future date',
+      expenseReminderAdded: 'Expense reminder added',
+      enterValidAmountMessage: 'Please enter a valid amount',
+      logReadingSession: 'Log Reading Session',
+      howManyPagesDidYouRead: 'How many pages did you read?',
+      timeSpent: 'Time Spent',
+      howManyMinutesDidYouSpend: 'How many minutes did you spend reading?',
+      readingSessionLogged: 'Reading session logged!',
+      failedToLogSession: 'Failed to log session',
+      next: 'Next',
+      addSession: 'Add Session',
+      noRemindersYet: 'No reminders yet',
+      createReminderToGetStarted: 'Create a reminder to get started',
+      
+      // Goals/Motivation Screen
+      goalsHeader: 'Goals',
+      trackAndAchieveYourFinancialGoals: 'Track and achieve your financial goals',
+      noGoalsYet: 'No goals yet',
+      createGoalToTrackProgress: 'Create a goal to track your progress',
+      accomplishments: 'Accomplishments',
+      noCompletedGoalsYet: 'No completed goals yet',
+      completeActiveGoalsToSeeHere: 'Complete your active goals to see them here',
+      addSavings: 'Add Savings',
+      enterAmountToAdd: 'Enter amount to add:',
+      goalCreatedSuccessfully: 'Goal created successfully! ✓',
+      deleteGoal: 'Delete Goal',
+      areYouSureYouWantToDeleteThisGoal: 'Are you sure you want to delete this goal?',
+      goalDeleted: 'Goal deleted ✓',
+      completeGoal: 'Complete Goal',
+      markAsCompleted: 'Mark as Completed',
+      goalMarkedAsCompleted: 'Goal marked as completed! 🎉',
+      failedToCompleteGoal: 'Failed to complete goal',
+      addedSuccessfully: 'Added {{amount}}! Progress: {{progress}}%',
+      goalCompletedNotification: 'Added {{amount}}! Goal completed! 🎉',
+      failedToAddSavings: 'Failed to add savings',
+      errorCreatingGoal: 'Error Creating Goal',
+      failedToCreateGoal: 'Failed to create goal',
+      goalTitle: 'Goal Title',
+      enterGoalTitle: 'Please enter a goal title',
+      goalDescription: 'Goal Description',
+      targetValue: 'Target Value',
+      enterValidTargetValue: 'Please enter a valid target value',
+      numberOfDays: 'Number of Days',
+      enterValidNumberOfDays: 'Please enter a valid number of days',
+      goalType: 'Goal Type',
+      spendUnder: 'Spend Under',
+      logNDays: 'Log N Days',
+      savings: 'Savings',
+      addGoal: 'Add Goal',
+      current: 'Current',
+      target: 'Target',
+      status: 'Status',
+      active: 'Active',
+      
+      // Books Screen
+      booksLibrary: 'Book Library',
+      addNewBook: 'Add New Book',
+      searchBooksFromOpenLibrary: 'Search Books from Open Library',
+      manualEntry: 'Manual Entry',
+      bookTitle: 'Book Title',
+      enterBookTitle: 'Enter book title',
+      author: 'Author',
+      pages: 'Pages',
+      chapters: 'Chapters',
+      searchBooksOpenLibrary: 'Search Books',
+      addBookFromSearch: 'Add Book',
+      addManualBook: 'Add Manual Book',
+      bookAddedToLibrary: 'added to your library!',
+      failedToAddBook: 'Failed to add book',
+      bookTitleRequired: 'Book title is required',
+      logReading: 'Log Reading',
+      pagesRead: 'Pages Read',
+      minutesSpent: 'Minutes Spent',
+      addReadingSession: 'Add Session',
+      failedToLogReadingSession: 'Failed to log session',
+      filterByStatus: 'Filter by Status',
+      allBooksFilter: 'All Books',
+      notStartedFilter: 'Not Started',
+      inProgressFilter: 'In Progress',
+      completedFilter: 'Completed',
+      noBooks: 'No books available',
+      noBooksInFilter: 'No books in this category',
+      bookDetailScreen: 'Book Details',
+      read: 'Read',
+      failedToDownloadBook: 'Failed to download the book',
+      retry: 'Retry',
     },
   },
   ru: {
@@ -181,11 +358,16 @@ const resources = {
       signUp: 'Зарегистрироваться',
       
       // Navigation
+      home: 'Главная',
+      add: 'Добавить',
       income: 'Доходы',
       expenses: 'Расходы',
       calendar: 'Календарь',
       motivation: 'Мотивация',
       reports: 'Отчеты',
+      reminders: 'Напоминания',
+      goals: 'Цели',
+      books: 'Книги',
       settings: 'Настройки',
       profile: 'Профиль',
       
@@ -203,7 +385,6 @@ const resources = {
       selectDate: 'Выберите дату',
       
       // Calendar & Reminders
-      reminders: 'Напоминания',
       addReminder: 'Добавить напоминание',
       reminderTitle: 'Название напоминания',
       reminderTime: 'Время напоминания',
@@ -275,7 +456,6 @@ const resources = {
       confirmPasswordPlaceholder: 'Подтвердите пароль',
 
       // Books
-      books: 'Книги',
       financialLiteracy: 'Финансовая грамотность',
       booksSubtitle: 'Учитесь и развивайте финансовые знания',
       bookLibrary: 'Библиотека книг',
@@ -289,7 +469,6 @@ const resources = {
       bookStatus_done: 'Завершено',
       startReading: 'Начать чтение',
       updateProgress: 'Обновить прогресс',
-      markComplete: 'Отметить завершенным',
       markAsComplete: 'Отметить завершенным',
       markAsCompleteConfirm: 'Вы уверены, что хотите отметить эту книгу как завершенную?',
       bookCompleted: 'Книга завершена!',
@@ -300,15 +479,19 @@ const resources = {
       by: 'автор',
       summary: 'Краткое содержание',
       keyTakeaways: 'Ключевые выводы',
+      read: 'Читать',
+      failedToDownloadBook: 'Не удалось загрузить книгу',
+      retry: 'Повторить',
 
       // Common
       loading: 'Загрузка...',
+      loadingDashboard: 'Загрузка панели...',
       save: 'Сохранить',
       cancel: 'Отмена',
       edit: 'Изменить',
       delete: 'Удалить',
       back: 'Назад',
-      add: 'Добавить',
+      addNewEntry: 'Добавить новую запись',
       update: 'Обновить',
       confirm: 'Подтвердить',
       yes: 'Да',
@@ -326,7 +509,62 @@ const resources = {
       year: 'Год',
       all: 'Все',
       none: 'Нет',
+      
+      // Expense-specific
+      deleteExpense: 'Удалить расход',
+      areYouSureDeleteExpense: 'Вы уверены, что хотите удалить этот расход в размере ',
+      expenseDeleted: 'Запись расхода удалена',
+      failedToDeleteEntry: 'Не удалось удалить запись',
+      remainingBudget: 'Остаток бюджета',
+      noExpenseData: 'Нет данных расходов',
       total: 'Всего',
+      
+      // Settings Screen
+      accountDetails: 'Данные аккаунта',
+      fullNameLabel: 'Полное имя',
+      emailLabel: 'Электронная почта',
+      emailCannotBeChanged: 'Email не может быть изменен',
+      selectLanguage: 'Выберите язык',
+      selectCurrency: 'Выберите валюту',
+      languageAndCurrency: 'Язык и валюта',
+      notificationSettings: 'Настройки уведомлений',
+      emailNotifications: 'Email уведомления',
+      pushNotifications: 'Push-уведомления',
+      upgradePlan: 'ОБНОВИТЬ ПЛАН',
+      appPreferences: 'Предпочтения приложения',
+      fontSize: 'Размер шрифта',
+      failedToSaveChanges: 'Не удалось сохранить изменения. Пожалуйста, попробуйте еще раз.',
+      
+      // Income Screen
+      noIncomeEntriesYet: 'Нет записей о доходе',
+      tapAddButtonToAddFirstIncome: 'Нажмите кнопку + чтобы добавить первый доход',
+      
+      // Auth Screen
+      welcomeToACT: 'Добро пожаловать в ACT',
+      username: 'Имя пользователя',
+      enterUsernameOrEmail: 'Введите имя пользователя или email',
+      joinACT: 'Присоединяйтесь к ACT',
+      recoveryKeyword: 'Ключевое слово восстановления',
+      enterRecoveryKeyword: 'Введите ключевое слово восстановления (будет использовано для сброса пароля)',
+      createNewAccount: 'Создать новый аккаунт',
+      alreadyHaveAccount: 'Уже есть аккаунт? Войти',
+      invalidEmailOrPassword: 'Неверный email или пароль. Пожалуйста, попробуйте еще раз.',
+      registrationRequiredMessage: 'Неверный email или пароль. Убедитесь, что вы зарегистрировались.',
+      invalidEmailFormat: 'Неверный формат email. Пожалуйста, используйте действительный email адрес.',
+      emailAlreadyRegistered: 'Email уже зарегистрирован.',
+      requiredFieldsError: 'Пожалуйста, заполните все обязательные поля правильно. Убедитесь, что пароль содержит минимум 8 символов, а ключевое слово - 3+ символа.',
+      connectionTimeout: 'Тайм-аут подключения',
+      serverTimeoutMessage: 'Сервер слишком долго отвечает. Пожалуйста, проверьте, что API сервер запущен, и попробуйте еще раз.',
+      networkErrorMessage: 'Не удается подключиться к серверу. Пожалуйста, убедитесь, что:\n\n1. API сервер запущен\n2. Ваше устройство имеет доступ в Интернет\n3. Для физических устройств: установите EXPO_PUBLIC_API_BASE_URL на IP адрес вашего компьютера\n\nТекущий URL API: ',
+      emailOrUsernameRequired: 'Email или имя пользователя обязательны',
+      confirmPasswordRequired: 'Пожалуйста, подтвердите ваш пароль',
+      recoveryKeywordRequired: 'Ключевое слово восстановления обязательно',
+      passwordsMustMatch: 'Пароли не совпадают',
+      recoveryKeywordMinLength: 'Ключевое слово восстановления должно содержать минимум 3 символа',
+      atLeast8Characters: 'Минимум 8 символов',
+      reEnterPassword: 'Повторно введите ваш пароль',
+      favoriteAnimalExample: 'например, FavoriteAnimal2024',
+      recoveryKeywordHelper: 'Секретное слово, которое вы будете использовать для сброса пароля, если это необходимо (3+ символа)',
     },
   },
   uz: {
@@ -344,11 +582,16 @@ const resources = {
       signUp: "Ro'yxatdan o'tish",
       
       // Navigation
+      home: 'Bosh sahifa',
+      add: 'Qo\'shish',
       income: 'Daromadlar',
       expenses: 'Xarajatlar',
       calendar: 'Kalendar',
       motivation: 'Motivatsiya',
       reports: 'Hisobotlar',
+      reminders: 'Eslatmalar',
+      goals: 'Maqsadlar',
+      books: 'Kitoblar',
       settings: 'Sozlamalar',
       profile: 'Profil',
       
@@ -366,7 +609,6 @@ const resources = {
       selectDate: 'Sanani tanlang',
       
       // Calendar & Reminders
-      reminders: 'Eslatmalar',
       addReminder: 'Eslatma qo\'shish',
       reminderTitle: 'Eslatma nomi',
       reminderTime: 'Eslatma vaqti',
@@ -438,7 +680,6 @@ const resources = {
       confirmPasswordPlaceholder: 'Parolni tasdiqlang',
 
       // Books
-      books: 'Kitoblar',
       financialLiteracy: 'Moliyaviy savodxonlik',
       booksSubtitle: 'O\'rganing va moliyaviy bilimingizni oshiring',
       bookLibrary: 'Kitoblar kutubxonasi',
@@ -452,7 +693,6 @@ const resources = {
       bookStatus_done: 'Tugallangan',
       startReading: 'O\'qishni boshlash',
       updateProgress: 'Progressni yangilash',
-      markComplete: 'Tugallangan deb belgilash',
       markAsComplete: 'Tugallangan deb belgilash',
       markAsCompleteConfirm: 'Ushbu kitobni tugallangan deb belgilamoqchimisiz?',
       bookCompleted: 'Kitob tugallandi!',
@@ -463,6 +703,9 @@ const resources = {
       by: 'muallif',
       summary: 'Qisqacha mazmuni',
       keyTakeaways: 'Asosiy xulosalar',
+      read: 'O\'qish',
+      failedToDownloadBook: 'Kitobni yuklab olish muvaffaq bo\'lmadi',
+      retry: 'Qayta urinish',
 
       // Common
       loading: 'Yuklanmoqda...',
@@ -471,7 +714,6 @@ const resources = {
       edit: 'Tahrirlash',
       delete: "O'chirish",
       back: 'Orqaga',
-      add: 'Qo\'shish',
       update: 'Yangilash',
       confirm: 'Tasdiqlash',
       yes: 'Ha',
@@ -490,6 +732,262 @@ const resources = {
       all: 'Hammasi',
       none: 'Yo\'q',
       total: 'Jami',
+      
+      // Settings Screen
+      accountDetails: 'Hisob maʼlumotlari',
+      fullNameLabel: 'To\'liq ism',
+      emailLabel: 'Elektron pochta',
+      emailCannotBeChanged: 'Email o\'zgartirilmaydi',
+      selectLanguage: 'Tilni tanlang',
+      selectCurrency: 'Valyutani tanlang',
+      languageAndCurrency: 'Til va valyuta',
+      notificationSettings: 'Bildirishnoma sozlamalari',
+      emailNotifications: 'Email bildirishnomalar',
+      pushNotifications: 'Push bildirishnomalar',
+      upgradePlan: 'PLANNI YANGILASH',
+      appPreferences: 'Ilovaning afzalliklari',
+      fontSize: 'Shrift o\'lchami',
+      failedToSaveChanges: 'O\'zgarishlarni saqlash amalga oshmadi. Iltimos, qayta urining.',
+      
+      // Income Screen
+      noIncomeEntriesYet: 'Hali daromad yozuvlari yo\'q',
+      tapAddButtonToAddFirstIncome: 'Birinchi daromadni qo\'shish uchun + tugmasini bosing',
+      
+      // Auth Screen
+      welcomeToACT: 'ACT ga xush kelibsiz',
+      username: 'Foydalanuvchi nomi',
+      enterUsernameOrEmail: 'Foydalanuvchi nomini yoki emailni kiriting',
+      joinACT: 'ACT ga qo\'shiling',
+      recoveryKeyword: 'Qayta tiklash kaliti',
+      enterRecoveryKeyword: 'Qayta tiklash kalitini kiriting (parolni qayta tiklash uchun ishlatiladi)',
+      createNewAccount: 'Yangi hisob yaratish',
+      alreadyHaveAccount: 'Allaqachon hisobingiz bormi? Kirish',
+      invalidEmailOrPassword: 'Noto\'g\'ri email yoki parol. Iltimos, qayta urining.',
+      registrationRequiredMessage: 'Noto\'g\'ri email yoki parol. Ro\'yxatdan o\'tganingizga ishonch hosil qiling.',
+      invalidEmailFormat: 'Noto\'g\'ri email formati. Iltimos, to\'g\'ri email manzilini kiriting.',
+      emailAlreadyRegistered: 'Email allaqachon ro\'yxatdan o\'tgan.',
+      requiredFieldsError: 'Iltimos, barcha talab qilinadigan maydonlarni to\'g\'ri to\'ldiring. Parol kamida 8 ta belgi bo\'lishi kerak va qayta tiklash kaliti 3+ ta belgidan iborat bo\'lishi kerak.',
+      connectionTimeout: 'Ulanish vaqti tugadi',
+      serverTimeoutMessage: 'Server juda uzoq javob bermoqda. Iltimos, API serveri ishlatilayotganini tekshiring va qayta urining.',
+      networkErrorMessage: 'Serverga ulanib bo\'lmadi. Iltimos, quyidagini tekshiring:\n\n1. API serveri ishga tushirilgan\n2. Qurilmangiz Internet ulanishiga ega\n3. Jismoniy qurilmalar uchun: EXPO_PUBLIC_API_BASE_URL ni kompyuteringizning IP manzilina o\'rnating\n\nHozirgi API URL: ',
+      emailOrUsernameRequired: 'Email yoki foydalanuvchi nomi talab qilinadi',
+      confirmPasswordRequired: 'Iltimos, parolingizni tasdiqlang',
+      recoveryKeywordRequired: 'Qayta tiklash kaliti talab qilinadi',
+      passwordsMustMatch: 'Parollar mos kelmaydi',
+      recoveryKeywordMinLength: 'Qayta tiklash kaliti kamida 3 ta belgidan iborat bo\'lishi kerak',
+      atLeast8Characters: 'Kamida 8 ta belgi',
+      reEnterPassword: 'Parolingizni qayta kiriting',
+      favoriteAnimalExample: 'masalan, FavoriteAnimal2024',
+      recoveryKeywordHelper: 'Zarurat bo\'lganda parolingizni qayta tiklash uchun ishlatadigan sirli so\'z (3+ belgi)',
+    },
+  },
+  es: {
+    translation: {
+      // Auth
+      welcome: 'Bienvenido a ACT Gen-1',
+      login: 'Iniciar sesión',
+      register: 'Registrarse',
+      logout: 'Cerrar sesión',
+      email: 'Correo electrónico',
+      password: 'Contraseña',
+      confirmPassword: 'Confirmar contraseña',
+      createAccount: 'Crear cuenta',
+      signIn: 'Iniciar sesión',
+      signUp: 'Registrarse',
+      
+      // Navigation
+      income: 'Ingresos',
+      expenses: 'Gastos',
+      calendar: 'Calendario',
+      motivation: 'Motivación',
+      reports: 'Reportes',
+      settings: 'Configuración',
+      profile: 'Perfil',
+      
+      // Income & Expenses
+      addIncome: 'Agregar Ingreso',
+      addExpense: 'Agregar Gasto',
+      editIncome: 'Editar Ingreso',
+      editExpense: 'Editar Gasto',
+      amount: 'Cantidad',
+      category: 'Categoría',
+      date: 'Fecha',
+      note: 'Nota',
+      description: 'Descripción',
+      selectCategory: 'Seleccionar Categoría',
+      selectDate: 'Seleccionar Fecha',
+      
+      // Calendar & Reminders
+      reminders: 'Recordatorios',
+      addReminder: 'Agregar Recordatorio',
+      reminderTitle: 'Título del Recordatorio',
+      reminderTime: 'Hora del Recordatorio',
+      upcoming: 'Próximos',
+      completed: 'Completados',
+      markComplete: 'Marcar como Completado',
+      
+      // Reports
+      totalIncome: 'Ingreso Total',
+      totalExpenses: 'Gastos Totales',
+      balance: 'Saldo',
+      thisMonth: 'Este Mes',
+      lastMonth: 'Mes Pasado',
+      thisYear: 'Este Año',
+      byCategory: 'Por Categoría',
+      trend: 'Tendencia',
+      
+      // Settings
+      preferences: 'Preferencias',
+      accountType: 'Tipo de Cuenta',
+      language: 'Idioma',
+      theme: 'Tema',
+      currency: 'Moneda',
+      name: 'Nombre',
+      dataExport: 'Exportar Datos',
+      exportCSV: 'Exportar como CSV',
+      exportJSON: 'Exportar como JSON',
+      about: 'Acerca de',
+      version: 'Versión',
+      
+      // Motivation
+      dailyQuote: 'Cita del Día',
+      financialTips: 'Consejos Financieros',
+      achievements: 'Logros',
+      
+      // Messages
+      loginFailed: 'Error al Iniciar Sesión',
+      registrationFailed: 'Error en Registro',
+      invalidCredentials: 'Correo electrónico o contraseña inválidos',
+      emailRequired: 'El correo electrónico es requerido',
+      passwordRequired: 'La contraseña es requerida',
+      passwordMinLength: 'La contraseña debe tener al menos 8 caracteres',
+      passwordsDoNotMatch: 'Las contraseñas no coinciden',
+      invalidEmail: 'Dirección de correo electrónico inválida',
+      networkError: 'Error de red. Por favor, verifique su conexión.',
+      success: 'Éxito',
+      error: 'Error',
+      confirmDelete: '¿Está seguro de que desea eliminar este elemento?',
+      settingUpdated: 'Configuración actualizada exitosamente',
+      settingUpdateFailed: 'Error al actualizar la configuración',
+      
+      // Password Reset
+      forgotPassword: 'Olvidé mi Contraseña',
+      resetPassword: 'Restablecer Contraseña',
+      sendResetLink: 'Enviar Enlace',
+      backToLogin: 'Volver a Iniciar Sesión',
+      enterEmailForReset: 'Ingrese su correo para recibir un enlace de restablecimiento',
+      enterNewPassword: 'Ingrese su nueva contraseña',
+      resetToken: 'Token de Restablecimiento',
+      enterResetToken: 'Ingrese el token de restablecimiento',
+      newPassword: 'Nueva Contraseña',
+      passwordResetTokenSent: 'Token de restablecimiento generado',
+      passwordResetEmailSent: 'Si la cuenta existe, se envió un enlace',
+      passwordResetSuccess: '¡Contraseña restablecida! Ahora puede iniciar sesión.',
+      passwordResetFailed: 'Error al restablecer contraseña',
+      devModeToken: 'MODO DEV - Token',
+      emailPlaceholder: 'tu@email.com',
+      passwordPlaceholder: 'Ingrese contraseña',
+      confirmPasswordPlaceholder: 'Confirme contraseña',
+
+      // Books
+      books: 'Libros',
+      financialLiteracy: 'Educación Financiera',
+      booksSubtitle: 'Aprenda y desarrolle su conocimiento financiero',
+      bookLibrary: 'Biblioteca de Libros',
+      inProgress: 'En Progreso',
+      completionRate: 'Completado',
+      failedToLoadBooks: 'Error al cargar libros',
+      failedToLoadBook: 'Error al cargar detalles del libro',
+      yourProgress: 'Su Progreso',
+      bookStatus_not_started: 'No Iniciado',
+      bookStatus_in_progress: 'En Progreso',
+      bookStatus_done: 'Completado',
+      startReading: 'Comenzar a Leer',
+      updateProgress: 'Actualizar Progreso',
+      markAsComplete: 'Marcar como Completado',
+      markAsCompleteConfirm: '¿Está seguro de que desea marcar este libro como completado?',
+      bookCompleted: '¡Libro Completado!',
+      progressUpdated: 'Progreso actualizado exitosamente',
+      failedToUpdateProgress: 'Error al actualizar progreso',
+      enterProgressPercent: 'Ingrese el porcentaje de progreso (0-100)',
+      invalidProgress: 'Por favor ingrese un porcentaje válido entre 0 y 100',
+      by: 'por',
+      summary: 'Resumen',
+      keyTakeaways: 'Puntos Clave',
+
+      // Common
+      loading: 'Cargando...',
+      save: 'Guardar',
+      cancel: 'Cancelar',
+      edit: 'Editar',
+      delete: 'Eliminar',
+      back: 'Atrás',
+      add: 'Agregar',
+      update: 'Actualizar',
+      confirm: 'Confirmar',
+      yes: 'Sí',
+      no: 'No',
+      ok: 'OK',
+      close: 'Cerrar',
+      search: 'Buscar',
+      filter: 'Filtro',
+      sort: 'Ordenar',
+      today: 'Hoy',
+      yesterday: 'Ayer',
+      tomorrow: 'Mañana',
+      week: 'Semana',
+      month: 'Mes',
+      year: 'Año',
+      all: 'Todo',
+      none: 'Ninguno',
+      total: 'Total',
+      
+      // Settings Screen
+      accountDetails: 'Detalles de la Cuenta',
+      fullNameLabel: 'Nombre Completo',
+      emailLabel: 'Correo Electrónico',
+      emailCannotBeChanged: 'El correo electrónico no puede ser cambiado',
+      selectLanguage: 'Seleccionar Idioma',
+      selectCurrency: 'Seleccionar Moneda',
+      languageAndCurrency: 'Idioma y Moneda',
+      notificationSettings: 'Configuración de Notificaciones',
+      emailNotifications: 'Notificaciones por Correo',
+      pushNotifications: 'Notificaciones Push',
+      upgradePlan: 'MEJORAR PLAN',
+      appPreferences: 'Preferencias de la Aplicación',
+      fontSize: 'Tamaño de Fuente',
+      failedToSaveChanges: 'Error al guardar cambios. Por favor, intente nuevamente.',
+      
+      // Income Screen
+      noIncomeEntriesYet: 'Sin entradas de ingresos aún',
+      tapAddButtonToAddFirstIncome: 'Toca el botón + para agregar tu primer ingreso',
+      
+      // Auth Screen
+      welcomeToACT: 'Bienvenido a ACT',
+      username: 'Nombre de Usuario',
+      enterUsernameOrEmail: 'Ingrese nombre de usuario o correo',
+      joinACT: 'Únase a ACT',
+      recoveryKeyword: 'Palabra de Recuperación',
+      enterRecoveryKeyword: 'Ingrese palabra de recuperación (se utilizará para restablecer contraseña)',
+      createNewAccount: 'Crear Nueva Cuenta',
+      alreadyHaveAccount: '¿Ya tiene una cuenta? Inicie Sesión',
+      invalidEmailOrPassword: 'Correo electrónico o contraseña inválidos. Por favor, intente nuevamente.',
+      registrationRequiredMessage: 'Correo electrónico o contraseña inválidos. Asegúrese de haberse registrado.',
+      invalidEmailFormat: 'Formato de correo electrónico inválido. Por favor, use una dirección de correo válida.',
+      emailAlreadyRegistered: 'El correo electrónico ya está registrado.',
+      requiredFieldsError: 'Por favor, complete todos los campos requeridos correctamente. Asegúrese de que la contraseña tenga al menos 8 caracteres y la palabra de recuperación tenga 3+ caracteres.',
+      connectionTimeout: 'Tiempo de Conexión Agotado',
+      serverTimeoutMessage: 'El servidor tarda demasiado en responder. Por favor, verifique que el servidor API esté ejecutándose e intente nuevamente.',
+      networkErrorMessage: 'No se puede conectar al servidor. Por favor, asegúrese:\n\n1. El servidor API está en ejecución\n2. Su dispositivo tiene acceso a Internet\n3. Para dispositivos físicos: configure EXPO_PUBLIC_API_BASE_URL en la dirección IP de su computadora\n\nURL de API actual: ',
+      emailOrUsernameRequired: 'Se requiere correo electrónico o nombre de usuario',
+      confirmPasswordRequired: 'Por favor, confirme su contraseña',
+      recoveryKeywordRequired: 'Se requiere palabra de recuperación',
+      passwordsMustMatch: 'Las contraseñas no coinciden',
+      recoveryKeywordMinLength: 'La palabra de recuperación debe tener al menos 3 caracteres',
+      atLeast8Characters: 'Al menos 8 caracteres',
+      reEnterPassword: 'Ingrese su contraseña nuevamente',
+      favoriteAnimalExample: 'ej., AnimalFavorito2024',
+      recoveryKeywordHelper: 'Una palabra secreta que usará para restablecer su contraseña si es necesario (3+ caracteres)',
     },
   },
 };
@@ -500,22 +998,31 @@ const languageDetector = {
   async: true,
   detect: async (callback: (lng: string) => void) => {
     try {
+      console.log('🌐 i18n Language Detector - Starting detection...');
       const savedLanguage = await AsyncStorage.getItem('user-language');
-      if (savedLanguage) {
+      console.log('🌐 i18n Language Detector - Saved language from AsyncStorage:', savedLanguage);
+      if (savedLanguage && ['en', 'ru', 'uz', 'es'].includes(savedLanguage)) {
+        console.log(`✅ 🌐 i18n Language Detector - Calling callback with saved language: ${savedLanguage}`);
         callback(savedLanguage);
       } else {
+        console.log('🌐 i18n Language Detector - No valid saved language, defaulting to English');
         callback('en');
       }
     } catch (error) {
+      console.error('🌐 i18n Language Detector Error:', error);
       callback('en');
     }
   },
-  init: () => {},
+  init: () => {
+    console.log('🌐 i18n Language Detector - init() called');
+  },
   cacheUserLanguage: async (lng: string) => {
     try {
+      console.log(`🌐 i18n Language Detector - Caching language: ${lng}`);
       await AsyncStorage.setItem('user-language', lng);
+      console.log(`✅ 🌐 i18n Language Cached: ${lng}`);
     } catch (error) {
-      // Handle error silently
+      console.error('🌐 i18n Cache Error:', error);
     }
   },
 };
@@ -524,7 +1031,7 @@ i18n
   .use(languageDetector as any)
   .use(initReactI18next)
   .init({
-    lng: 'en',
+    lng: 'en', // Default to English while detection is happening
     fallbackLng: 'en',
     resources,
     interpolation: {
@@ -532,7 +1039,26 @@ i18n
     },
     react: {
       useSuspense: false,
+      bindI18n: 'languageChanged loaded', // Re-render on language change
+      bindI18nStore: 'added removed',
     },
+    nonExplicitSupportedLngs: false,
+    supportedLngs: ['en', 'ru', 'uz', 'es'],
+    cleanCode: true,
   });
+
+// Add event listener for language change to force component re-renders
+i18n.on('languageChanged', (lng: string) => {
+  console.log('✅ 🌐 i18n Language Changed Event:', lng);
+  console.log('✅ 🌐 Current i18n language:', i18n.language);
+});
+
+i18n.on('loaded', (loaded: any) => {
+  console.log('✅ 🌐 i18n Loaded namespaces:', loaded);
+  console.log('✅ 🌐 Current i18n language after load:', i18n.language);
+});
+
+console.log('✅ 🌐 i18n Initialized with resources for: en, ru, uz, es');
+console.log('✅ 🌐 Initial language:', i18n.language);
 
 export default i18n;
