@@ -2,49 +2,45 @@ const { withAndroidManifest } = require("@expo/config-plugins");
 
 module.exports = function (config) {
   return withAndroidManifest(config, async (config) => {
-    const manifest = config.modResults;
+    let manifest = config.modResults;
     
-    // Ensure manifest root attributes exist
+    // Ensure root attributes
     if (!manifest.manifest.$) {
       manifest.manifest.$ = {};
     }
     
-    // Add tools namespace
+    // Add tools namespace - this is critical!
     manifest.manifest.$["xmlns:tools"] = "http://schemas.android.com/tools";
     
-    // Get or create application element
+    // Get application element
     const application = manifest.manifest.application?.[0];
     if (!application) {
       return config;
     }
     
-    // Ensure meta-data array exists
-    if (!application["meta-data"]) {
-      application["meta-data"] = [];
-    }
-    
-    // Process all metadata elements
-    application["meta-data"] = application["meta-data"].map((metaData) => {
-      if (!metaData.$) {
-        metaData.$ = {};
-      }
-      
-      const name = metaData.$["android:name"];
-      
-      // Fix Firebase notification conflicts by using tools:replace
-      if (
-        name === "com.google.firebase.messaging.default_notification_color" ||
-        name === "com.google.firebase.messaging.default_notification_icon"
-      ) {
-        // Only add tools:replace if it doesn't already exist
-        if (!metaData.$["tools:replace"]) {
+    // Process meta-data elements
+    if (application["meta-data"]) {
+      // Iterate through each meta-data element
+      for (let metaData of application["meta-data"]) {
+        if (!metaData.$) {
+          metaData.$ = {};
+        }
+        
+        const name = metaData.$["android:name"];
+        
+        // Handle Firebase notification color conflict
+        if (name === "com.google.firebase.messaging.default_notification_color") {
+          // Add tools:replace to override the conflicting attribute
+          metaData.$["tools:replace"] = "android:resource";
+        }
+        
+        // Handle Firebase notification icon conflict if present
+        if (name === "com.google.firebase.messaging.default_notification_icon") {
           metaData.$["tools:replace"] = "android:resource";
         }
       }
-      
-      return metaData;
-    });
-
+    }
+    
     return config;
   });
 };
