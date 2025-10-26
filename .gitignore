@@ -7,6 +7,10 @@ build/
 # Native build artifacts (we won't commit these)
 android/
 ios/
+# BUT include gradle wrapper (needed for builds)
+!android/gradlew
+!android/gradlew.bat
+!android/gradle/
 # Firebase Configuration (SENSITIVE - DO NOT COMMIT)
 google-services.json
 GoogleService-Info.plist
