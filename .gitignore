@@ -11,6 +11,13 @@ ios/
 !android/gradlew
 !android/gradlew.bat
 !android/gradle/
+# AND include source manifests for Expo (critical for build configuration)
+!apps/mobile/android/app/src/
+!apps/mobile/android/app/src/main/
+!apps/mobile/android/app/src/main/AndroidManifest.xml
+!apps/mobile/android/app/src/main/res/
+!apps/mobile/android/app/src/main/res/values/
+!apps/mobile/android/app/src/main/res/values/colors.xml
 # Firebase Configuration (SENSITIVE - DO NOT COMMIT)
 google-services.json
 GoogleService-Info.plist
