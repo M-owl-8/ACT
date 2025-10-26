@@ -15,6 +15,16 @@ apps/mobile/ios/
 !apps/mobile/android/app/src/main/res/
 !apps/mobile/android/app/src/main/res/values/
 !apps/mobile/android/app/src/main/res/values/colors.xml
+# EXCEPT gradle wrapper files (required for builds)
+!apps/mobile/android/gradle/
+!apps/mobile/android/gradle/wrapper/
+!apps/mobile/android/gradle/wrapper/gradle-wrapper.jar
+!apps/mobile/android/gradle/wrapper/gradle-wrapper.properties
+!apps/mobile/android/gradlew
+!apps/mobile/android/gradlew.bat
+!apps/mobile/android/build.gradle
+!apps/mobile/android/settings.gradle
+!apps/mobile/android/gradle.properties
 # Firebase Configuration (SENSITIVE - DO NOT COMMIT)
 google-services.json
 GoogleService-Info.plist
