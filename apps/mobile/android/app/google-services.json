@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1071583523463",
+    "project_id": "act-gen1-f9812",
+    "storage_bucket": "act-gen1-f9812.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1071583523463:android:35b57bc15c07a299f4fe22",
+        "android_client_info": {
+          "package_name": "com.act.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmoswpGMJzRbjRQoYjRNHsjp-3l6cyUM4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1071583523463:android:9f0aa92385aa1a80f4fe22",
+        "android_client_info": {
+          "package_name": "com.bitway.actgen1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmoswpGMJzRbjRQoYjRNHsjp-3l6cyUM4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

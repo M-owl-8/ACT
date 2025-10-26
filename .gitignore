@@ -13,7 +13,7 @@ apps/mobile/android/app/build/
 apps/mobile/android/app/debug.keystore
 apps/mobile/android/local.properties
 # Firebase Configuration (SENSITIVE - DO NOT COMMIT)
-google-services.json
+# Exception: google-services.json in android/app is needed for EAS builds
 GoogleService-Info.plist
 firebase-service-account.json
 # Editor
