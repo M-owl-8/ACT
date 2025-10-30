@@ -41,6 +41,16 @@ async def lifespan(app: FastAPI):
                     await conn.execute(text("DROP TABLE IF EXISTS books CASCADE"))
                 except Exception as e:
                     print(f"[DB] Note: Could not drop books table: {str(e)}")
+                
+                # Add missing currency column to users table if it doesn't exist
+                try:
+                    await conn.execute(text("""
+                        ALTER TABLE users 
+                        ADD COLUMN IF NOT EXISTS currency VARCHAR DEFAULT 'USD' NOT NULL
+                    """))
+                    print("[DB] ✓ Currency column added/verified")
+                except Exception as e:
+                    print(f"[DB] Note: Could not add currency column: {str(e)}")
             
             await conn.run_sync(Base.metadata.create_all)
         print("✓ Database tables ready")
