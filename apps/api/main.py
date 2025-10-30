@@ -96,10 +96,13 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             print(f"[DB] ⚠️  Error seeding data: {str(e)}")
         
-        # Start daily backup task
+        # Start daily backup task (only for SQLite, not PostgreSQL)
         try:
-            backup_task = asyncio.create_task(daily_backup_task())
-            print("✓ Daily backup task started")
+            if "postgresql" not in settings.DATABASE_URL.lower():
+                backup_task = asyncio.create_task(daily_backup_task())
+                print("✓ Daily backup task started (SQLite only)")
+            else:
+                print("[Backup] ⚠️  PostgreSQL detected - skipping backup task (use pg_dump instead)")
         except Exception as e:
             print(f"[DB] ⚠️  Error starting backup task: {str(e)}")
         
