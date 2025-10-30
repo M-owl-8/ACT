@@ -33,40 +33,81 @@ async def lifespan(app: FastAPI):
     backup_task = None
     
     try:
-        # Create tables (or migrate existing ones)
-        async with engine.begin() as conn:
-            # For PostgreSQL, drop and recreate books table to fix schema issues
-            if "postgresql" in settings.DATABASE_URL.lower():
-                try:
-                    await conn.execute(text("DROP TABLE IF EXISTS books CASCADE"))
-                except Exception as e:
-                    print(f"[DB] Note: Could not drop books table: {str(e)}")
+        # STEP 1: Create all base tables from models
+        print("[DB] STEP 1: Creating base tables from models...")
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            print("[DB] ✓ Base tables created/verified")
+        except Exception as e:
+            print(f"[DB] ⚠️  Error creating base tables: {str(e)}")
+            import traceback
+            print(traceback.format_exc())
+        
+        # STEP 2: Run PostgreSQL-specific migrations
+        if "postgresql" in settings.DATABASE_URL.lower():
+            print("[DB] STEP 2: Running PostgreSQL migrations...")
+            try:
+                async with engine.begin() as conn:
+                    # Drop books table for fresh recreation
+                    try:
+                        await conn.execute(text("DROP TABLE IF EXISTS books CASCADE"))
+                        print("[DB] ✓ Books table dropped (will be recreated)")
+                    except Exception as e:
+                        print(f"[DB] ⚠️  Note: Could not drop books table: {str(e)}")
+                    
+                    # Ensure currency column exists in users table
+                    try:
+                        await conn.execute(text("""
+                            ALTER TABLE users 
+                            ADD COLUMN IF NOT EXISTS currency VARCHAR NOT NULL DEFAULT 'USD'
+                        """))
+                        print("[DB] ✓ Currency column verified in users table")
+                    except Exception as e:
+                        print(f"[DB] ⚠️  Could not verify currency column: {str(e)}")
+                    
+                    # Ensure recovery_keyword column exists in users table
+                    try:
+                        await conn.execute(text("""
+                            ALTER TABLE users 
+                            ADD COLUMN IF NOT EXISTS recovery_keyword VARCHAR NOT NULL
+                        """))
+                        print("[DB] ✓ Recovery keyword column verified in users table")
+                    except Exception as e:
+                        print(f"[DB] ⚠️  Could not verify recovery_keyword column: {str(e)}")
                 
-                # Add missing currency column to users table if it doesn't exist
-                try:
-                    await conn.execute(text("""
-                        ALTER TABLE users 
-                        ADD COLUMN IF NOT EXISTS currency VARCHAR DEFAULT 'USD' NOT NULL
-                    """))
-                    print("[DB] ✓ Currency column added/verified")
-                except Exception as e:
-                    print(f"[DB] Note: Could not add currency column: {str(e)}")
-            
-            await conn.run_sync(Base.metadata.create_all)
+                # Recreate tables that were dropped
+                print("[DB] STEP 3: Recreating dropped tables...")
+                async with engine.begin() as conn:
+                    await conn.run_sync(Base.metadata.create_all)
+                print("[DB] ✓ All tables finalized")
+            except Exception as e:
+                print(f"[DB] ⚠️  Error running PostgreSQL migrations: {str(e)}")
+                import traceback
+                print(traceback.format_exc())
+        
         print("✓ Database tables ready")
         
         # Seed default data (categories and books)
-        async with AsyncSessionLocal() as session:
-            await seed_default_data(session)
-        print("✓ Default data seeded")
+        try:
+            async with AsyncSessionLocal() as session:
+                await seed_default_data(session)
+            print("✓ Default data seeded")
+        except Exception as e:
+            print(f"[DB] ⚠️  Error seeding data: {str(e)}")
         
         # Start daily backup task
-        backup_task = asyncio.create_task(daily_backup_task())
-        print("✓ Daily backup task started")
+        try:
+            backup_task = asyncio.create_task(daily_backup_task())
+            print("✓ Daily backup task started")
+        except Exception as e:
+            print(f"[DB] ⚠️  Error starting backup task: {str(e)}")
         
         print("✅ ACT Gen-1 API is ready!\n")
     except Exception as e:
-        print(f"⚠️ Database initialization error: {str(e)}")
+        print(f"⚠️ Unexpected error during API initialization: {str(e)}")
+        import traceback
+        print(traceback.format_exc())
         print("⚠️ API will start in limited mode (no persistent data)")
     
     yield
@@ -109,6 +150,68 @@ app.add_middleware(
 @app.get("/health")
 async def health():
     return {"status": "ok", "app": settings.APP_NAME}
+
+
+@app.get("/health/db")
+async def health_db():
+    """Comprehensive database diagnostic endpoint"""
+    result = {
+        "status": "unknown",
+        "database_type": "unknown",
+        "connection": False,
+        "tables": [],
+        "users_table_columns": [],
+        "error": None
+    }
+    
+    try:
+        # Detect database type
+        if "sqlite" in settings.DATABASE_URL.lower():
+            result["database_type"] = "SQLite"
+        elif "postgresql" in settings.DATABASE_URL.lower():
+            result["database_type"] = "PostgreSQL"
+        else:
+            result["database_type"] = "Unknown"
+        
+        # Try to connect
+        async with engine.begin() as conn:
+            # Test connection
+            await conn.execute(text("SELECT 1"))
+            result["connection"] = True
+            
+            # Get all tables
+            if result["database_type"] == "PostgreSQL":
+                table_query = """
+                    SELECT table_name FROM information_schema.tables 
+                    WHERE table_schema = 'public'
+                """
+            else:  # SQLite
+                table_query = "SELECT name FROM sqlite_master WHERE type='table'"
+            
+            tables_result = await conn.execute(text(table_query))
+            result["tables"] = [row[0] for row in tables_result.fetchall()]
+            
+            # Get users table columns
+            if "users" in result["tables"]:
+                if result["database_type"] == "PostgreSQL":
+                    cols_query = """
+                        SELECT column_name, data_type, is_nullable, column_default
+                        FROM information_schema.columns 
+                        WHERE table_name = 'users'
+                    """
+                else:  # SQLite
+                    cols_query = "PRAGMA table_info(users)"
+                
+                cols_result = await conn.execute(text(cols_query))
+                result["users_table_columns"] = [row[0] for row in cols_result.fetchall()]
+        
+        result["status"] = "ok"
+        return result
+        
+    except Exception as e:
+        result["status"] = "error"
+        result["error"] = str(e)
+        return result
 
 
 # Include all routers

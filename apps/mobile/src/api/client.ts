@@ -17,16 +17,22 @@ const getBaseURL = () => {
     return process.env.EXPO_PUBLIC_API_BASE_URL;
   }
   
-  // Default URLs based on platform
+  // For production builds, always use production API
+  // Only use local URLs during development with emulators
+  if (!__DEV__) {
+    return PRODUCTION_API_URL;
+  }
+  
+  // Development mode - use local URLs for emulators
   if (Platform.OS === 'android') {
-    // For Android emulator - use local development by default
+    // For Android emulator - use local development
     return LOCAL_API_URL;
   } else if (Platform.OS === 'ios') {
-    // For iOS simulator - use local development by default
+    // For iOS simulator - use local development
     return LOCAL_API_URL;
   }
   
-  // For web or physical devices - use production by default
+  // For web or fallback - use production
   return PRODUCTION_API_URL;
 };
 
