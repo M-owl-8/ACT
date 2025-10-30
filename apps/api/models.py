@@ -189,7 +189,7 @@ class Goal(Base):
 
 
 class Book(Base):
-    """Books with comprehensive tracking for reading progress"""
+    """Books library"""
     __tablename__ = "books"
     
     id = Column(Integer, primary_key=True, index=True)
@@ -197,21 +197,15 @@ class Book(Base):
     author = Column(String, nullable=True)
     cover_url = Column(String, nullable=True)
     summary = Column(Text, nullable=True)
-    key_takeaways = Column(Text, nullable=True)  # JSON array of strings
+    key_takeaways = Column(Text, nullable=True)
     genre = Column(String, nullable=True)
-    isbn = Column(String, nullable=True, index=True)
-    
-    # Comprehensive tracking
+    isbn = Column(String, nullable=True)
     total_pages = Column(Integer, nullable=True)
     total_chapters = Column(Integer, nullable=True)
     is_user_created = Column(Boolean, default=False, nullable=False)
-    
-    # Multi-language support for PDF uploads
-    language_code = Column(String, default="en", nullable=False, index=True)  # en, ru, uz
-    file_path = Column(String, nullable=True, index=True)  # e.g., "en/book_1.pdf"
-    file_size = Column(Integer, nullable=True)  # bytes
-    
-    # Ordering for library books
+    language_code = Column(String, default="en", nullable=False, index=True)
+    file_path = Column(String, nullable=True)
+    file_size = Column(Integer, nullable=True)
     order_index = Column(Integer, default=0, nullable=False, index=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     

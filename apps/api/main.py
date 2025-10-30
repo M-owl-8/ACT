@@ -2,6 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
+from sqlalchemy import text
 
 from config import settings
 from db import engine, Base, AsyncSessionLocal
@@ -32,8 +33,15 @@ async def lifespan(app: FastAPI):
     backup_task = None
     
     try:
-        # Create tables
+        # Create tables (or migrate existing ones)
         async with engine.begin() as conn:
+            # For PostgreSQL, drop and recreate books table to fix schema issues
+            if "postgresql" in settings.DATABASE_URL.lower():
+                try:
+                    await conn.execute(text("DROP TABLE IF EXISTS books CASCADE"))
+                except Exception as e:
+                    print(f"[DB] Note: Could not drop books table: {str(e)}")
+            
             await conn.run_sync(Base.metadata.create_all)
         print("✓ Database tables ready")
         
