@@ -70,7 +70,7 @@ async def lifespan(app: FastAPI):
                     try:
                         await conn.execute(text("""
                             ALTER TABLE users 
-                            ADD COLUMN IF NOT EXISTS recovery_keyword VARCHAR NOT NULL
+                            ADD COLUMN IF NOT EXISTS recovery_keyword VARCHAR NOT NULL DEFAULT 'not_set'
                         """))
                         print("[DB] ✓ Recovery keyword column verified in users table")
                     except Exception as e:
