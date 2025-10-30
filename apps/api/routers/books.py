@@ -108,7 +108,6 @@ async def create_book(
     User-created books are separate from library books
     """
     book = Book(
-        user_id=current_user.id,
         title=book_data.title,
         author=book_data.author,
         cover_url=book_data.cover_url,
