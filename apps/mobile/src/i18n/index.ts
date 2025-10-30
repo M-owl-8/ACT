@@ -136,37 +136,9 @@ const resources = {
       passwordPlaceholder: 'Enter password',
       confirmPasswordPlaceholder: 'Confirm password',
 
-      // Books
-      financialLiteracy: 'Financial Literacy',
-      booksSubtitle: 'Learn and grow your financial knowledge',
-      bookLibrary: 'Book Library',
-      inProgress: 'In Progress',
-      completionRate: 'Completion',
-      failedToLoadBooks: 'Failed to load books',
-      failedToLoadBook: 'Failed to load book details',
-      yourProgress: 'Your Progress',
-      bookStatus_not_started: 'Not Started',
-      bookStatus_in_progress: 'In Progress',
-      bookStatus_done: 'Completed',
-      startReading: 'Start Reading',
-      updateProgress: 'Update Progress',
-      markAsComplete: 'Mark as Complete',
-      markAsCompleteConfirm: 'Are you sure you want to mark this book as complete?',
-      bookCompleted: 'Book Completed!',
-      progressUpdated: 'Progress updated successfully',
-      failedToUpdateProgress: 'Failed to update progress',
-      enterProgressPercent: 'Enter progress percentage (0-100)',
-      invalidProgress: 'Please enter a valid percentage between 0 and 100',
-      by: 'by',
-      summary: 'Summary',
-      keyTakeaways: 'Key Takeaways',
-
-      // Book Titles - Library
-      book_richestManInBabylon: 'The Richest Man in Babylon',
-      book_atomicHabits: 'Atomic Habits',
-      book_richDadPoorDad: 'Rich Dad Poor Dad',
-
-      // Book Titles - Recommended
+      // Books - Recommended books on goals page
+      recommendedBooks: 'Recommended',
+      recommendedBooksDescription: 'Books we recommend for your financial growth',
       book_intelligentInvestor: 'The Intelligent Investor',
       book_randomWallStreet: 'A Random Walk Down Wall Street',
       book_littleBookCommonSense: 'The Little Book of Common Sense Investing',
@@ -184,16 +156,6 @@ const resources = {
       book_earlyRetirementExtreme: 'Early Retirement Extreme',
       book_smartestMoneyBook: 'The Smartest Money Book You\'ll Ever Read',
       book_fooledRandomness: 'Fooled by Randomness',
-      book_behavioralInvestor: 'The Behavioral Investor',
-
-      // Books Sections
-      libraryBooks: 'Library',
-      recommendedBooks: 'Recommended',
-      libraryBooksDescription: 'Your personal library of financial books',
-      recommendedBooksDescription: 'Books we recommend for your financial growth',
-      yourReadingProgress: 'Track your reading progress',
-      comingSoon: 'Coming Soon',
-      moreInfo: 'More Info',
 
       // Common
       loading: 'Loading...',
@@ -801,40 +763,9 @@ const resources = {
       passwordPlaceholder: 'Введите пароль',
       confirmPasswordPlaceholder: 'Подтвердите пароль',
 
-      // Books
-      financialLiteracy: 'Финансовая грамотность',
-      booksSubtitle: 'Учитесь и развивайте финансовые знания',
-      bookLibrary: 'Библиотека книг',
-      inProgress: 'В процессе',
-      completionRate: 'Завершено',
-      failedToLoadBooks: 'Не удалось загрузить книги',
-      failedToLoadBook: 'Не удалось загрузить детали книги',
-      yourProgress: 'Ваш прогресс',
-      bookStatus_not_started: 'Не начато',
-      bookStatus_in_progress: 'В процессе',
-      bookStatus_done: 'Завершено',
-      startReading: 'Начать чтение',
-      updateProgress: 'Обновить прогресс',
-      markAsComplete: 'Отметить завершенным',
-      markAsCompleteConfirm: 'Вы уверены, что хотите отметить эту книгу как завершенную?',
-      bookCompleted: 'Книга завершена!',
-      progressUpdated: 'Прогресс успешно обновлен',
-      failedToUpdateProgress: 'Не удалось обновить прогресс',
-      enterProgressPercent: 'Введите процент прогресса (0-100)',
-      invalidProgress: 'Введите корректный процент от 0 до 100',
-      by: 'автор',
-      summary: 'Краткое содержание',
-      keyTakeaways: 'Ключевые выводы',
-      read: 'Читать',
-      failedToDownloadBook: 'Не удалось загрузить книгу',
-      retry: 'Повторить',
-
-      // Book Titles - Library
-      book_richestManInBabylon: 'Самый богатый человек в Вавилоне',
-      book_atomicHabits: 'Атомные привычки',
-      book_richDadPoorDad: 'Богатый папа, бедный папа',
-
-      // Book Titles - Recommended
+      // Books - Recommended books on goals page
+      recommendedBooks: 'Рекомендуемые',
+      recommendedBooksDescription: 'Книги, которые мы рекомендуем для вашего финансового роста',
       book_intelligentInvestor: 'Умный инвестор',
       book_randomWallStreet: 'Случайная прогулка по Уолл-Стрит',
       book_littleBookCommonSense: 'Маленькая книга здравого смысла инвестирования',
@@ -852,16 +783,6 @@ const resources = {
       book_earlyRetirementExtreme: 'Экстремальный ранний выход на пенсию',
       book_smartestMoneyBook: 'Самая умная книга о деньгах',
       book_fooledRandomness: 'Обманутые случайностью',
-      book_behavioralInvestor: 'Поведенческий инвестор',
-
-      // Books Sections
-      libraryBooks: 'Библиотека',
-      recommendedBooks: 'Рекомендуемые',
-      libraryBooksDescription: 'Ваша личная библиотека финансовых книг',
-      recommendedBooksDescription: 'Книги, которые мы рекомендуем для вашего финансового роста',
-      yourReadingProgress: 'Отслеживайте ваш прогресс чтения',
-      comingSoon: 'Скоро',
-      moreInfo: 'Подробнее',
 
       // Currency Selection (Signup)
       selectCurrencyForAccount: 'Выберите Вашу Валюту',
@@ -1315,40 +1236,9 @@ const resources = {
       passwordPlaceholder: 'Parolni kiriting',
       confirmPasswordPlaceholder: 'Parolni tasdiqlang',
 
-      // Books
-      financialLiteracy: 'Moliyaviy savodxonlik',
-      booksSubtitle: 'O\'rganing va moliyaviy bilimingizni oshiring',
-      bookLibrary: 'Kitoblar kutubxonasi',
-      inProgress: 'Jarayonda',
-      completionRate: 'Tugallangan',
-      failedToLoadBooks: 'Kitoblarni yuklash amalga oshmadi',
-      failedToLoadBook: 'Kitob tafsilotlarini yuklash amalga oshmadi',
-      yourProgress: 'Sizning progressingiz',
-      bookStatus_not_started: 'Boshlanmagan',
-      bookStatus_in_progress: 'Jarayonda',
-      bookStatus_done: 'Tugallangan',
-      startReading: 'O\'qishni boshlash',
-      updateProgress: 'Progressni yangilash',
-      markAsComplete: 'Tugallangan deb belgilash',
-      markAsCompleteConfirm: 'Ushbu kitobni tugallangan deb belgilamoqchimisiz?',
-      bookCompleted: 'Kitob tugallandi!',
-      progressUpdated: 'Progress muvaffaqiyatli yangilandi',
-      failedToUpdateProgress: 'Progressni yangilash amalga oshmadi',
-      enterProgressPercent: 'Progress foizini kiriting (0-100)',
-      invalidProgress: '0 dan 100 gacha bo\'lgan to\'g\'ri foizni kiriting',
-      by: 'muallif',
-      summary: 'Qisqacha mazmuni',
-      keyTakeaways: 'Asosiy xulosalar',
-      read: 'O\'qish',
-      failedToDownloadBook: 'Kitobni yuklab olish muvaffaq bo\'lmadi',
-      retry: 'Qayta urinish',
-
-      // Book Titles - Library
-      book_richestManInBabylon: 'Bobilonda eng boy odam',
-      book_atomicHabits: 'Atomik odatlar',
-      book_richDadPoorDad: 'Boʻyak ota, xuddi ota',
-
-      // Book Titles - Recommended
+      // Books - Recommended books on goals page
+      recommendedBooks: 'Tavsiya qilingan',
+      recommendedBooksDescription: 'Sizning moliyaviy o\'sishingiz uchun tavsiya qiladigan kitoblar',
       book_intelligentInvestor: 'Aqlli investor',
       book_randomWallStreet: 'Uoll-Strit boʻylab tasodifiy yuguruv',
       book_littleBookCommonSense: 'Investisiyalashtirish boʻyicha sog\'lik fikri haqidagi kichik kitob',
@@ -1366,16 +1256,6 @@ const resources = {
       book_earlyRetirementExtreme: 'Ekstremaldagi erta pensiyaga chiqish',
       book_smartestMoneyBook: 'Eng aqlli pul kitob',
       book_fooledRandomness: 'Tasodifiylik bilan aldatilgan',
-      book_behavioralInvestor: 'Harakatli investor',
-
-      // Books Sections
-      libraryBooks: 'Kutubxona',
-      recommendedBooks: 'Tavsiya qilingan',
-      libraryBooksDescription: 'Sizning molliyaviy kitoblarni shaxsiy kutubxonasi',
-      recommendedBooksDescription: 'Sizning moliyaviy o\'sishingiz uchun tavsiya qiladigan kitoblar',
-      yourReadingProgress: 'O\'qish progressingizni kuzatib boring',
-      comingSoon: 'Tez orada',
-      moreInfo: 'Batafsil',
 
       // Currency Selection (Signup)
       selectCurrencyForAccount: 'Valyutani tanlang',
