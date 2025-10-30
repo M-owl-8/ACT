@@ -414,8 +414,7 @@ async def seed_multilingual_books(db: AsyncSession):
             result = await db.execute(
                 select(Book).where(
                     Book.title == book_data["title"],
-                    Book.language_code == lang_code,
-                    Book.user_id == None  # Library books only
+                    Book.language_code == lang_code
                 )
             )
             existing = result.scalar_one_or_none()
@@ -432,8 +431,7 @@ async def seed_multilingual_books(db: AsyncSession):
                     language_code=lang_code,
                     file_path=book_data.get("file_path"),
                     order_index=book_group["order_index"],
-                    is_user_created=False,
-                    user_id=None  # Library book
+                    is_user_created=False
                 )
                 db.add(book)
                 books_created += 1
@@ -450,8 +448,7 @@ async def seed_books(db: AsyncSession):
         # Check if book already exists
         result = await db.execute(
             select(Book).where(
-                Book.title == book_data["title"],
-                Book.user_id == None  # Library books only
+                Book.title == book_data["title"]
             )
         )
         existing = result.scalar_one_or_none()
@@ -460,7 +457,6 @@ async def seed_books(db: AsyncSession):
             book = Book(
                 **book_data,
                 is_user_created=False,
-                user_id=None,  # Library book
                 language_code="en"  # These are in English
             )
             db.add(book)

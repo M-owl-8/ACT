@@ -193,7 +193,6 @@ class Book(Base):
     __tablename__ = "books"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)  # NULL = library book, NOT NULL = user-created
     title = Column(String, nullable=False)
     author = Column(String, nullable=True)
     cover_url = Column(String, nullable=True)
