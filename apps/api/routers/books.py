@@ -149,17 +149,33 @@ async def create_book(
 @router.get("/", response_model=List[BookOut])
 async def list_books(
     status_filter: Optional[str] = Query(None),  # not_started, in_progress, done
+    lang: Optional[str] = Query(None),  # Optionally override user's language (en, ru, uz)
+    include_all_languages: bool = Query(False),  # If true, return books in all languages
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
     List all books (library + user-created) with progress
-    Optionally filter by reading status
+    - Automatically filters by user's preferred language unless include_all_languages=true
+    - Optionally filter by reading status
+    - Can override language with lang parameter
     """
-    # Get all books ordered by order_index, then by creation date
-    result = await db.execute(
-        select(Book).order_by(Book.order_index, Book.created_at)
-    )
+    # Determine which language to filter by
+    book_language = lang or current_user.language  # Use provided lang or user's preference
+    
+    if not include_all_languages:
+        # Filter by language if not requesting all languages
+        result = await db.execute(
+            select(Book)
+            .where(Book.language_code == book_language)
+            .order_by(Book.order_index, Book.created_at)
+        )
+    else:
+        # Get all books regardless of language
+        result = await db.execute(
+            select(Book).order_by(Book.order_index, Book.created_at)
+        )
+    
     books = result.scalars().all()
     
     # Get user's progress for all books
@@ -531,15 +547,27 @@ async def update_book_progress(
 # ===== STATISTICS =====
 @router.get("/stats/overview", response_model=BookStatsOut)
 async def get_reading_stats(
+    lang: Optional[str] = Query(None),  # Optionally override user's language
+    include_all_languages: bool = Query(False),  # If true, include all language books
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Get comprehensive reading statistics
     Includes completion rate, time spent, streaks, and achievements
+    - Filters by user's language preference unless include_all_languages=true
     """
-    # Get all books
-    book_result = await db.execute(select(Book))
+    # Determine language filter
+    book_language = lang or current_user.language
+    
+    # Get books (filtered by language)
+    if include_all_languages:
+        book_result = await db.execute(select(Book))
+    else:
+        book_result = await db.execute(
+            select(Book).where(Book.language_code == book_language)
+        )
+    
     all_books = book_result.scalars().all()
     total_books = len(all_books)
     
@@ -629,6 +657,144 @@ async def get_reading_stats(
     if reading_streak >= 30:
         achievements.append("⭐ Month Streak")
     if total_time_minutes >= 3600:  # 60 hours
+        achievements.append("⏱️ 60 Hours Read")
+    
+    return BookStatsOut(
+        total_books=total_books,
+        not_started=not_started,
+        in_progress=in_progress,
+        completed=completed,
+        completion_rate=completion_rate,
+        average_progress=avg_progress,
+        total_time_minutes=total_time_minutes,
+        reading_streak=reading_streak,
+        recent_activity=recent_activity,
+        achievements=achievements
+    )
+
+
+# Alias endpoint for mobile app compatibility
+@router.get("/progress/stats", response_model=BookStatsOut)
+async def get_reading_stats_alias(
+    lang: Optional[str] = Query(None),
+    include_all_languages: bool = Query(False),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Alias for /stats/overview endpoint
+    Mobile app calls this endpoint path
+    """
+    # Determine language filter
+    book_language = lang or current_user.language
+    
+    # Get books (filtered by language)
+    if include_all_languages:
+        book_result = await db.execute(select(Book))
+    else:
+        book_result = await db.execute(
+            select(Book).where(Book.language_code == book_language)
+        )
+    
+    all_books = book_result.scalars().all()
+    total_books = len(all_books)
+    
+    # Get user's progress for all books
+    progress_result = await db.execute(
+        select(UserBookProgress).where(
+            UserBookProgress.user_id == current_user.id
+        )
+    )
+    all_progress = progress_result.scalars().all()
+    
+    # Count by status
+    not_started = sum(1 for p in all_progress if p.status == BookStatus.not_started)
+    in_progress = sum(1 for p in all_progress if p.status == BookStatus.in_progress)
+    completed = sum(1 for p in all_progress if p.status == BookStatus.done)
+    
+    # Add books not started
+    not_started += max(0, total_books - len(all_progress))
+    
+    completion_rate = round((completed / total_books) * 100, 2) if total_books > 0 else 0
+    
+    # Average progress
+    avg_progress = 0
+    if all_progress:
+        avg_progress = round(sum(p.progress_percent for p in all_progress) / len(all_progress), 2)
+    
+    # Total time spent reading
+    sessions_result = await db.execute(
+        select(ReadingSession).where(
+            ReadingSession.user_id == current_user.id
+        )
+    )
+    all_sessions = sessions_result.scalars().all()
+    total_time_minutes = sum(s.time_spent_minutes for s in all_sessions if s.time_spent_minutes)
+    
+    # Calculate reading streak
+    if not all_sessions:
+        reading_streak = 0
+    else:
+        # Sort sessions by date descending
+        sorted_sessions = sorted([s for s in all_sessions if s.session_date], key=lambda s: s.session_date, reverse=True)
+        
+        if not sorted_sessions:
+            reading_streak = 0
+        else:
+            reading_streak = 1
+            current_date = sorted_sessions[0].session_date
+            
+            for session in sorted_sessions[1:]:
+                session_date = session.session_date
+                expected_prev_date = current_date - timedelta(days=1)
+                
+                if session_date == expected_prev_date:
+                    reading_streak += 1
+                    current_date = session_date
+                elif session_date < expected_prev_date:
+                    break
+                else:
+                    current_date = session_date
+                    reading_streak = 1
+    
+    # Get most recent book activity
+    recent_activity = None
+    if all_progress:
+        most_recent = max(
+            [p for p in all_progress if p.updated_at],
+            key=lambda p: p.updated_at,
+            default=None
+        )
+        if most_recent:
+            book = await db.execute(
+                select(Book).where(Book.id == most_recent.book_id)
+            )
+            book_obj = book.scalar_one_or_none()
+            if book_obj:
+                recent_activity = {
+                    "book_title": book_obj.title,
+                    "book_id": book_obj.id,
+                    "status": most_recent.status.value,
+                    "progress_percent": most_recent.progress_percent,
+                    "time_today": 0,
+                    "updated_at": most_recent.updated_at.isoformat() if most_recent.updated_at else None
+                }
+    
+    # Achievement badges
+    achievements = []
+    if completed >= 1:
+        achievements.append("📖 First Book")
+    if completed >= 5:
+        achievements.append("📚 5 Books")
+    if completed >= 10:
+        achievements.append("🎓 10 Books")
+    if completion_rate == 100:
+        achievements.append("👑 Master Reader")
+    if reading_streak >= 7:
+        achievements.append("🔥 Week Streak")
+    if reading_streak >= 30:
+        achievements.append("⭐ Month Streak")
+    if total_time_minutes >= 3600:
         achievements.append("⏱️ 60 Hours Read")
     
     return BookStatsOut(

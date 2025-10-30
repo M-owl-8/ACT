@@ -66,13 +66,25 @@ if settings.DATABASE_URL.startswith("postgresql://"):
     settings.DATABASE_URL = settings.DATABASE_URL.replace(
         "postgresql://", "postgresql+asyncpg://", 1
     )
-    print("[DB] Using internal Railway connection (SSL disabled)")
+    # For internal Railway connections, disable SSL to avoid ALPN negotiation errors
+    if "sslmode" not in settings.DATABASE_URL.lower():
+        if "?" in settings.DATABASE_URL:
+            settings.DATABASE_URL = settings.DATABASE_URL + "&sslmode=disable"
+        else:
+            settings.DATABASE_URL = settings.DATABASE_URL + "?sslmode=disable"
+    print("[DB] Using internal Railway connection (SSL disabled via sslmode=disable)")
 elif settings.DATABASE_URL.startswith("postgres://"):
     print("[DB] Converting postgres:// to postgresql+asyncpg://")
     # Handle old postgres:// format as well
     settings.DATABASE_URL = settings.DATABASE_URL.replace(
         "postgres://", "postgresql+asyncpg://", 1
     )
-    print("[DB] Using internal Railway connection (SSL disabled)")
+    # For internal Railway connections, disable SSL to avoid ALPN negotiation errors
+    if "sslmode" not in settings.DATABASE_URL.lower():
+        if "?" in settings.DATABASE_URL:
+            settings.DATABASE_URL = settings.DATABASE_URL + "&sslmode=disable"
+        else:
+            settings.DATABASE_URL = settings.DATABASE_URL + "?sslmode=disable"
+    print("[DB] Using internal Railway connection (SSL disabled via sslmode=disable)")
 
 print(f"[DB] Final DATABASE_URL: {settings.DATABASE_URL[:60]}...")

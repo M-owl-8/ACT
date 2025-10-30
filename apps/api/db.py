@@ -28,11 +28,10 @@ elif "postgresql" in db_url.lower() or "asyncpg" in db_url.lower():
     print("[DB] PostgreSQL detected - using NullPool (async-safe)")
     # For async engines, we must use NullPool to avoid blocking issues
     # Connection pooling is handled by the database driver (asyncpg)
-    # Railway internal connections don't need SSL verification
+    # SSL configuration is handled in config.py
     pool_config = {
         "poolclass": NullPool,
         "connect_args": {
-            "ssl": False,
             "server_settings": {
                 "application_name": "act_api"
             }

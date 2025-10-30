@@ -14,10 +14,13 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { createEntry } from "../api/entries";
+import { useAuthStore } from "../store/auth";
+import { formatCurrency } from "../utils/currencyFormatter";
 import { SAMURAI_COLORS, SAMURAI_PATTERNS } from "../theme/SAMURAI_COLORS";
 
 export default function AddIncomeScreen({ navigation, route }: any) {
   const { onSave } = route.params || {};
+  const { user } = useAuthStore();
 
   const [source, setSource] = useState("");
   const [amount, setAmount] = useState("");
@@ -45,7 +48,7 @@ export default function AddIncomeScreen({ navigation, route }: any) {
         amount: amountNum,
         note: source.trim() || null,
         booked_at: date.toISOString(),
-        currency: "USD",
+        currency: user?.currency || "USD",
       });
 
       Alert.alert("Success", "Income added successfully", [

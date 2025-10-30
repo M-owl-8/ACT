@@ -12,6 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { api } from '../api/client';
+import { useAuthStore } from '../store/auth';
+import { formatCurrency } from '../utils/currencyFormatter';
 
 const { width, height } = Dimensions.get('window');
 
@@ -31,6 +33,7 @@ interface Transaction {
 }
 
 export default function CalendarScreen() {
+  const { user } = useAuthStore();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarDays, setCalendarDays] = useState<CalendarDay[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -265,7 +268,7 @@ export default function CalendarScreen() {
                     styles.amount,
                     transaction.type === 'income' ? styles.incomeAmount : styles.expenseAmount
                   ]}>
-                    {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)}
+                    {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount, user?.currency || 'USD', 2)}
                   </Text>
                 </View>
               ))

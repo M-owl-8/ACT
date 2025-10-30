@@ -1,0 +1,190 @@
+=============================================================================
+                    BACKEND RUN - EXACT CODE
+=============================================================================
+
+OPTION 1: RECOMMENDED - ONE COMMAND (PowerShell)
+─────────────────────────────────────────────────────────────────────────
+
+Navigate to project root, then copy and paste this exact command:
+
+cd c:\work\act-gen1 && .\RUN_BACKEND.ps1
+
+That's it! The script handles everything.
+
+
+OPTION 2: STEP-BY-STEP COMMANDS (PowerShell)
+─────────────────────────────────────────────────────────────────────────
+
+Step 1: Navigate to API directory
+───────────────────────────────────
+cd c:\work\act-gen1\apps\api
+
+
+Step 2: Activate virtual environment (if not already)
+──────────────────────────────────────────────────────
+.\\.venv\Scripts\activate
+
+
+Step 3: Ensure dependencies are installed
+──────────────────────────────────────────
+.\.venv\Scripts\pip install -q -r requirements.txt
+
+
+Step 4: Start the backend server
+────────────────────────────────
+.\.venv\Scripts\uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+
+Expected Output:
+────────────────
+INFO:     Will watch for changes in these directories...
+INFO:     Uvicorn running on http://0.0.0.0:8000
+INFO:     Started reloader process
+✅ ACT Gen-1 API is ready!
+
+
+OPTION 3: SINGLE LINE COMMAND (Full path)
+──────────────────────────────────────────────────────────────────────────
+
+c:\work\act-gen1\apps\api\.venv\Scripts\uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+
+OPTION 4: FOR MAC/LINUX
+──────────────────────────────────────────────────────────────────────────
+
+cd /work/act-gen1/apps/api
+source .venv/bin/activate
+python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+
+AFTER STARTING - TEST THE BACKEND
+──────────────────────────────────────────────────────────────────────────
+
+Open these in your browser:
+
+1. API Documentation (Swagger UI):
+   http://localhost:8000/docs
+
+2. Health Check:
+   http://localhost:8000/health
+
+3. Alternative Documentation:
+   http://localhost:8000/redoc
+
+
+WHAT THE BACKEND DOES
+──────────────────────────────────────────────────────────────────────────
+
+✅ Starts FastAPI server on port 8000
+✅ Initializes SQLite database
+✅ Loads 18 default expense categories
+✅ Loads 20 educational books
+✅ Enables auto-reload on code changes
+✅ Starts automatic backup service
+✅ Enables CORS for mobile app
+✅ Configures Firebase integration
+
+
+CONNECTING MOBILE APP TO BACKEND
+──────────────────────────────────────────────────────────────────────────
+
+1. Find your machine IP:
+   Windows: Run "ipconfig" in command prompt, look for "IPv4 Address"
+   Mac/Linux: Run "ifconfig" or "ip addr"
+
+2. Update mobile app's .env file:
+   EXPO_PUBLIC_API_BASE_URL=http://YOUR_IP:8000
+   Example: http://192.168.1.100:8000
+
+3. Restart mobile app (press 'r' in terminal)
+
+4. Try login/register - it should work!
+
+
+STOPPING THE BACKEND
+──────────────────────────────────────────────────────────────────────────
+
+In the terminal running the backend, press:
+Ctrl + C
+
+The server will shutdown gracefully and you'll see:
+🛑 Shutting down ACT Gen-1 API...
+✓ Cleanup complete
+
+
+USEFUL ENVIRONMENT SETUP (Optional)
+──────────────────────────────────────────────────────────────────────────
+
+If you want to use a different database:
+
+Set DATABASE_URL environment variable:
+Windows (PowerShell):
+$env:DATABASE_URL="sqlite+aiosqlite:///./dev.db"
+
+Mac/Linux:
+export DATABASE_URL="sqlite+aiosqlite:///./dev.db"
+
+For PostgreSQL production:
+$env:DATABASE_URL="postgresql+asyncpg://user:pass@host:5432/dbname"
+
+
+TROUBLESHOOTING
+──────────────────────────────────────────────────────────────────────────
+
+Issue: "No module named 'uvicorn'"
+Fix: 
+  .\.venv\Scripts\pip install uvicorn fastapi
+
+Issue: "Port 8000 already in use"
+Fix:
+  Change port: .\.venv\Scripts\uvicorn main:app --port 8001
+
+Issue: "ModuleNotFoundError"
+Fix:
+  Reinstall: .\.venv\Scripts\pip install -r requirements.txt --force-reinstall
+
+Issue: "Database is locked"
+Fix:
+  Delete dev.db and restart (it will recreate):
+  Remove-Item c:\work\act-gen1\apps\api\dev.db
+
+
+VERIFY IT'S WORKING
+──────────────────────────────────────────────────────────────────────────
+
+✅ Check 1: Terminal shows "Uvicorn running on http://0.0.0.0:8000"
+✅ Check 2: Browser can access http://localhost:8000/docs
+✅ Check 3: Browser shows {"status": "ok"} at http://localhost:8000/health
+✅ Check 4: Console shows "✓ Database tables ready"
+✅ Check 5: Console shows "✓ Default data seeded"
+✅ Check 6: Mobile app can register/login
+
+If all 6 checks pass, backend is working perfectly!
+
+
+PRODUCTION BUILD
+──────────────────────────────────────────────────────────────────────────
+
+For production (multiple workers, no reload):
+
+.\.venv\Scripts\uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
+
+
+With Docker (if installed):
+
+docker build -t act-gen1-api .
+docker run -p 8000:8000 act-gen1-api
+
+
+SUMMARY
+──────────────────────────────────────────────────────────────────────────
+
+Quick Start:  cd c:\work\act-gen1 && .\RUN_BACKEND.ps1
+Manual:       cd c:\work\act-gen1\apps\api && .\\.venv\Scripts\uvicorn main:app --port 8000 --reload
+Test:         Open http://localhost:8000/docs in browser
+Connect App:  Update mobile .env with your IP:8000
+Stop:         Press Ctrl+C in terminal
+
+═════════════════════════════════════════════════════════════════════════
+
+That's it! Your backend is ready to go! 🚀

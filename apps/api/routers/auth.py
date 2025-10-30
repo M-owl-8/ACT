@@ -45,7 +45,8 @@ async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)):
             email=payload.email, 
             password_hash=password_hash,
             recovery_keyword=recovery_keyword_hash,  # Store hashed recovery keyword
-            is_admin=is_first_user
+            is_admin=is_first_user,
+            currency=payload.currency  # Set currency selected during signup
         )
         db.add(user)
         await db.commit()

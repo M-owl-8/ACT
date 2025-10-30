@@ -61,7 +61,7 @@ export default ({ config }) => {
       eas: {
         projectId: process.env.EXPO_PROJECT_ID || "0d2ff065-1b12-4766-b547-3bdeea01cb0a"
       },
-      apiUrl: process.env.API_URL || "http://localhost:8000"
+      apiUrl: process.env.EXPO_PUBLIC_API_BASE_URL || "https://act-production-8080.up.railway.app"
     },
     owner: process.env.EXPO_OWNER || "owl_wilde"
   };

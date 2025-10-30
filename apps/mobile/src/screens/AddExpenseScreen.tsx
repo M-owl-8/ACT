@@ -17,7 +17,11 @@ import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createEntry } from "../api/entries";
-import { getCategories, Category, ExpenseType } from "../api/categories";
+import { getCategories, createCategory, Category, ExpenseType } from "../api/categories";
+import { useAuthStore } from "../store/auth";
+import { useGoalsStore, Goal } from "../store/goals";
+import { api } from "../api/client";
+import { formatCurrency } from "../utils/currencyFormatter";
 import { SAMURAI_COLORS } from "../theme/SAMURAI_COLORS";
 
 const LAST_CATEGORY_KEY = "@last_expense_category";
@@ -31,6 +35,8 @@ interface CategorySection {
 
 export default function AddExpenseScreen({ navigation, route }: any) {
   const { onSave } = route.params || {};
+  const { user } = useAuthStore();
+  const { goals, loadGoals: loadGoalsFromStore } = useGoalsStore();
 
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
@@ -147,6 +153,37 @@ export default function AddExpenseScreen({ navigation, route }: any) {
     }
   };
 
+  const handleOthersCategory = async (expenseType: ExpenseType): Promise<Category | null> => {
+    try {
+      // Check if "Others" category already exists for this expense type
+      const existingOthers = categories.find(
+        cat => cat.name.toLowerCase() === "others" && cat.expense_type === expenseType
+      );
+      
+      if (existingOthers) {
+        return existingOthers;
+      }
+
+      // Create "Others" category if it doesn't exist
+      const newCategory = await createCategory({
+        name: "Others",
+        type: "expense",
+        expense_type: expenseType,
+        color: "#999",
+        icon: "🛒",
+      });
+
+      return newCategory;
+    } catch (error: any) {
+      console.error("Failed to handle Others category:", error);
+      Alert.alert(
+        "Error",
+        error.response?.data?.detail || "Failed to create Others category"
+      );
+      return null;
+    }
+  };
+
   const handleSave = async () => {
     const amountNum = parseFloat(amount);
     if (!amount || isNaN(amountNum) || amountNum <= 0) {
@@ -159,42 +196,86 @@ export default function AddExpenseScreen({ navigation, route }: any) {
       return;
     }
 
-    // Handle placeholder "Others" category
-    if (selectedCategory.id === -1) {
-      Alert.alert(
-        "Others Category Required",
-        "Please create an 'Others' category for this expense type in your settings, or select a specific category.",
-        [{ text: "OK" }]
-      );
-      return;
-    }
-
     setLoading(true);
     try {
+      let categoryId = selectedCategory.id;
+
+      // Handle placeholder "Others" category - create or fetch it
+      if (selectedCategory.id === -1) {
+        const othersCategory = await handleOthersCategory(selectedCategory.expense_type);
+        if (!othersCategory) {
+          setLoading(false);
+          return;
+        }
+        categoryId = othersCategory.id;
+        setSelectedCategory(othersCategory);
+      }
+
       await createEntry({
         type: "expense",
-        category_id: selectedCategory.id,
+        category_id: categoryId,
         amount: amountNum,
         note: note.trim() || null,
         booked_at: date.toISOString(),
-        currency: "USD",
+        currency: user?.currency || "USD",
       });
 
       // Save last used category
       await AsyncStorage.setItem(
         LAST_CATEGORY_KEY,
-        selectedCategory.id.toString()
+        categoryId.toString()
       );
 
-      Alert.alert("Success", "Expense added successfully", [
-        {
-          text: "OK",
-          onPress: () => {
-            if (onSave) onSave();
-            navigation.goBack();
+      // Fetch updated goals to check if any failed due to this expense
+      try {
+        const goalsResponse = await api.get("/motivation/goals");
+        const updatedGoals: Goal[] = goalsResponse.data || [];
+        
+        // Update store with fresh goals
+        await loadGoalsFromStore();
+
+        // Check for newly failed goals
+        const failedGoals = updatedGoals.filter((goal: Goal) => goal.status === "failed");
+        
+        if (failedGoals.length > 0) {
+          const failedGoalNames = failedGoals.map((g: Goal) => `"${g.title}"`).join(", ");
+          Alert.alert(
+            "⚠️ Goal Failed",
+            `Your expense caused ${failedGoals.length > 1 ? "these goals" : "this goal"} to fail: ${failedGoalNames}`,
+            [
+              {
+                text: "OK",
+                onPress: () => {
+                  if (onSave) onSave();
+                  navigation.goBack();
+                },
+              },
+            ]
+          );
+        } else {
+          Alert.alert("Success", "Expense added successfully", [
+            {
+              text: "OK",
+              onPress: () => {
+                if (onSave) onSave();
+                navigation.goBack();
+              },
+            },
+          ]);
+        }
+      } catch (goalError) {
+        // If fetching goals fails, still show success but don't block
+        console.warn("Failed to fetch updated goals:", goalError);
+        Alert.alert("Success", "Expense added successfully", [
+          {
+            text: "OK",
+            onPress: () => {
+              if (onSave) onSave();
+              navigation.goBack();
+            },
           },
-        },
-      ]);
+        ]);
+      }
     } catch (error: any) {
       console.error("Failed to create expense:", error);
       Alert.alert(

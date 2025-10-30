@@ -66,7 +66,7 @@ async def update_goals_for_user(user_id: int, db: AsyncSession, entry_date: date
     Automatically update all active goals for a user based on their entries.
     Called after each entry is created/updated.
     
-    - spend_under goals: Count neutral + excess expenses (exclude mandatory)
+    - spend_under goals: Count neutral + excess expenses (exclude mandatory) and mark as failed if exceeded
     - log_n_days goals: Count days with any entries
     - streak goals: Already handled by streak system
     """
@@ -110,6 +110,10 @@ async def update_goals_for_user(user_id: int, db: AsyncSession, entry_date: date
                 discretionary_total += exp.amount
         
         goal.current_value = discretionary_total
+        
+        # Mark goal as FAILED if spending exceeds target
+        if discretionary_total > goal.target_value:
+            goal.status = GoalStatus.failed
     
     # Get all active log_n_days goals for this user
     result = await db.execute(

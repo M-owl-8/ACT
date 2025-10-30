@@ -291,27 +291,191 @@ async def seed_default_categories(db: AsyncSession):
     print(f"✓ Seeded {len(DEFAULT_CATEGORIES)} default categories")
 
 
+async def seed_multilingual_books(db: AsyncSession):
+    """
+    Seed 3 multilingual books with PDF files in different languages
+    These are the main books that users interact with
+    """
+    multilingual_books = [
+        {
+            "base_title": "The Richest Man in Babylon",
+            "order_index": 1,
+            "books_by_lang": {
+                "en": {
+                    "title": "The Richest Man in Babylon",
+                    "author": "George S. Clason",
+                    "summary": "Ancient wisdom about money management through parables set in ancient Babylon. Teaches fundamental principles of wealth building.",
+                    "key_takeaways": '["Pay yourself first - save at least 10% of income", "Make your money work for you through investments", "Seek advice from those experienced in handling money", "Guard your wealth from loss", "Own your home", "Ensure future income through planning", "Increase your ability to earn"]',
+                    "genre": "Personal Finance",
+                    "total_pages": 247,
+                    "total_chapters": 13,
+                    "file_path": "en/book_1.pdf",
+                },
+                "ru": {
+                    "title": "Самый богатый человек в Вавилоне",
+                    "author": "Джордж С. Клейсон",
+                    "summary": "Древняя мудрость об управлении деньгами через притчи из древнего Вавилона. Учит фундаментальным принципам накопления богатства.",
+                    "key_takeaways": '["Плати себе в первую очередь - сэкономь минимум 10% дохода", "Заставляй свои деньги работать на тебя через инвестиции", "Ищи советы у тех, кто умеет управлять деньгами", "Защищай свое богатство от потерь", "Владей своим домом", "Обеспечивай будущий доход через планирование", "Увеличивай свою способность зарабатывать"]',
+                    "genre": "Персональные финансы",
+                    "total_pages": 247,
+                    "total_chapters": 13,
+                    "file_path": "ru/Book_1.pdf",
+                },
+                "uz": {
+                    "title": "Vavilondagi eng boy odam",
+                    "author": "Jorj S. Kleyson",
+                    "summary": "Qadim Vavilondan olingan hikoyalar orqali pul boshqarish haqida qadimiy donolik. Boylik yig'ishning asosiy tamoyillarini o'retadi.",
+                    "key_takeaways": '["O\'zindan birinchi pul olib qol - kirimning hech bo\'lmaganda 10% tejamondir", "Pullarni sening uchun ishlat investitsiyalar orqali", "Pul boshqarishni bilganlardan maslahat oling", "Yog\'iligingni yo\'qotishdan saqlang", "Sening uyini o\'z nombingizga qilin", "Kelajak daromadini rejalashtirishni tayyorla", "Yig\'iladigan qobiliyatini oshir"]',
+                    "genre": "Moliyaviy o\'sish",
+                    "total_pages": 247,
+                    "total_chapters": 13,
+                    "file_path": "uz/Book_1.pdf",
+                }
+            }
+        },
+        {
+            "base_title": "Atomic Habits",
+            "order_index": 2,
+            "books_by_lang": {
+                "en": {
+                    "title": "Atomic Habits",
+                    "author": "James Clear",
+                    "summary": "Transform your life with tiny habits. Practical strategies for building good habits and breaking bad ones.",
+                    "key_takeaways": '["Make it obvious - design your environment", "Make it attractive - use temptation bundling", "Make it easy - reduce friction", "Make it satisfying - immediate reward", "Compound effect of small improvements", "Identity-based habits work best"]',
+                    "genre": "Self-Help",
+                    "total_pages": 320,
+                    "total_chapters": 37,
+                    "file_path": "en/book_2.pdf",
+                },
+                "ru": {
+                    "title": "Атомные привычки",
+                    "author": "Джеймс Клир",
+                    "summary": "Трансформируй свою жизнь с помощью крошечных привычек. Практические стратегии для создания хороших привычек и избавления от плохих.",
+                    "key_takeaways": '["Сделай это очевидным - создай благоприятную среду", "Сделай это привлекательным - используй связанное искушение", "Сделай это легким - снизь трение", "Сделай это приятным - немедленное вознаграждение", "Кумулятивный эффект малых улучшений", "Привычки, основанные на идентичности, работают лучше всего"]',
+                    "genre": "Саморазвитие",
+                    "total_pages": 320,
+                    "total_chapters": 37,
+                    "file_path": "ru/Book_2.pdf",
+                },
+                "uz": {
+                    "title": "Atomli odatlar",
+                    "author": "Jeyms Klir",
+                    "summary": "O'z hayotingizni kichik odatlar bilan o'zgartirib yuboring. Yaxshi odatlarni shakllantirish va yomon odatlardan qutulish uchun amaliy strategiyalar.",
+                    "key_takeaways": '["Uni aniq qilib bering - muhitingni rejala\\\'shtirib oling", "Uni qiziqarli qilib bering - valajon kelishini ishlating", "Uni oson qilib bering - ishqalanishni kamaytiring", "Uni qoniqtiruvchi qilib bering - darhol mukofot", "Kichik yaxsiliklarning murakkab ta\'siri", "Shaxsiyatga asoslangan odatlar eng yaxshi ishlaydi"]',
+                    "genre": "O\'z-o\'zini rivojlantirish",
+                    "total_pages": 320,
+                    "total_chapters": 37,
+                    "file_path": "uz/Book_2.pdf",
+                }
+            }
+        },
+        {
+            "base_title": "Rich Dad Poor Dad",
+            "order_index": 3,
+            "books_by_lang": {
+                "en": {
+                    "title": "Rich Dad Poor Dad",
+                    "author": "Robert T. Kiyosaki",
+                    "summary": "Contrasts lessons from two father figures about money, assets, and building wealth through financial education.",
+                    "key_takeaways": '["The rich don\'t work for money", "Financial literacy is essential", "Buy assets, not liabilities", "Mind your own business", "Understand taxes and corporations", "Work to learn, not to earn"]',
+                    "genre": "Wealth Building",
+                    "total_pages": 336,
+                    "total_chapters": 10,
+                    "file_path": "en/book_3.pdf",
+                },
+                "ru": {
+                    "title": "Богатый папа, бедный папа",
+                    "author": "Роберт Т. Кийосаки",
+                    "summary": "Контрастирует уроки двух отцов о деньгах, активах и накоплении богатства через финансовое образование.",
+                    "key_takeaways": '["Богатые не работают за деньги", "Финансовая грамотность существенна", "Покупай активы, а не пассивы", "Занимайся своим делом", "Разбирайся в налогах и корпорациях", "Работай, чтобы учиться, а не зарабатывать"]',
+                    "genre": "Накопление богатства",
+                    "total_pages": 336,
+                    "total_chapters": 10,
+                    "file_path": "ru/Book_3.pdf",
+                },
+                "uz": {
+                    "title": "Boy otasi, kambag\'al otasi",
+                    "author": "Robert T. Kiyosaki",
+                    "summary": "Ikki otasining pul, aktivlar va moliyaviy bilim orqali boylik yig\'ish haqidagi darslarini solishtiradi.",
+                    "key_takeaways": '["Boy odamlar pul uchun ishlamaydi", "Moliyaviy savodoborat zarurdir", "Aktivlar sotib oling, passivlar emas", "O\'z biznesini ehtiyot bilan ko\'rib chiq", "Solgalar va korporatsiyalarni tushun", "Ishlash uchun emas, o\'rganish uchun ishlang"]',
+                    "genre": "Boylik yig\'ish",
+                    "total_pages": 336,
+                    "total_chapters": 10,
+                    "file_path": "uz/Book_3.pdf",
+                }
+            }
+        }
+    ]
+    
+    books_created = 0
+    for book_group in multilingual_books:
+        for lang_code, book_data in book_group["books_by_lang"].items():
+            # Check if this book in this language already exists
+            result = await db.execute(
+                select(Book).where(
+                    Book.title == book_data["title"],
+                    Book.language_code == lang_code,
+                    Book.user_id == None  # Library books only
+                )
+            )
+            existing = result.scalar_one_or_none()
+            
+            if not existing:
+                book = Book(
+                    title=book_data["title"],
+                    author=book_data.get("author"),
+                    summary=book_data.get("summary"),
+                    key_takeaways=book_data.get("key_takeaways"),
+                    genre=book_data.get("genre"),
+                    total_pages=book_data.get("total_pages"),
+                    total_chapters=book_data.get("total_chapters"),
+                    language_code=lang_code,
+                    file_path=book_data.get("file_path"),
+                    order_index=book_group["order_index"],
+                    is_user_created=False,
+                    user_id=None  # Library book
+                )
+                db.add(book)
+                books_created += 1
+                print(f"✅ Added book: {book_data['title']} ({lang_code})")
+    
+    await db.commit()
+    if books_created > 0:
+        print(f"✓ Seeded {books_created} multilingual books")
+
+
 async def seed_books(db: AsyncSession):
-    """Seed financial literacy books if they don't exist"""
+    """Seed additional financial literacy books if they don't exist"""
     for book_data in BOOKS_DATA:
         # Check if book already exists
         result = await db.execute(
-            select(Book).where(Book.title == book_data["title"])
+            select(Book).where(
+                Book.title == book_data["title"],
+                Book.user_id == None  # Library books only
+            )
         )
         existing = result.scalar_one_or_none()
         
         if not existing:
-            book = Book(**book_data)
+            book = Book(
+                **book_data,
+                is_user_created=False,
+                user_id=None,  # Library book
+                language_code="en"  # These are in English
+            )
             db.add(book)
     
     await db.commit()
-    print(f"✓ Seeded {len(BOOKS_DATA)} books")
+    additional_books_count = len([b for b in BOOKS_DATA])  # Count added books
+    if additional_books_count > 0:
+        print(f"✓ Seeded {additional_books_count} additional books")
 
 
 async def seed_all(db: AsyncSession):
     """Seed all default data"""
     await seed_default_categories(db)
-    await seed_books(db)
+    await seed_multilingual_books(db)  # Seed 3 main multilingual books first
+    await seed_books(db)  # Seed additional financial books
     print("✓ All seed data loaded successfully")
 
 

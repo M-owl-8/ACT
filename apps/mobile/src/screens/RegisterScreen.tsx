@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, ScrollView, Platform, Modal } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 import { API } from '../api/client';
 import { useAuthStore } from '../store/auth';
 import { useTheme } from '../theme';
@@ -22,6 +23,9 @@ export default function RegisterScreen({ navigation }: any) {
   const { setTokens, fetchProfile } = useAuthStore();
   const { theme } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState<string | null>(null);
+  const [showCurrencyWarning, setShowCurrencyWarning] = useState(false);
+  const [formData, setFormData] = useState<any>(null);
   const password = watch('password');
 
   // Listen for language changes and force re-render
@@ -36,13 +40,39 @@ export default function RegisterScreen({ navigation }: any) {
   }, [i18n]);
 
   const onSubmit = async (data: any) => {
+    // Validate email format before proceeding
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(data.email)) {
+      Alert.alert(t('invalidEmailFormat'), t('invalidEmail'));
+      return;
+    }
+
+    // Verify password and confirm password match
+    if (data.password !== data.confirmPassword) {
+      Alert.alert(t('passwordsDoNotMatch'), t('passwordsDoNotMatch'));
+      return;
+    }
+
+    // First, show currency selection - don't submit yet
+    setFormData(data);
+    setSelectedCurrency(null);
+    setShowCurrencyWarning(true);
+  };
+
+  const handleCurrencySelected = async (currency: string) => {
+    setSelectedCurrency(currency);
+    setShowCurrencyWarning(false);
+    
+    // Now submit with currency
     setIsLoading(true);
     try {
-      console.log('📝 Attempting registration for:', data.email);
+      console.log('📝 Attempting registration for:', formData.email);
+      console.log('💱 Currency selected:', currency);
       const res = await API.post('/auth/register', {
-        email: data.email,
-        password: data.password,
-        recovery_keyword: data.recovery_keyword
+        email: formData.email,
+        password: formData.password,
+        recovery_keyword: formData.recovery_keyword,
+        currency: currency
       });
       console.log('✅ Registration successful, saving tokens...');
       await setTokens(res.data.access_token, res.data.refresh_token);
@@ -73,6 +103,11 @@ export default function RegisterScreen({ navigation }: any) {
         errorMessage = t('requiredFieldsError');
       } else if (error.response?.data?.detail) {
         errorMessage = error.response.data.detail;
+      } else if (error.response?.data) {
+        // Fallback: show whatever error data the backend sent
+        errorMessage = typeof error.response.data === 'string' 
+          ? error.response.data 
+          : JSON.stringify(error.response.data);
       }
       
       Alert.alert(errorTitle, errorMessage);
@@ -239,6 +274,104 @@ export default function RegisterScreen({ navigation }: any) {
           </View>
         </ThemedView>
       </ScrollView>
+
+      {/* Currency Selection Modal */}
+      <Modal
+        visible={showCurrencyWarning}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowCurrencyWarning(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <Ionicons name="cash" size={28} color="#FFFFFF" />
+              <Text style={styles.modalTitle}>{t('selectCurrency')}</Text>
+            </View>
+
+            {/* Modal Description */}
+            <Text style={styles.modalDescription}>
+              {t('chooseCurrencyDescription')}
+            </Text>
+
+            {/* Warning Box */}
+            <View style={styles.warningBox}>
+              <View style={styles.warningHeader}>
+                <Ionicons name="warning" size={20} color="#FFB700" />
+                <Text style={styles.warningLabel}>{t('warningLabel')}</Text>
+              </View>
+              <Text style={styles.warningText}>
+                {t('currencyWarningMessage')}
+              </Text>
+            </View>
+
+            {/* Currency Options */}
+            <Text style={styles.currencyLabel}>{t('selectCurrency')}</Text>
+            <View style={styles.currencyGrid}>
+              {['USD', 'EUR', 'RUB', 'UZS'].map((currency) => (
+                <TouchableOpacity
+                  key={currency}
+                  style={[
+                    styles.currencyButton,
+                    selectedCurrency === currency && styles.currencyButtonSelected,
+                  ]}
+                  onPress={() => handleCurrencySelected(currency)}
+                  disabled={isLoading}
+                >
+                  <Ionicons
+                    name={selectedCurrency === currency ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={24}
+                    color={selectedCurrency === currency ? '#4CAF50' : '#CCCCCC'}
+                  />
+                  <Text
+                    style={[
+                      styles.currencyButtonText,
+                      selectedCurrency === currency && styles.currencyButtonTextSelected,
+                    ]}
+                  >
+                    {currency}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Error message if no currency selected */}
+            {!selectedCurrency && (
+              <Text style={styles.selectCurrencyError}>
+                {t('pleaseSelectCurrency')}
+              </Text>
+            )}
+
+            {/* Confirmation Button */}
+            <TouchableOpacity
+              style={[
+                styles.confirmButton,
+                (!selectedCurrency || isLoading) && styles.confirmButtonDisabled,
+              ]}
+              onPress={() => selectedCurrency && handleCurrencySelected(selectedCurrency)}
+              disabled={!selectedCurrency || isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.confirmButtonText}>
+                  {t('confirmSelection')}
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Cancel Button */}
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setShowCurrencyWarning(false)}
+              disabled={isLoading}
+            >
+              <Text style={styles.cancelButtonText}>{t('cancel')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -254,13 +387,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
+    backgroundColor: '#000000',
   },
   content: {
     width: '100%',
     maxWidth: 450,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#000000',
     borderRadius: 8,
     padding: 28,
     shadowColor: '#000',
@@ -276,19 +410,19 @@ const styles = StyleSheet.create({
   welcomeTitle: {
     fontSize: 22,
     fontWeight: '600',
-    color: '#000000',
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   subtitleText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#666666',
+    color: '#CCCCCC',
     marginBottom: 12,
   },
   underline: {
     width: 140,
     height: 3,
-    backgroundColor: '#000000',
+    backgroundColor: '#FFFFFF',
     borderRadius: 2,
   },
   inputContainer: {
@@ -297,12 +431,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#000000',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   input: { 
     borderWidth: 1,
-    borderColor: '#CCCCCC',
+    borderColor: '#FFFFFF',
     padding: 12, 
     borderRadius: 8,
     fontSize: 16,
@@ -310,15 +444,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   inputError: {
-    borderColor: '#FF0000',
+    borderColor: '#FF6B6B',
   },
   errorText: {
     fontSize: 12,
-    color: '#FF0000',
+    color: '#FF6B6B',
     marginTop: 4,
   },
   registerButton: {
-    backgroundColor: '#000000',
+    backgroundColor: '#FFFFFF',
     padding: 14,
     borderRadius: 8,
     marginTop: 22,
@@ -330,7 +464,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   registerButtonText: {
-    color: '#FFFFFF',
+    color: '#000000',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -341,12 +475,146 @@ const styles = StyleSheet.create({
   },
   link: {
     fontSize: 14,
-    color: '#000000',
+    color: '#FFFFFF',
     fontWeight: '500',
   },
   helperText: {
     fontSize: 12,
-    color: '#666666',
+    color: '#CCCCCC',
     marginBottom: 4,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  modalContent: {
+    backgroundColor: '#1A1A1A',
+    borderRadius: 16,
+    padding: 24,
+    maxWidth: 400,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginLeft: 12,
+  },
+  modalDescription: {
+    fontSize: 14,
+    color: '#CCCCCC',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  warningBox: {
+    backgroundColor: '#2A2A1F',
+    borderLeftWidth: 4,
+    borderLeftColor: '#FFB700',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 20,
+  },
+  warningHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  warningLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFB700',
+    marginLeft: 8,
+  },
+  warningText: {
+    fontSize: 13,
+    color: '#E0E0E0',
+    lineHeight: 18,
+  },
+  currencyLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginBottom: 12,
+  },
+  currencyGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  currencyButton: {
+    width: '48%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#2A2A2A',
+    borderWidth: 2,
+    borderColor: '#3A3A3A',
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginBottom: 12,
+  },
+  currencyButtonSelected: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#1B3D1B',
+  },
+  currencyButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#CCCCCC',
+    marginLeft: 8,
+  },
+  currencyButtonTextSelected: {
+    color: '#4CAF50',
+  },
+  selectCurrencyError: {
+    fontSize: 12,
+    color: '#FF6B6B',
+    marginBottom: 16,
+    fontStyle: 'italic',
+  },
+  confirmButton: {
+    backgroundColor: '#FFFFFF',
+    padding: 14,
+    borderRadius: 8,
+    marginBottom: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  confirmButtonDisabled: {
+    opacity: 0.5,
+  },
+  confirmButtonText: {
+    color: '#000000',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  cancelButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#CCCCCC',
+    padding: 12,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#CCCCCC',
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

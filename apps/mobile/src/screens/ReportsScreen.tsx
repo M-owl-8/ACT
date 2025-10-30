@@ -14,6 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
 import { ExpenseTypeColors } from '../constants/colors';
+import { useAuthStore } from '../store/auth';
+import { formatCurrency as formatCurrencyUtil } from '../utils/currencyFormatter';
 
 const { width } = Dimensions.get('window');
 
@@ -51,6 +53,7 @@ interface ReportData {
 
 export default function ReportsScreen() {
   const { t, i18n } = useTranslation();
+  const { user } = useAuthStore();
   const [languageChangeKey, setLanguageChangeKey] = useState(0);
   
   const TABS: Array<{ key: ReportRange; label: string }> = [
@@ -130,7 +133,8 @@ export default function ReportsScreen() {
   };
 
   const formatCurrency = (amount: number) => {
-    return `$${amount.toFixed(2)}`;
+    const currency = user?.currency || 'USD';
+    return formatCurrencyUtil(amount, currency, 2);
   };
 
   const formatDate = (dateStr: string) => {
@@ -171,10 +175,10 @@ export default function ReportsScreen() {
       <View style={styles.alertBanner}>
         <Ionicons name="warning" size={24} color="#333" />
         <View style={styles.alertTextContainer}>
-          <Text style={styles.alertTitle}>⚠️ Excess Spending Alert</Text>
+          <Text style={styles.alertTitle}>{t('excessSpendingAlert')}</Text>
           <Text style={styles.alertMessage}>
-            Your excess spending ({formatCurrency(reportData.excess_alert.excess_total)}) 
-            exceeds 50% of mandatory expenses ({formatCurrency(reportData.excess_alert.mandatory_total)})
+            {t('yourExcessSpending')} ({formatCurrency(reportData.excess_alert.excess_total)}) 
+            {t('exceedsThreshold')} ({formatCurrency(reportData.excess_alert.mandatory_total)})
           </Text>
         </View>
       </View>
@@ -189,14 +193,14 @@ export default function ReportsScreen() {
         {/* Income Card */}
         <View style={[styles.summaryCard, styles.incomeCard]}>
           <Ionicons name="arrow-down-circle" size={32} color="#666" />
-          <Text style={styles.summaryLabel}>Income</Text>
+          <Text style={styles.summaryLabel}>{t('income')}</Text>
           <Text style={styles.summaryAmount}>{formatCurrency(reportData.income_total)}</Text>
         </View>
 
         {/* Expense Card */}
         <View style={[styles.summaryCard, styles.expenseCard]}>
           <Ionicons name="arrow-up-circle" size={32} color="#333" />
-          <Text style={styles.summaryLabel}>Expenses</Text>
+          <Text style={styles.summaryLabel}>{t('expenses')}</Text>
           <Text style={styles.summaryAmount}>{formatCurrency(reportData.expense_total)}</Text>
         </View>
 
@@ -207,7 +211,7 @@ export default function ReportsScreen() {
             size={32} 
             color={reportData.net >= 0 ? "#4CAF50" : "#F44336"} 
           />
-          <Text style={styles.summaryLabel}>Net Balance</Text>
+          <Text style={styles.summaryLabel}>{t('netBalance')}</Text>
           <Text style={[
             styles.summaryAmount,
             reportData.net >= 0 ? styles.positiveAmount : styles.negativeAmount
@@ -232,7 +236,7 @@ export default function ReportsScreen() {
 
     return (
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Expense Breakdown</Text>
+        <Text style={styles.sectionTitle}>{t('expenseBreakdown')}</Text>
         
         {/* Visual Bar Chart */}
         <View style={styles.barChartContainer}>
@@ -271,17 +275,17 @@ export default function ReportsScreen() {
         <View style={styles.legendContainer}>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: ExpenseTypeColors.MANDATORY }]} />
-            <Text style={styles.legendText}>Mandatory</Text>
+            <Text style={styles.legendText}>{t('mandatory')}</Text>
             <Text style={styles.legendAmount}>{formatCurrency(mandatory)}</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: ExpenseTypeColors.NEUTRAL }]} />
-            <Text style={styles.legendText}>Neutral</Text>
+            <Text style={styles.legendText}>{t('neutral')}</Text>
             <Text style={styles.legendAmount}>{formatCurrency(neutral)}</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: ExpenseTypeColors.EXCESS }]} />
-            <Text style={styles.legendText}>Excess</Text>
+            <Text style={styles.legendText}>{t('excess')}</Text>
             <Text style={styles.legendAmount}>{formatCurrency(excess)}</Text>
           </View>
         </View>
@@ -293,15 +297,15 @@ export default function ReportsScreen() {
     if (!reportData || reportData.top_categories.length === 0) {
       return (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Top Categories</Text>
-          <Text style={styles.emptyText}>No spending data available</Text>
+          <Text style={styles.sectionTitle}>{t('topCategories')}</Text>
+          <Text style={styles.emptyText}>{t('noSpendingData')}</Text>
         </View>
       );
     }
 
     return (
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Top Spending Categories</Text>
+        <Text style={styles.sectionTitle}>{t('topSpendingCategories')}</Text>
         {reportData.top_categories.map((category, index) => (
           <View key={category.category_id} style={styles.categoryItem}>
             <View style={styles.categoryRank}>
@@ -312,7 +316,7 @@ export default function ReportsScreen() {
                 <Text style={styles.categoryIcon}>{category.category_icon || '📦'}</Text>
                 <Text style={styles.categoryName}>{category.category_name}</Text>
               </View>
-              <Text style={styles.categoryCount}>{category.count} transactions</Text>
+              <Text style={styles.categoryCount}>{category.count} {t('transactions')}</Text>
             </View>
             <Text style={styles.categoryAmount}>{formatCurrency(category.total)}</Text>
           </View>
@@ -337,7 +341,7 @@ export default function ReportsScreen() {
   return (
     <SafeAreaView key={languageChangeKey} style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Reports</Text>
+        <Text style={styles.headerTitle}>{t('reports')}</Text>
         <TouchableOpacity onPress={fetchReport}>
           <Ionicons name="refresh" size={24} color="#000" />
         </TouchableOpacity>
@@ -349,21 +353,21 @@ export default function ReportsScreen() {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#000" />
-          <Text style={styles.loadingText}>Loading report...</Text>
+          <Text style={styles.loadingText}>{t('loadingReport')}</Text>
         </View>
       ) : !reportData ? (
         <View style={styles.emptyContainer}>
           <Ionicons name="bar-chart-outline" size={80} color="#ccc" />
-          <Text style={styles.emptyTitle}>No Data Available</Text>
+          <Text style={styles.emptyTitle}>{t('noDataAvailable')}</Text>
           <Text style={styles.emptyMessage}>
-            Start tracking your income and expenses to see reports here.
+            {t('startTrackingMessage')}
           </Text>
           <TouchableOpacity 
             style={styles.retryButton}
             onPress={fetchReport}
           >
             <Ionicons name="refresh" size={20} color="#fff" />
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <Text style={styles.retryButtonText}>{t('retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : (

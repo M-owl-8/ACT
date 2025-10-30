@@ -53,6 +53,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=100)
     recovery_keyword: str = Field(min_length=3, max_length=100)  # Secret keyword for password recovery
+    currency: str = Field(default="USD", min_length=3, max_length=3)  # Currency selected during signup
 
 
 class UserOut(BaseModel):
@@ -73,7 +74,7 @@ class UserUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     language: Optional[Language] = None
     theme: Optional[Theme] = None
-    currency: Optional[str] = Field(None, min_length=3, max_length=3)
+    # Note: Currency is NOT included here - it cannot be changed after signup
 
 
 class TokenPair(BaseModel):

@@ -18,9 +18,12 @@ import {
   Entry,
   EntryTotals,
 } from "../api/entries";
+import { useAuthStore } from "../store/auth";
+import { formatCurrency } from "../utils/currencyFormatter";
 
 export default function IncomeScreen({ navigation }: any) {
   const { t, i18n } = useTranslation();
+  const { user } = useAuthStore();
   const [languageChangeKey, setLanguageChangeKey] = useState(0);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [totals, setTotals] = useState<EntryTotals | null>(null);
@@ -94,9 +97,10 @@ export default function IncomeScreen({ navigation }: any) {
   }, []);
 
   const handleDelete = (entry: Entry) => {
+    const formattedAmount = formatCurrency(entry.amount, user?.currency || 'USD');
     Alert.alert(
       t('delete'),
-      `${t('confirmDelete')} $${entry.amount}?`,
+      `${t('confirmDelete')} ${formattedAmount}?`,
       [
         { text: t('cancel'), style: "cancel" },
         {
@@ -140,7 +144,7 @@ export default function IncomeScreen({ navigation }: any) {
         </Text>
         <Text style={styles.entryDate}>{formatDate(item.booked_at)}</Text>
       </View>
-      <Text style={styles.entryAmount}>${item.amount.toFixed(2)}</Text>
+      <Text style={styles.entryAmount}>{formatCurrency(item.amount, user?.currency || 'USD')}</Text>
     </View>
   );
 
@@ -212,7 +216,7 @@ export default function IncomeScreen({ navigation }: any) {
               <View style={styles.totalsHeader}>
                 <Text style={styles.totalsLabel}>{t('totalIncome')}</Text>
                 <Text style={styles.totalsAmount}>
-                  ${totals?.total.toFixed(2) || "0.00"}
+                  {formatCurrency(totals?.total || 0, user?.currency || 'USD')}
                 </Text>
               </View>
             )}

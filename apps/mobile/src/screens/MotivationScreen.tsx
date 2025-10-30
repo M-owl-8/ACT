@@ -70,17 +70,17 @@ export default function MotivationScreen() {
 
   const handleCreateGoal = async () => {
     if (!goalTitle.trim()) {
-      Alert.alert('Error', 'Please enter a goal title');
+      Alert.alert(t('error'), t('invalidGoalTitle'));
       return;
     }
 
     if (!targetValue || parseFloat(targetValue) <= 0) {
-      Alert.alert('Error', 'Please enter a valid target value');
+      Alert.alert(t('error'), t('invalidTargetValue'));
       return;
     }
 
     if (!goalDays || parseInt(goalDays) <= 0) {
-      Alert.alert('Error', 'Please enter a valid number of days');
+      Alert.alert(t('error'), t('invalidNumberOfDays'));
       return;
     }
 
@@ -111,18 +111,18 @@ export default function MotivationScreen() {
       setGoalDays('7');
       setShowAddGoalModal(false);
 
-      Alert.alert('Success', 'Goal created successfully! ✓');
+      Alert.alert(t('success'), t('goalCreatedSuccessfully'));
     } catch (error: any) {
       console.error('Error creating goal:', error);
       
-      let errorMessage = 'Failed to create goal. ';
-      let errorTitle = 'Error Creating Goal';
+      let errorMessage = t('failedToCreateGoal') + ' ';
+      let errorTitle = t('errorCreatingGoalTitle');
       
       // Check for session expiration
       if (error.message?.includes('No refresh token available') || 
           error.message?.includes('session expired')) {
-        errorTitle = 'Session Expired';
-        errorMessage = 'Your session has expired. Please log in again to continue.';
+        errorTitle = t('sessionExpired');
+        errorMessage = t('sessionExpiredMessage');
       } else if (error.response?.data?.detail) {
         errorMessage += error.response.data.detail;
       } else if (error.response?.data?.message) {
@@ -141,21 +141,21 @@ export default function MotivationScreen() {
 
   const handleDeleteGoal = async (goalId: number) => {
     Alert.alert(
-      'Delete Goal',
-      'Are you sure you want to delete this goal?',
+      t('deleteGoalTitle'),
+      t('deleteGoalConfirmation'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('deleteButtonText'),
           style: 'destructive',
           onPress: async () => {
             try {
               // Use the store to delete goal - automatically saves and syncs
               await useGoalsStore.getState().deleteGoal(goalId);
-              Alert.alert('Success', 'Goal deleted ✓');
+              Alert.alert(t('success'), t('goalDeleted'));
             } catch (error) {
               console.error('Error deleting goal:', error);
-              Alert.alert('Error', 'Failed to delete goal');
+              Alert.alert(t('error'), t('failedToDeleteGoal'));
             }
           },
         },
@@ -165,21 +165,21 @@ export default function MotivationScreen() {
 
   const handleCompleteGoal = async (goalId: number, title: string) => {
     Alert.alert(
-      'Complete Goal',
-      `Mark "${title}" as completed?`,
+      t('completeGoalTitle'),
+      t('markAsCompletedQuestion').replace('{title}', title),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: 'Complete',
+          text: t('completeButtonText'),
           style: 'default',
           onPress: async () => {
             try {
               // Use the store to complete goal - automatically saves and syncs
               await useGoalsStore.getState().completeGoal(goalId);
-              Alert.alert('Success', 'Goal marked as completed! 🎉');
+              Alert.alert(t('success'), t('goalCompletedSuccess'));
             } catch (error) {
               console.error('Error completing goal:', error);
-              Alert.alert('Error', 'Failed to complete goal');
+              Alert.alert(t('error'), t('failedToCompleteGoal'));
             }
           },
         },
@@ -194,15 +194,15 @@ export default function MotivationScreen() {
       
       // Check if goal was auto-completed
       if (updatedGoal?.status === 'completed') {
-        Alert.alert('Success', `Added $${amount}! Goal completed! 🎉`);
+        Alert.alert(t('success'), `${t('addSavingsPromptMessage').split(':')[0]}: $${amount}! ${t('goalCompletedSuccess')}`);
       } else {
         const progress = updatedGoal?.progress_percentage || 0;
-        Alert.alert('Success', `Added $${amount}! Progress: ${progress.toFixed(0)}%`);
+        Alert.alert(t('success'), `${t('addSavingsPromptMessage').split(':')[0]}: $${amount}! ${t('goalsProgressLabel')}: ${progress.toFixed(0)}%`);
       }
     } catch (error: any) {
       console.error('Error adding savings:', error);
-      const errorMsg = error.response?.data?.detail || 'Failed to add savings';
-      Alert.alert('Error', errorMsg);
+      const errorMsg = error.response?.data?.detail || t('failedToAddIncome');
+      Alert.alert(t('error'), errorMsg);
     }
   };
 
@@ -215,25 +215,25 @@ export default function MotivationScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#000" />
-          <Text style={styles.loadingText}>Loading goals...</Text>
+          <Text style={styles.loadingText}>{t('loadingGoals')}</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} key={languageChangeKey}>
       <ScrollView style={styles.scrollView}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Goals</Text>
-          <Text style={styles.headerSubtitle}>Track and achieve your financial goals</Text>
+          <Text style={styles.headerTitle}>{t('goalsHeaderTitle')}</Text>
+          <Text style={styles.headerSubtitle}>{t('goalsHeaderSubtitle')}</Text>
         </View>
 
         {/* Goals Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Goals</Text>
+            <Text style={styles.sectionTitle}>{t('goalsHeaderTitle')}</Text>
             <TouchableOpacity
               style={styles.addButton}
               onPress={() => setShowAddGoalModal(true)}
@@ -245,9 +245,9 @@ export default function MotivationScreen() {
           {goals.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="flag-outline" size={48} color="#BDBDBD" />
-              <Text style={styles.emptyStateText}>No goals yet</Text>
+              <Text style={styles.emptyStateText}>{t('noGoalsText')}</Text>
               <Text style={styles.emptyStateSubtext}>
-                Create a goal to track your progress
+                {t('noGoalsCreateMessage')}
               </Text>
             </View>
           ) : (
@@ -296,23 +296,23 @@ export default function MotivationScreen() {
                 {/* Goal Stats */}
                 <View style={styles.goalStats}>
                   <View style={styles.goalStat}>
-                    <Text style={styles.goalStatLabel}>Current</Text>
+                    <Text style={styles.goalStatLabel}>{t('currentStatLabel')}</Text>
                     <Text style={styles.goalStatValue}>
                       {goal.kind === 'spend_under' || goal.kind === 'savings' ? '$' : ''}
                       {goal.current_value}
-                      {goal.kind === 'log_n_days' ? ' days' : ''}
+                      {goal.kind === 'log_n_days' ? ` ${t('daysUnit')}` : ''}
                     </Text>
                   </View>
                   <View style={styles.goalStat}>
-                    <Text style={styles.goalStatLabel}>Target</Text>
+                    <Text style={styles.goalStatLabel}>{t('targetStatLabel')}</Text>
                     <Text style={styles.goalStatValue}>
                       {goal.kind === 'spend_under' || goal.kind === 'savings' ? '$' : ''}
                       {goal.target_value}
-                      {goal.kind === 'log_n_days' ? ' days' : ''}
+                      {goal.kind === 'log_n_days' ? ` ${t('daysUnit')}` : ''}
                     </Text>
                   </View>
                   <View style={styles.goalStat}>
-                    <Text style={styles.goalStatLabel}>Status</Text>
+                    <Text style={styles.goalStatLabel}>{t('statusStatLabel')}</Text>
                     <Text
                       style={[
                         styles.goalStatValue,
@@ -330,14 +330,14 @@ export default function MotivationScreen() {
                     style={styles.addSavingsButton}
                     onPress={() => {
                       Alert.prompt(
-                        'Add Savings',
-                        'Enter amount to add:',
+                        t('addSavingsLabel'),
+                        t('addSavingsPrompt'),
                         (amount) => {
                           const parsedAmount = parseFloat(amount);
                           if (!isNaN(parsedAmount) && parsedAmount > 0) {
                             handleAddSavings(goal.id, parsedAmount);
                           } else {
-                            Alert.alert('Invalid', 'Please enter a valid amount');
+                            Alert.alert(t('invalidAmountTitle'), t('pleaseEnterValidAmountError'));
                           }
                         },
                         'plain-text',
@@ -347,7 +347,7 @@ export default function MotivationScreen() {
                     }}
                   >
                     <Ionicons name="add-circle-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
-                    <Text style={styles.addSavingsButtonText}>Add Savings</Text>
+                    <Text style={styles.addSavingsButtonText}>{t('addSavingsLabel')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -355,15 +355,87 @@ export default function MotivationScreen() {
           )}
         </View>
 
+        {/* Failed Goals Section */}
+        {goals.filter(g => g.status === 'failed').length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>❌ {t('failedGoalsHeader') || 'Failed Goals'}</Text>
+            <View>
+              {goals
+                .filter(g => g.status === 'failed')
+                .map(goal => (
+                  <View key={goal.id} style={[styles.goalCard, { borderLeftColor: '#F44336', borderLeftWidth: 4 }]}>
+                    <View style={styles.goalHeader}>
+                      <View style={styles.goalTitleContainer}>
+                        <Text style={styles.goalTitle}>{goal.title}</Text>
+                        {goal.description && (
+                          <Text style={styles.goalDescription}>{goal.description}</Text>
+                        )}
+                      </View>
+                      <View style={styles.goalHeaderButtons}>
+                        <TouchableOpacity 
+                          style={styles.goalHeaderButton}
+                          onPress={() => handleDeleteGoal(goal.id)}
+                        >
+                          <Ionicons name="trash-outline" size={20} color="#F44336" />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* Progress Bar */}
+                    <View style={styles.progressContainer}>
+                      <View style={styles.progressBar}>
+                        <View
+                          style={[
+                            styles.progressFill,
+                            { width: `${Math.min(goal.progress_percentage || 0, 100)}%`, backgroundColor: '#F44336' },
+                          ]}
+                        />
+                      </View>
+                      <Text style={[styles.progressText, { color: '#F44336' }]}>
+                        {goal.progress_percentage?.toFixed(0) || 0}%
+                      </Text>
+                    </View>
+
+                    {/* Goal Stats */}
+                    <View style={styles.goalStats}>
+                      <View style={styles.goalStat}>
+                        <Text style={styles.goalStatLabel}>{t('currentStatLabel')}</Text>
+                        <Text style={styles.goalStatValue}>
+                          {goal.kind === 'spend_under' || goal.kind === 'savings' ? '$' : ''}
+                          {goal.current_value}
+                          {goal.kind === 'log_n_days' ? ` ${t('daysUnit')}` : ''}
+                        </Text>
+                      </View>
+                      <View style={styles.goalStat}>
+                        <Text style={styles.goalStatLabel}>{t('targetStatLabel')}</Text>
+                        <Text style={styles.goalStatValue}>
+                          {goal.kind === 'spend_under' || goal.kind === 'savings' ? '$' : ''}
+                          {goal.target_value}
+                          {goal.kind === 'log_n_days' ? ` ${t('daysUnit')}` : ''}
+                        </Text>
+                      </View>
+                      <View style={styles.goalStat}>
+                        <Text style={styles.goalStatLabel}>{t('statusStatLabel')}</Text>
+                        <Text style={[styles.goalStatValue, { color: '#F44336' }]}>
+                          Failed
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+            </View>
+          </View>
+        )}
+
         {/* Accomplishments Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🏆 Accomplishments</Text>
+          <Text style={styles.sectionTitle}>{t('achievementsHeader')}</Text>
           {goals.filter(g => g.status === 'completed').length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="star-outline" size={48} color="#BDBDBD" />
-              <Text style={styles.emptyStateText}>No completed goals yet</Text>
+              <Text style={styles.emptyStateText}>{t('noAccomplishmentsYet')}</Text>
               <Text style={styles.emptyStateSubtext}>
-                Complete your active goals to see them here
+                {t('completeActiveGoalsMessage')}
               </Text>
             </View>
           ) : (
@@ -383,23 +455,23 @@ export default function MotivationScreen() {
                   
                   <View style={styles.accomplishmentStats}>
                     <View style={styles.accomplishmentStat}>
-                      <Text style={styles.accomplishmentStatLabel}>Achieved</Text>
+                      <Text style={styles.accomplishmentStatLabel}>{t('achievedLabel')}</Text>
                       <Text style={styles.accomplishmentStatValue}>
                         {goal.kind === 'spend_under' || goal.kind === 'savings' ? '$' : ''}
                         {goal.current_value}
-                        {goal.kind === 'log_n_days' ? ' days' : ''}
+                        {goal.kind === 'log_n_days' ? ` ${t('daysLabel')}` : ''}
                       </Text>
                     </View>
                     <View style={styles.accomplishmentStat}>
-                      <Text style={styles.accomplishmentStatLabel}>Target</Text>
+                      <Text style={styles.accomplishmentStatLabel}>{t('targetLabel')}</Text>
                       <Text style={styles.accomplishmentStatValue}>
                         {goal.kind === 'spend_under' || goal.kind === 'savings' ? '$' : ''}
                         {goal.target_value}
-                        {goal.kind === 'log_n_days' ? ' days' : ''}
+                        {goal.kind === 'log_n_days' ? ` ${t('daysLabel')}` : ''}
                       </Text>
                     </View>
                     <View style={styles.accomplishmentStat}>
-                      <Text style={styles.accomplishmentStatLabel}>Completion</Text>
+                      <Text style={styles.accomplishmentStatLabel}>{t('completionLabel')}</Text>
                       <Text style={styles.accomplishmentStatValue}>
                         {goal.progress_percentage?.toFixed(0) || 100}%
                       </Text>
@@ -408,7 +480,7 @@ export default function MotivationScreen() {
 
                   <View style={styles.accomplishmentDateContainer}>
                     <Text style={styles.accomplishmentDate}>
-                      Completed: {new Date(goal.end_date).toLocaleDateString()}
+                      {t('completedLabel')}: {new Date(goal.end_date).toLocaleDateString()}
                     </Text>
                   </View>
                 </View>
@@ -420,21 +492,93 @@ export default function MotivationScreen() {
 
         {/* Weekly Summary */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>This Week</Text>
+          <Text style={styles.sectionTitle}>{t('thisWeekHeader')}</Text>
           <View style={styles.summaryCard}>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Entries Logged</Text>
+              <Text style={styles.summaryLabel}>{t('entriesLoggedHeader')}</Text>
               <Text style={styles.summaryValue}>-</Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Days Active</Text>
+              <Text style={styles.summaryLabel}>{t('daysActiveHeader')}</Text>
               <Text style={styles.summaryValue}>-</Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Goals Progress</Text>
+              <Text style={styles.summaryLabel}>{t('goalsProgressHeader')}</Text>
               <Text style={styles.summaryValue}>
-                {goals.filter(g => g.status === 'active').length} active
+                {goals.filter(g => g.status === 'active').length} {t('activeLabel')}
               </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Recommended Books Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('recommendedBooks')}</Text>
+          <Text style={styles.recommendedBooksDescription}>{t('recommendedBooksDescription')}</Text>
+          
+          <View style={styles.booksGrid}>
+            <View style={styles.bookItem}>
+              <Text style={styles.bookTitle}>{t('book_intelligentInvestor')}</Text>
+            </View>
+            <View style={styles.bookItem}>
+              <Text style={styles.bookTitle}>{t('book_randomWallStreet')}</Text>
+            </View>
+            <View style={styles.bookItem}>
+              <Text style={styles.bookTitle}>{t('book_littleBookCommonSense')}</Text>
+            </View>
+            <View style={styles.bookItem}>
+              <Text style={styles.bookTitle}>{t('book_moneyMasterGame')}</Text>
+            </View>
+            <View style={styles.bookItem}>
+              <Text style={styles.bookTitle}>{t('book_indexCard')}</Text>
+            </View>
+            <View style={styles.bookItem}>
+              <Text style={styles.bookTitle}>{t('book_boggleheadsGuide')}</Text>
+            </View>
+            <View style={styles.bookItem}>
+              <Text style={styles.bookTitle}>{t('book_thinkGrowRich')}</Text>
+            </View>
+            <View style={styles.bookItem}>
+              <Text style={styles.bookTitle}>{t('book_psychologyMoney')}</Text>
+            </View>
+            <View style={styles.bookItem}>
+              <Text style={styles.bookTitle}>{t('book_yourMoneyLife')}</Text>
+            </View>
+            <View style={styles.bookItem}>
+              <Text style={styles.bookTitle}>{t('book_simplePathWealth')}</Text>
+            </View>
+            <View style={styles.bookItem}>
+              <Text style={styles.bookTitle}>{t('book_beatMarket')}</Text>
+            </View>
+            <View style={styles.bookItem}>
+              <Text style={styles.bookTitle}>{t('book_principlesLife')}</Text>
+            </View>
+            <View style={styles.bookItem}>
+              <Text style={styles.bookTitle}>{t('book_fewLessonsInvestors')}</Text>
+            </View>
+            <View style={styles.bookItem}>
+              <Text style={styles.bookTitle}>{t('book_millionaireNextDoor')}</Text>
+            </View>
+            <View style={styles.bookItem}>
+              <Text style={styles.bookTitle}>{t('book_earlyRetirementExtreme')}</Text>
+            </View>
+            <View style={styles.bookItem}>
+              <Text style={styles.bookTitle}>{t('book_smartestMoneyBook')}</Text>
+            </View>
+            <View style={styles.bookItem}>
+              <Text style={styles.bookTitle}>{t('book_fooledRandomness')}</Text>
+            </View>
+            <View style={styles.bookItem}>
+              <Text style={styles.bookTitle}>{t('book_behavioralInvestor')}</Text>
+            </View>
+            <View style={styles.bookItem}>
+              <Text style={styles.bookTitle}>{t('book_richestManInBabylon')}</Text>
+            </View>
+            <View style={styles.bookItem}>
+              <Text style={styles.bookTitle}>{t('book_atomicHabits')}</Text>
+            </View>
+            <View style={styles.bookItem}>
+              <Text style={styles.bookTitle}>{t('book_richDadPoorDad')}</Text>
             </View>
           </View>
         </View>
@@ -454,7 +598,7 @@ export default function MotivationScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Create Goal</Text>
+                <Text style={styles.modalTitle}>{t('createGoalTitle')}</Text>
                 <TouchableOpacity onPress={() => setShowAddGoalModal(false)}>
                   <Ionicons name="close" size={28} color="#333" />
                 </TouchableOpacity>
@@ -462,7 +606,7 @@ export default function MotivationScreen() {
 
               <ScrollView style={styles.modalBody} keyboardShouldPersistTaps="handled">
               {/* Goal Type */}
-              <Text style={styles.inputLabel}>Goal Type</Text>
+              <Text style={styles.inputLabel}>{t('goalTypeHeader')}</Text>
               <View style={styles.goalTypeContainer}>
                 <TouchableOpacity
                   style={[
@@ -477,7 +621,7 @@ export default function MotivationScreen() {
                       goalType === 'spend_under' && styles.goalTypeButtonTextActive,
                     ]}
                   >
-                    Spend Under
+                    {t('spendUnderLabel')}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -493,7 +637,7 @@ export default function MotivationScreen() {
                       goalType === 'log_n_days' && styles.goalTypeButtonTextActive,
                     ]}
                   >
-                    Log N Days
+                    {t('logNDaysLabel')}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -509,28 +653,28 @@ export default function MotivationScreen() {
                       goalType === 'savings' && styles.goalTypeButtonTextActive,
                     ]}
                   >
-                    Savings
+                    {t('savingsLabel')}
                   </Text>
                 </TouchableOpacity>
               </View>
 
               {/* Title */}
-              <Text style={styles.inputLabel}>Title *</Text>
+              <Text style={styles.inputLabel}>{t('titleFieldLabel')} *</Text>
               <TextInput
                 style={styles.input}
                 value={goalTitle}
                 onChangeText={setGoalTitle}
-                placeholder="e.g., Spend less than $500 this week"
+                placeholder={t('titleFieldPlaceholder')}
                 placeholderTextColor="#999"
               />
 
               {/* Description */}
-              <Text style={styles.inputLabel}>Description</Text>
+              <Text style={styles.inputLabel}>{t('descriptionFieldLabel')}</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={goalDescription}
                 onChangeText={setGoalDescription}
-                placeholder="Optional description"
+                placeholder={t('descriptionFieldPlaceholder')}
                 placeholderTextColor="#999"
                 multiline
                 numberOfLines={3}
@@ -538,24 +682,24 @@ export default function MotivationScreen() {
 
               {/* Target Value */}
               <Text style={styles.inputLabel}>
-                Target {goalType === 'spend_under' ? 'Amount' : goalType === 'savings' ? 'Savings Amount' : 'Days'} *
+                {t('targetFieldLabel')} {goalType === 'spend_under' ? t('amountFieldLabel') : goalType === 'savings' ? t('savingsAmountFieldLabel') : t('daysLabel')} *
               </Text>
               <TextInput
                 style={styles.input}
                 value={targetValue}
                 onChangeText={setTargetValue}
-                placeholder={goalType === 'spend_under' || goalType === 'savings' ? '500' : '7'}
+                placeholder={goalType === 'spend_under' || goalType === 'savings' ? t('amountPlaceholder') : t('durationPlaceholder')}
                 placeholderTextColor="#999"
                 keyboardType="numeric"
               />
 
               {/* Duration */}
-              <Text style={styles.inputLabel}>Duration (days) *</Text>
+              <Text style={styles.inputLabel}>{t('durationFieldLabel')} *</Text>
               <TextInput
                 style={styles.input}
                 value={goalDays}
                 onChangeText={setGoalDays}
-                placeholder="7"
+                placeholder={t('durationPlaceholder')}
                 placeholderTextColor="#999"
                 keyboardType="numeric"
               />
@@ -566,13 +710,13 @@ export default function MotivationScreen() {
                   style={styles.modalButtonSecondary}
                   onPress={() => setShowAddGoalModal(false)}
                 >
-                  <Text style={styles.modalButtonSecondaryText}>Cancel</Text>
+                  <Text style={styles.modalButtonSecondaryText}>{t('cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.modalButtonPrimary}
                   onPress={handleCreateGoal}
                 >
-                  <Text style={styles.modalButtonPrimaryText}>Create Goal</Text>
+                  <Text style={styles.modalButtonPrimaryText}>{t('createGoalTitle')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -773,6 +917,40 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#000',
+  },
+
+  // Books Styles
+  recommendedBooksDescription: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 16,
+    lineHeight: 18,
+  },
+  booksGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  bookItem: {
+    flex: 1,
+    minWidth: '48%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  bookTitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#000',
+    lineHeight: 18,
   },
 
   // Modal Styles

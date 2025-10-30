@@ -14,12 +14,18 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { updateEntry, Entry } from "../api/entries";
 import { getCategories, Category, ExpenseType } from "../api/categories";
+import { useAuthStore } from "../store/auth";
+import { useGoalsStore, Goal } from "../store/goals";
+import { api } from "../api/client";
+import { formatCurrency } from "../utils/currencyFormatter";
 import { SAMURAI_COLORS, SAMURAI_PATTERNS } from "../theme/SAMURAI_COLORS";
 
 const LAST_CATEGORY_KEY = "@last_expense_category";
 
 export default function EditExpenseScreen({ navigation, route }: any) {
   const { entry, onSave } = route.params || {};
+  const { user } = useAuthStore();
+  const { loadGoals: loadGoalsFromStore } = useGoalsStore();
 
   const [amount, setAmount] = useState(entry?.amount?.toString() || "");
   const [note, setNote] = useState(entry?.note || "");
@@ -91,15 +97,56 @@ export default function EditExpenseScreen({ navigation, route }: any) {
         selectedCategory.id.toString()
       );
 
-      Alert.alert("Success", "Expense updated successfully", [
-        {
-          text: "OK",
-          onPress: () => {
-            if (onSave) onSave();
-            navigation.goBack();
+      // Fetch updated goals to check if any failed due to this update
+      try {
+        const goalsResponse = await api.get("/motivation/goals");
+        const updatedGoals: Goal[] = goalsResponse.data || [];
+        
+        // Update store with fresh goals
+        await loadGoalsFromStore();
+
+        // Check for newly failed goals
+        const failedGoals = updatedGoals.filter((goal: Goal) => goal.status === "failed");
+        
+        if (failedGoals.length > 0) {
+          const failedGoalNames = failedGoals.map((g: Goal) => `"${g.title}"`).join(", ");
+          Alert.alert(
+            "⚠️ Goal Failed",
+            `Your expense update caused ${failedGoals.length > 1 ? "these goals" : "this goal"} to fail: ${failedGoalNames}`,
+            [
+              {
+                text: "OK",
+                onPress: () => {
+                  if (onSave) onSave();
+                  navigation.goBack();
+                },
+              },
+            ]
+          );
+        } else {
+          Alert.alert("Success", "Expense updated successfully", [
+            {
+              text: "OK",
+              onPress: () => {
+                if (onSave) onSave();
+                navigation.goBack();
+              },
+            },
+          ]);
+        }
+      } catch (goalError) {
+        // If fetching goals fails, still show success but don't block
+        console.warn("Failed to fetch updated goals:", goalError);
+        Alert.alert("Success", "Expense updated successfully", [
+          {
+            text: "OK",
+            onPress: () => {
+              if (onSave) onSave();
+              navigation.goBack();
+            },
           },
-        },
-      ]);
+        ]);
+      }
     } catch (error: any) {
       console.error("Failed to update expense:", error);
       Alert.alert(

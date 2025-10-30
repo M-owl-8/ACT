@@ -1,0 +1,78 @@
+╔════════════════════════════════════════════════════════════════════╗
+║          SSL CERTIFICATE ERROR - QUICK FIX (5 MINUTES)              ║
+╚════════════════════════════════════════════════════════════════════╝
+
+❌ ERROR YOU'RE SEEING:
+━━━━━━━━━━━━━━━━━━━━━━━
+"ReactNativeBlobUtil request error: java.lang.IllegalStateException: 
+ Use of own trust manager but none defined"
+
+This means: Android can't verify SSL certificates when react-native-pdf 
+           tries to load PDFs.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ QUICK FIX (Follow in order):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1️⃣  AUTO-FIX SCRIPT (Recommended - 2 min)
+    ➜ Run: .\FIX_SSL_CERTIFICATE.ps1
+    ➜ Then: npm start
+    ➜ Test Books tab
+
+2️⃣  MANUAL FIX (If script doesn't work - 5 min):
+    ➜ npm install
+    ➜ npx expo prebuild --clean
+    ➜ npm start
+
+3️⃣  CLEAR APP DATA:
+    Settings → Apps → ACT → Storage → Clear Cache & Clear Data
+    Restart app
+
+4️⃣  NUCLEAR OPTION (Last resort - 10 min):
+    ➜ rm -r node_modules .expo build
+    ➜ npm cache clean --force
+    ➜ npm install
+    ➜ npx expo prebuild --clean
+    ➜ npm start
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✨ WHAT WAS FIXED:
+━━━━━━━━━━━━━━━━━━
+
+✅ app.json: Added "usesCleartextTraffic": true
+✅ PDFReaderScreen.tsx: Better SSL error detection
+✅ Error messages now show specific issues instead of infinite loading
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 EXPECTED RESULT:
+━━━━━━━━━━━━━━━━━
+
+After applying fix, when you open a book:
+✓ PDF loads in 3-10 seconds
+✓ Shows "Page 1 of 384" at bottom
+✓ Can swipe to next page
+
+OR shows specific error: "SSL Certificate Error" with next steps
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 DETAILED INFO:
+━━━━━━━━━━━━━━━
+
+See: SSL_CERTIFICATE_FIX.md for full explanation
+See: PDFReaderScreen.tsx for error handling code
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 START HERE:
+━━━━━━━━━━━━
+
+cd c:\work\act-gen1\apps\mobile
+.\FIX_SSL_CERTIFICATE.ps1
+
+Then: npm start
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

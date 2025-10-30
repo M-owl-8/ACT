@@ -35,6 +35,14 @@ export default function LoginScreen({ navigation }: any) {
   const onSubmit = async (data: any) => {
     setIsLoading(true);
     try {
+      // Validate email format before sending
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(data.email)) {
+        Alert.alert(t('invalidEmailFormat'), t('emailPlaceholder'));
+        setIsLoading(false);
+        return;
+      }
+
       console.log('🔐 Attempting login for:', data.email);
       console.log('📤 Login payload:', JSON.stringify(data, null, 2));
       const res = await API.post('/auth/login', data);
@@ -62,7 +70,13 @@ export default function LoginScreen({ navigation }: any) {
         errorTitle = t('networkError');
         errorMessage = t('networkErrorMessage') + (process.env.EXPO_PUBLIC_API_BASE_URL || 'default');
       } else if (error.response?.status === 401) {
-        errorMessage = error.response?.data?.detail || t('registrationRequiredMessage');
+        // Email exists but password wrong, or email doesn't exist
+        errorTitle = t('loginFailed');
+        errorMessage = error.response?.data?.detail || t('invalidEmailOrPassword');
+        // Add helpful hint to the error
+        if (errorMessage.includes('Invalid credentials')) {
+          errorMessage += '\n\n' + t('accountNotFound') || 'Account not found. Please create a new account or check your email.';
+        }
       } else if (error.response?.status === 422) {
         errorMessage = t('invalidEmailFormat');
       } else if (error.response?.data?.detail) {
@@ -184,13 +198,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
+    backgroundColor: '#000000',
   },
   content: {
     width: '100%',
     maxWidth: 450,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#000000',
     borderRadius: 8,
     padding: 28,
     shadowColor: '#000',
@@ -206,19 +221,19 @@ const styles = StyleSheet.create({
   welcomeTitle: {
     fontSize: 22,
     fontWeight: '600',
-    color: '#000000',
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   subtitleText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#666666',
+    color: '#CCCCCC',
     marginBottom: 12,
   },
   underline: {
     width: 140,
     height: 3,
-    backgroundColor: '#000000',
+    backgroundColor: '#FFFFFF',
     borderRadius: 2,
   },
   inputContainer: {
@@ -227,12 +242,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#000000',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   input: { 
     borderWidth: 1,
-    borderColor: '#CCCCCC',
+    borderColor: '#FFFFFF',
     padding: 12, 
     borderRadius: 8,
     fontSize: 16,
@@ -240,15 +255,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   inputError: {
-    borderColor: '#FF0000',
+    borderColor: '#FF6B6B',
   },
   errorText: {
     fontSize: 12,
-    color: '#FF0000',
+    color: '#FF6B6B',
     marginTop: 4,
   },
   loginButton: {
-    backgroundColor: '#000000',
+    backgroundColor: '#FFFFFF',
     padding: 14,
     borderRadius: 8,
     marginTop: 22,
@@ -260,7 +275,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   loginButtonText: {
-    color: '#FFFFFF',
+    color: '#000000',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -271,7 +286,7 @@ const styles = StyleSheet.create({
   },
   link: {
     fontSize: 14,
-    color: '#000000',
+    color: '#FFFFFF',
     fontWeight: '500',
   },
 });

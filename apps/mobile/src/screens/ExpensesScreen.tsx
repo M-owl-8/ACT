@@ -21,8 +21,11 @@ import {
   ExpenseTypeStats,
   EntryTotals,
 } from "../api/entries";
+import { useAuthStore } from "../store/auth";
+import { formatCurrency } from "../utils/currencyFormatter";
 export default function ExpensesScreen({ navigation }: any) {
   const { t, i18n } = useTranslation();
+  const { user } = useAuthStore();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [stats, setStats] = useState<ExpenseTypeStats | null>(null);
   const [totals, setTotals] = useState<EntryTotals | null>(null);
@@ -203,11 +206,11 @@ export default function ExpensesScreen({ navigation }: any) {
         <View style={styles.statsContainer}>
           <View style={styles.statRow}>
             <Text style={styles.statLabel}>{t('totalIncome')}</Text>
-            <Text style={styles.statValue}>${totals?.total.toFixed(2) || "0"}</Text>
+            <Text style={styles.statValue}>{formatCurrency(totals?.total || 0, user?.currency || 'USD')}</Text>
           </View>
           <View style={styles.statRow}>
             <Text style={styles.statLabel}>{t('totalExpenses')}</Text>
-            <Text style={styles.statValue}>${stats?.total.toFixed(2) || "0"}</Text>
+            <Text style={styles.statValue}>{formatCurrency(stats?.total || 0, user?.currency || 'USD')}</Text>
           </View>
           <View style={styles.statRow}>
             <Text style={styles.statLabel}>{t('remainingBudget')}</Text>
@@ -221,7 +224,7 @@ export default function ExpensesScreen({ navigation }: any) {
               }
               return (
                 <Text style={[styles.statValue, style]}>
-                  ${remaining.toFixed(2)}
+                  {formatCurrency(remaining, user?.currency || 'USD')}
                 </Text>
               );
             })()}

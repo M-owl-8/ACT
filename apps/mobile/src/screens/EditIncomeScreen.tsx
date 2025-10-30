@@ -12,10 +12,13 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { updateEntry, Entry } from "../api/entries";
+import { useAuthStore } from "../store/auth";
+import { formatCurrency } from "../utils/currencyFormatter";
 import { SAMURAI_COLORS, SAMURAI_PATTERNS } from "../theme/SAMURAI_COLORS";
 
 export default function EditIncomeScreen({ navigation, route }: any) {
   const { entry, onSave } = route.params as { entry: Entry; onSave: () => void };
+  const { user } = useAuthStore();
 
   const [amount, setAmount] = useState(entry.amount.toString());
   const [note, setNote] = useState(entry.note || "");

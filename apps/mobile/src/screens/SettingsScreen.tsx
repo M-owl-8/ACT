@@ -27,7 +27,6 @@ export default function SettingsScreen() {
     pushNotificationsEnabled,
     fontSize,
     language,
-    currency,
     loadSettings,
     setFullName,
     setEmail,
@@ -35,7 +34,6 @@ export default function SettingsScreen() {
     setPushNotifications,
     setFontSize,
     setLanguage,
-    setCurrency,
   } = useSettingsStore();
 
   // Load settings on mount
@@ -155,23 +153,12 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.pickerRow}>
-            <Text style={styles.toggleLabel}>{t('currency')}</Text>
-            <TouchableOpacity 
-              style={styles.pickerButton}
-              onPress={() => Alert.alert(t('currency'), t('selectCurrency'), [
-                { text: 'USD ($)', onPress: () => handleFieldChange(setCurrency, 'USD') },
-                { text: 'UZS (сўм)', onPress: () => handleFieldChange(setCurrency, 'UZS') },
-                { text: 'RUB (₽)', onPress: () => handleFieldChange(setCurrency, 'RUB') },
-                { text: 'EUR (€)', onPress: () => handleFieldChange(setCurrency, 'EUR') },
-                { text: t('cancel'), style: 'cancel' }
-              ])}
-            >
-              <Text style={styles.pickerButtonText}>
-                {currency === 'USD' ? 'USD ($)' : currency === 'UZS' ? 'UZS (сўм)' : currency === 'RUB' ? 'RUB (₽)' : currency === 'EUR' ? 'EUR (€)' : currency}
-              </Text>
-              <Ionicons name="chevron-down" size={18} color="#000" />
-            </TouchableOpacity>
+          <View style={styles.currencyInfoBox}>
+            <Ionicons name="lock-closed" size={20} color="#666" />
+            <View style={styles.currencyInfoText}>
+              <Text style={styles.currencyInfoTitle}>{t('currency')}</Text>
+              <Text style={styles.currencyInfoDescription}>{t('currencyCannotBeChanged')}</Text>
+            </View>
           </View>
         </View>
 
@@ -492,5 +479,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#000',
     fontWeight: '500',
+  },
+  currencyInfoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    gap: 12,
+    marginBottom: 8,
+  },
+  currencyInfoText: {
+    flex: 1,
+  },
+  currencyInfoTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 4,
+  },
+  currencyInfoDescription: {
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic',
   },
 });

@@ -19,9 +19,7 @@ import ReportsScreen from '../screens/ReportsScreen';
 import MotivationScreen from '../screens/MotivationScreen';
 import ReminderScreen from '../screens/ReminderScreen';
 import SettingsScreen from '../screens/SettingsScreen';
-import BooksScreen from '../screens/BooksScreen';
-import BookDetailScreen from '../screens/BookDetailScreen';
-import PDFReaderScreen from '../screens/PDFReaderScreen';
+
 import { useAuthStore } from '../store/auth';
 import { useTheme } from '../theme';
 
@@ -62,8 +60,6 @@ function MainTabs() {
             iconName = focused ? 'notifications' : 'notifications-outline';
           } else if (route.name === 'GoalsTab') {
             iconName = focused ? 'flag' : 'flag-outline';
-          } else if (route.name === 'BooksTab') {
-            iconName = focused ? 'book' : 'book-outline';
           } else if (route.name === 'SettingsTab') {
             iconName = focused ? 'settings' : 'settings-outline';
           }
@@ -87,7 +83,6 @@ function MainTabs() {
           else if (route.name === 'ReportsTab') label = t('reports');
           else if (route.name === 'ReminderTab') label = t('reminders');
           else if (route.name === 'GoalsTab') label = t('goals');
-          else if (route.name === 'BooksTab') label = t('books');
           else if (route.name === 'SettingsTab') label = t('settings');
           
           return (
@@ -97,7 +92,6 @@ function MainTabs() {
                      route.name === 'ReportsTab' ? 'bar-chart' :
                      route.name === 'ReminderTab' ? 'notifications' :
                      route.name === 'GoalsTab' ? 'flag' :
-                     route.name === 'BooksTab' ? 'book' :
                      'settings'}
               size={0}
               color="transparent"
@@ -143,14 +137,6 @@ function MainTabs() {
         component={MotivationScreen}
         options={{ 
           tabBarLabel: t('goals'),
-          tabBarLabelStyle: { fontSize: 12, fontWeight: '500', marginTop: 4 },
-        }}
-      />
-      <Tab.Screen 
-        name="BooksTab" 
-        component={BooksScreen}
-        options={{ 
-          tabBarLabel: t('books'),
           tabBarLabelStyle: { fontSize: 12, fontWeight: '500', marginTop: 4 },
         }}
       />
@@ -210,22 +196,6 @@ export default function AppNavigator() {
             <Stack.Screen 
               name="EditExpense" 
               component={EditExpenseScreen}
-              options={{
-                presentation: 'modal',
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen 
-              name="BookDetail" 
-              component={BookDetailScreen}
-              options={{
-                presentation: 'modal',
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen 
-              name="PDFReader" 
-              component={PDFReaderScreen}
               options={{
                 presentation: 'modal',
                 headerShown: false,

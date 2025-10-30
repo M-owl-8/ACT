@@ -151,7 +151,7 @@ export default function ReminderScreen() {
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
           title: '💰 ' + reminder.title,
-          body: reminder.description || 'Time to manage your finances',
+          body: reminder.description || t('timeToManageFinances'),
           sound: 'default',
           badge: 1,
         },
@@ -170,7 +170,7 @@ export default function ReminderScreen() {
       // Schedule notification for the date of the expense
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
-          title: '📅 Upcoming Expense Reminder',
+          title: `📅 ${t('upcomingExpenseReminder')}`,
           body: `${reminder.notes} - $${reminder.amount.toFixed(2)}`,
           sound: 'default',
           badge: 1,
@@ -204,8 +204,8 @@ export default function ReminderScreen() {
       let mockReminders: Reminder[] = [
         {
           id: 1,
-          title: 'Log Daily Expenses',
-          description: 'Remember to track your daily expenses',
+          title: t('logDailyExpenses'),
+          description: t('rememberToTrackDailyExpenses'),
           time: '09:00 AM',
           frequency: 'daily',
           is_enabled: true,
@@ -214,8 +214,8 @@ export default function ReminderScreen() {
         },
         {
           id: 2,
-          title: 'Weekly Budget Review',
-          description: 'Check your spending against budget',
+          title: t('weeklyBudgetReview'),
+          description: t('checkYourSpendingAgainstBudget'),
           time: '06:00 PM',
           frequency: 'weekly',
           is_enabled: true,
@@ -224,8 +224,8 @@ export default function ReminderScreen() {
         },
         {
           id: 3,
-          title: 'Monthly Financial Report',
-          description: 'Review your monthly finances',
+          title: t('monthlyFinancialReport'),
+          description: t('reviewYourMonthlyFinances'),
           time: '08:00 AM',
           frequency: 'monthly',
           is_enabled: false,
@@ -282,7 +282,7 @@ export default function ReminderScreen() {
       setReminders(allReminders);
     } catch (error) {
       console.error('Error loading reminders:', error);
-      Alert.alert('Error', 'Failed to load reminders');
+      Alert.alert(t('error'), t('failedToLoadReminders'));
     } finally {
       setLoading(false);
     }
@@ -291,20 +291,20 @@ export default function ReminderScreen() {
   const handleAddExpenseReminder = async () => {
     const amountNum = parseFloat(amount);
     if (!amount || isNaN(amountNum) || amountNum <= 0) {
-      Alert.alert('Invalid Amount', 'Please enter a valid amount');
+      Alert.alert(t('invalidAmountError'), t('pleaseEnterValidAmountError'));
       return;
     }
 
     if (selectedDate <= new Date()) {
-      Alert.alert('Invalid Date', 'Please select a future date');
+      Alert.alert(t('invalidDateError'), t('pleaseSeletFutureDate'));
       return;
     }
 
     const newReminder: ExpenseReminder = {
       id: Math.max(...reminders.map(r => r.id), 0) + 1,
-      title: `Trip to Segovia`,
+      title: t('tripToSegovia'),
       amount: amountNum,
-      notes: notes.trim() || 'No notes',
+      notes: notes.trim() || t('noNotes'),
       date: selectedDate,
       dateString: selectedDate.toISOString(),
       is_enabled: true,
@@ -324,12 +324,12 @@ export default function ReminderScreen() {
       const expenseReminders = updatedReminders.filter(r => r.type === 'expense') as ExpenseReminder[];
       await AsyncStorage.setItem('expenseReminders', JSON.stringify(expenseReminders));
 
-      Alert.alert('Success', 'Expense reminder added');
+      Alert.alert(t('success'), t('expenseReminderAdded'));
       setShowAddModal(false);
       resetForm();
     } catch (error) {
       console.error('Error saving reminder:', error);
-      Alert.alert('Error', 'Failed to save reminder');
+      Alert.alert(t('error'), t('failedToSaveReminder'));
     }
   };
 
@@ -395,17 +395,17 @@ export default function ReminderScreen() {
     
     // Prevent deletion of default reminders
     if (reminderToDelete && (reminderToDelete as any).isDefault) {
-      Alert.alert('Cannot Delete', 'This is a default reminder and cannot be deleted. You can turn it off instead.');
+      Alert.alert(t('cannotDeleteReminder'), t('defaultReminderWarning'));
       return;
     }
 
     Alert.alert(
-      'Delete Reminder',
-      'Are you sure you want to delete this reminder?',
+      t('deleteReminderDialog'),
+      t('areYouSureDeleteReminder'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -422,10 +422,10 @@ export default function ReminderScreen() {
               const expenseReminders = updatedReminders.filter(r => r.type === 'expense') as ExpenseReminder[];
               await AsyncStorage.setItem('expenseReminders', JSON.stringify(expenseReminders));
 
-              Alert.alert('Success', 'Reminder deleted');
+              Alert.alert(t('success'), t('reminderDeletedSuccess'));
             } catch (error) {
               console.error('Error deleting reminder:', error);
-              Alert.alert('Error', 'Failed to delete reminder');
+              Alert.alert(t('error'), t('failedToDeleteReminder'));
             }
           },
         },
@@ -548,7 +548,7 @@ export default function ReminderScreen() {
       console.log('Modal closed and time saved');
     } catch (error) {
       console.error('Error in handleTimeConfirm:', error);
-      Alert.alert('Error', 'Failed to save time. Please try again.');
+      Alert.alert(t('error'), t('failedToSaveTimeError'));
     }
   };
 
@@ -560,9 +560,9 @@ export default function ReminderScreen() {
 
   const getFrequencyLabel = (frequency: string) => {
     const labels: { [key: string]: string } = {
-      daily: 'Daily',
-      weekly: 'Weekly',
-      monthly: 'Monthly',
+      daily: t('daily'),
+      weekly: t('weekly'),
+      monthly: t('monthly'),
     };
     return labels[frequency] || frequency;
   };
@@ -584,7 +584,7 @@ export default function ReminderScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#000" />
-          <Text style={styles.loadingText}>Loading reminders...</Text>
+          <Text style={styles.loadingText}>{t('loadingReminders')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -594,9 +594,9 @@ export default function ReminderScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Reminders</Text>
-          <Text style={styles.headerSubtitle}>Stay on top of your finances</Text>
+        <View style={styles.header} key={languageChangeKey}>
+          <Text style={styles.headerTitle}>{t('remindersPageTitle')}</Text>
+          <Text style={styles.headerSubtitle}>{t('stayOnTopOfFinances')}</Text>
         </View>
 
         {/* Add Expense Reminder Button */}
@@ -606,14 +606,14 @@ export default function ReminderScreen() {
             onPress={() => setShowAddModal(true)}
           >
             <Ionicons name="add-circle" size={24} color="#fff" />
-            <Text style={styles.addButtonText}>Add Expense Reminder</Text>
+            <Text style={styles.addButtonText}>{t('addExpenseReminder')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Expense Reminders Section */}
         {expenseReminders.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📅 Future Expenses</Text>
+            <Text style={styles.sectionTitle}>{t('futureExpensesTitle')}</Text>
             {expenseReminders.map(reminder => (
               <View key={reminder.id} style={styles.expenseReminderCard}>
                 <View style={styles.expenseContent}>
@@ -664,13 +664,13 @@ export default function ReminderScreen() {
 
         {/* Recurring Reminders Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🔔 Recurring Reminders</Text>
+          <Text style={styles.sectionTitle}>{t('recurringRemindersTitle')}</Text>
           {recurringReminders.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="notifications-outline" size={48} color="#BDBDBD" />
-              <Text style={styles.emptyStateText}>No reminders set</Text>
+              <Text style={styles.emptyStateText}>{t('noRemindersSet')}</Text>
               <Text style={styles.emptyStateSubtext}>
-                Add reminders to help you stay on track
+                {t('addRemindersToStayOnTrack')}
               </Text>
             </View>
           ) : (
@@ -768,12 +768,12 @@ export default function ReminderScreen() {
 
                 {/* Modal Header */}
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>📅 Add Expense Reminder</Text>
+                  <Text style={styles.modalTitle}>{t('addExpenseReminderModalTitle')}</Text>
                 </View>
 
                 {/* Date Picker */}
                 <View style={styles.formSection}>
-                  <Text style={styles.formLabel}>Select Date</Text>
+                  <Text style={styles.formLabel}>{t('selectDateLabel')}</Text>
                   <TouchableOpacity
                     style={styles.datePickerButton}
                     onPress={() => setShowDatePicker(true)}
@@ -795,7 +795,7 @@ export default function ReminderScreen() {
 
                 {/* Amount Input */}
                 <View style={styles.formSection}>
-                  <Text style={styles.formLabel}>Amount ($)</Text>
+                  <Text style={styles.formLabel}>{t('amountLabel')}</Text>
                   <View style={styles.amountInputContainer}>
                     <Text style={styles.currencySymbol}>$</Text>
                     <TextInput
@@ -811,10 +811,10 @@ export default function ReminderScreen() {
 
                 {/* Notes Input */}
                 <View style={styles.formSection}>
-                  <Text style={styles.formLabel}>Notes</Text>
+                  <Text style={styles.formLabel}>{t('notesLabel')}</Text>
                   <TextInput
                     style={[styles.notesInput, { minHeight: 80 }]}
-                    placeholder="e.g., Trip to Segovia"
+                    placeholder={t('exampleTripSegovia')}
                     placeholderTextColor="#999"
                     value={notes}
                     onChangeText={setNotes}
@@ -828,7 +828,7 @@ export default function ReminderScreen() {
                   style={styles.submitButton}
                   onPress={handleAddExpenseReminder}
                 >
-                  <Text style={styles.submitButtonText}>Add Reminder</Text>
+                  <Text style={styles.submitButtonText}>{t('addReminderButton')}</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -858,7 +858,7 @@ export default function ReminderScreen() {
               onPress={handleTimeConfirm}
               activeOpacity={0.7}
             >
-              <Text style={styles.timePickerSimpleButtonText}>OK</Text>
+              <Text style={styles.timePickerSimpleButtonText}>{t('okButton')}</Text>
             </TouchableOpacity>
           </View>
         </View>
