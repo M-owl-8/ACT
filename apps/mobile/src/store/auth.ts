@@ -1,7 +1,4 @@
 import { create } from 'zustand';
-import * as SecureStore from 'expo-secure-store';
-import { API } from '../api/client';
-import { registerPushTokenAfterLogin } from '../services/notificationService';
 
 type User = {
   id: number;
@@ -25,108 +22,54 @@ type AuthState = {
   initializeAuth: () => Promise<void>;
 };
 
+// Default guest user for offline mode
+const DEFAULT_GUEST_USER: User = {
+  id: 1,
+  email: 'guest@local',
+  is_admin: false,
+  name: 'Guest User',
+  language: 'en',
+  theme: 'dark',
+  currency: 'USD',
+  created_at: new Date().toISOString(),
+};
+
 export const useAuthStore = create<AuthState>((set, get) => ({
-  accessToken: null,
-  refreshToken: null,
+  accessToken: 'local-offline-mode',
+  refreshToken: 'local-offline-mode',
   user: null,
   isLoading: true,
 
   setTokens: async (access, refresh) => {
-    try {
-      await SecureStore.setItemAsync('access', access);
-      await SecureStore.setItemAsync('refresh', refresh);
-      set({ accessToken: access, refreshToken: refresh });
-      
-      // Register push token with backend after successful login
-      registerPushTokenAfterLogin().catch(error => {
-        console.warn('Failed to register push token after login:', error);
-      });
-    } catch (error) {
-      console.error('Failed to save tokens:', error);
-      throw error;
-    }
+    // No-op in offline mode
+    set({ accessToken: access, refreshToken: refresh });
+    console.log('✅ Tokens set (offline mode)');
   },
 
   logout: async () => {
-    try {
-      // Get refresh token before clearing
-      const refreshToken = await SecureStore.getItemAsync('refresh');
-      
-      // Call backend to revoke refresh token
-      if (refreshToken) {
-        try {
-          await API.post('/auth/logout', { refresh_token: refreshToken });
-        } catch (error) {
-          // Ignore logout errors, still clear local tokens
-          console.warn('Logout API call failed:', error);
-        }
-      }
-    } finally {
-      // Always clear local tokens
-      try {
-        await SecureStore.deleteItemAsync('access');
-        await SecureStore.deleteItemAsync('refresh');
-      } catch (error) {
-        console.warn('Failed to delete tokens from secure store:', error);
-      }
-      set({ accessToken: null, refreshToken: null, user: null });
-    }
+    // No-op in offline mode - user stays logged in as guest
+    console.log('⚠️ Logout not available in offline mode');
   },
 
   fetchProfile: async () => {
-    try {
-      const { accessToken } = get();
-      if (!accessToken) {
-        console.log('⚠️ No access token available for profile fetch');
-        return;
-      }
-      
-      console.log('📡 Fetching user profile...');
-      const res = await API.get('/users/me');
-      set({ user: res.data });
-      console.log('✅ Profile fetched successfully:', res.data.email);
-    } catch (error: any) {
-      console.error('❌ Failed to fetch profile:', error.response?.data || error.message);
-      // If profile fetch fails with 401, clear auth state
-      if (error.response?.status === 401) {
-        console.log('🔄 Token expired, logging out...');
-        await get().logout();
-      } else {
-        // For other errors (network, etc.), don't logout but clear user
-        console.log('⚠️ Network or server error, keeping tokens for retry');
-        set({ user: null });
-      }
-    }
+    // Return default guest user
+    set({ user: DEFAULT_GUEST_USER });
+    console.log('✅ Guest profile loaded');
   },
 
   initializeAuth: async () => {
     try {
       set({ isLoading: true });
-      console.log('🔐 Initializing authentication...');
+      console.log('🔐 Initializing authentication (offline mode)...');
       
-      // Try to restore tokens from secure storage
-      const accessToken = await SecureStore.getItemAsync('access');
-      const refreshToken = await SecureStore.getItemAsync('refresh');
-
-      if (accessToken && refreshToken) {
-        console.log('✅ Found stored tokens, restoring session...');
-        set({ accessToken, refreshToken });
-        await get().fetchProfile();
-      } else {
-        console.log('ℹ️ No stored tokens found, user needs to login');
-      }
+      // Auto-login as guest user
+      await get().fetchProfile();
+      
+      console.log('✅ Auth initialization complete - logged in as guest');
     } catch (error) {
-      console.error('❌ Failed to restore auth session:', error);
-      // Clear any corrupted tokens
-      try {
-        await SecureStore.deleteItemAsync('access');
-        await SecureStore.deleteItemAsync('refresh');
-      } catch (e) {
-        console.warn('Failed to clear tokens:', e);
-      }
+      console.error('❌ Failed to initialize auth:', error);
     } finally {
       set({ isLoading: false });
-      console.log('✅ Auth initialization complete');
     }
   }
 }));

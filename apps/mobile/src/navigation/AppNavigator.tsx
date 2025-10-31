@@ -4,14 +4,9 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import LoginScreen from '../screens/LoginScreen';
-import RegisterScreen from '../screens/RegisterScreen';
-import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
-import ProfileScreen from '../screens/ProfileScreen';
-import IncomeScreen from '../screens/IncomeScreen';
+import ExpensesScreen from '../screens/ExpensesScreen';
 import AddIncomeScreen from '../screens/AddIncomeScreen';
 import EditIncomeScreen from '../screens/EditIncomeScreen';
-import ExpensesScreen from '../screens/ExpensesScreen';
 import AddExpenseScreen from '../screens/AddExpenseScreen';
 import EditExpenseScreen from '../screens/EditExpenseScreen';
 import AddScreen from '../screens/AddScreen';
@@ -20,7 +15,6 @@ import MotivationScreen from '../screens/MotivationScreen';
 import ReminderScreen from '../screens/ReminderScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 
-import { useAuthStore } from '../store/auth';
 import { useTheme } from '../theme';
 
 const Stack = createNativeStackNavigator();
@@ -153,8 +147,7 @@ function MainTabs() {
 }
 
 export default function AppNavigator() {
-  const user = useAuthStore((s) => s.user);
-
+  // Always show main app - offline mode with local data only
   return (
     <NavigationContainer>
       <Stack.Navigator
@@ -162,63 +155,42 @@ export default function AppNavigator() {
           headerShown: false,
         }}
       >
-        {user ? (
-          // Authenticated screens
-          <>
-            <Stack.Screen 
-              name="Main" 
-              component={MainTabs}
-            />
-            <Stack.Screen 
-              name="AddIncome" 
-              component={AddIncomeScreen}
-              options={{
-                presentation: 'modal',
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen 
-              name="EditIncome" 
-              component={EditIncomeScreen}
-              options={{
-                presentation: 'modal',
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen 
-              name="AddExpense" 
-              component={AddExpenseScreen}
-              options={{
-                presentation: 'modal',
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen 
-              name="EditExpense" 
-              component={EditExpenseScreen}
-              options={{
-                presentation: 'modal',
-                headerShown: false,
-              }}
-            />
-          </>
-        ) : (
-          // Auth screens - Clean white/black theme
-          <>
-            <Stack.Screen 
-              name="Login" 
-              component={LoginScreen}
-            />
-            <Stack.Screen 
-              name="Register" 
-              component={RegisterScreen}
-            />
-            <Stack.Screen 
-              name="ForgotPassword" 
-              component={ForgotPasswordScreen}
-            />
-          </>
-        )}
+        <Stack.Screen 
+          name="Main" 
+          component={MainTabs}
+        />
+        <Stack.Screen 
+          name="AddIncome" 
+          component={AddIncomeScreen}
+          options={{
+            presentation: 'modal',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="EditIncome" 
+          component={EditIncomeScreen}
+          options={{
+            presentation: 'modal',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="AddExpense" 
+          component={AddExpenseScreen}
+          options={{
+            presentation: 'modal',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="EditExpense" 
+          component={EditExpenseScreen}
+          options={{
+            presentation: 'modal',
+            headerShown: false,
+          }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
