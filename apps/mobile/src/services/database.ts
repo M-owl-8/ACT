@@ -62,6 +62,7 @@ async function createTables(): Promise<void> {
       icon TEXT,
       color TEXT,
       is_default INTEGER DEFAULT 0,
+      expense_type TEXT DEFAULT 'mandatory' CHECK(expense_type IN ('mandatory', 'neutral', 'excess')),
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
@@ -117,16 +118,16 @@ async function seedDefaultData(): Promise<void> {
   
   console.log('🌱 Seeding default data...');
   
-  // Default expense categories
+  // Default expense categories with expense type classification
   const expenseCategories = [
-    { name: 'Food & Dining', icon: '🍔', color: '#FF6B6B' },
-    { name: 'Transportation', icon: '🚗', color: '#4ECDC4' },
-    { name: 'Shopping', icon: '🛍️', color: '#95E1D3' },
-    { name: 'Entertainment', icon: '🎬', color: '#F38181' },
-    { name: 'Bills & Utilities', icon: '💡', color: '#AA96DA' },
-    { name: 'Healthcare', icon: '🏥', color: '#FCBAD3' },
-    { name: 'Education', icon: '📚', color: '#A8D8EA' },
-    { name: 'Other', icon: '📦', color: '#C7CEEA' },
+    { name: 'Food & Dining', icon: '🍔', color: '#FF6B6B', expense_type: 'mandatory' },
+    { name: 'Transportation', icon: '🚗', color: '#4ECDC4', expense_type: 'mandatory' },
+    { name: 'Bills & Utilities', icon: '💡', color: '#AA96DA', expense_type: 'mandatory' },
+    { name: 'Healthcare', icon: '🏥', color: '#FCBAD3', expense_type: 'mandatory' },
+    { name: 'Education', icon: '📚', color: '#A8D8EA', expense_type: 'neutral' },
+    { name: 'Shopping', icon: '🛍️', color: '#95E1D3', expense_type: 'neutral' },
+    { name: 'Entertainment', icon: '🎬', color: '#F38181', expense_type: 'excess' },
+    { name: 'Other', icon: '📦', color: '#C7CEEA', expense_type: 'neutral' },
   ];
   
   // Default income categories
@@ -141,16 +142,16 @@ async function seedDefaultData(): Promise<void> {
   // Insert expense categories (user_id = 0 for default/system categories)
   for (const cat of expenseCategories) {
     await db.runAsync(
-      'INSERT INTO categories (user_id, name, type, icon, color, is_default) VALUES (?, ?, ?, ?, ?, ?)',
-      [0, cat.name, 'expense', cat.icon, cat.color, 1]
+      'INSERT INTO categories (user_id, name, type, icon, color, is_default, expense_type) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [0, cat.name, 'expense', cat.icon, cat.color, 1, cat.expense_type]
     );
   }
   
   // Insert income categories
   for (const cat of incomeCategories) {
     await db.runAsync(
-      'INSERT INTO categories (user_id, name, type, icon, color, is_default) VALUES (?, ?, ?, ?, ?, ?)',
-      [0, cat.name, 'income', cat.icon, cat.color, 1]
+      'INSERT INTO categories (user_id, name, type, icon, color, is_default, expense_type) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [0, cat.name, 'income', cat.icon, cat.color, 1, 'neutral']
     );
   }
   
@@ -230,6 +231,7 @@ export interface Category {
   icon?: string;
   color?: string;
   is_default: number;
+  expense_type: 'mandatory' | 'neutral' | 'excess';
   created_at: string;
 }
 
@@ -254,4 +256,113 @@ export interface Book {
   category?: string;
   rating?: number;
   created_at: string;
+}
+
+/**
+ * Get categories by type (income or expense)
+ */
+export async function getCategories(type?: 'income' | 'expense'): Promise<Category[]> {
+  const database = getDatabase();
+  if (type) {
+    return await database.getAllAsync<Category>(
+      'SELECT * FROM categories WHERE type = ? ORDER BY name',
+      [type]
+    );
+  }
+  return await database.getAllAsync<Category>('SELECT * FROM categories ORDER BY name');
+}
+
+/**
+ * Create or update entry
+ */
+export async function createEntry(entry: Omit<Entry, 'id' | 'created_at' | 'updated_at'>): Promise<Entry> {
+  const database = getDatabase();
+  const now = new Date().toISOString();
+  
+  const result = await database.runAsync(
+    'INSERT INTO entries (user_id, category_id, amount, type, description, date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    [entry.user_id, entry.category_id, entry.amount, entry.type, entry.description || null, entry.date, now, now]
+  );
+  
+  return {
+    ...entry,
+    id: result.lastInsertRowId as number,
+    created_at: now,
+    updated_at: now,
+  };
+}
+
+/**
+ * Get entries with optional filters
+ */
+export async function getEntries(filters?: {
+  user_id?: number;
+  type?: 'income' | 'expense';
+  start_date?: string;
+  end_date?: string;
+  limit?: number;
+}): Promise<Entry[]> {
+  const database = getDatabase();
+  let query = 'SELECT * FROM entries WHERE 1=1';
+  const params: any[] = [];
+  
+  if (filters?.user_id !== undefined) {
+    query += ' AND user_id = ?';
+    params.push(filters.user_id);
+  }
+  if (filters?.type) {
+    query += ' AND type = ?';
+    params.push(filters.type);
+  }
+  if (filters?.start_date) {
+    query += ' AND date >= ?';
+    params.push(filters.start_date);
+  }
+  if (filters?.end_date) {
+    query += ' AND date <= ?';
+    params.push(filters.end_date);
+  }
+  
+  query += ' ORDER BY date DESC';
+  
+  if (filters?.limit) {
+    query += ' LIMIT ?';
+    params.push(filters.limit);
+  }
+  
+  return await database.getAllAsync<Entry>(query, params);
+}
+
+/**
+ * Get entry totals
+ */
+export async function getEntryTotals(filters?: {
+  user_id?: number;
+  type?: 'income' | 'expense';
+  start_date?: string;
+  end_date?: string;
+}): Promise<{ total: number; count: number }> {
+  const database = getDatabase();
+  let query = 'SELECT COALESCE(SUM(amount), 0) as total, COUNT(*) as count FROM entries WHERE 1=1';
+  const params: any[] = [];
+  
+  if (filters?.user_id !== undefined) {
+    query += ' AND user_id = ?';
+    params.push(filters.user_id);
+  }
+  if (filters?.type) {
+    query += ' AND type = ?';
+    params.push(filters.type);
+  }
+  if (filters?.start_date) {
+    query += ' AND date >= ?';
+    params.push(filters.start_date);
+  }
+  if (filters?.end_date) {
+    query += ' AND date <= ?';
+    params.push(filters.end_date);
+  }
+  
+  const result = await database.getFirstAsync<{ total: number; count: number }>(query, params);
+  return result || { total: 0, count: 0 };
 }

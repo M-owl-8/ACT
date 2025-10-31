@@ -85,16 +85,6 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView key={`settings-${languageChangeKey}`} style={styles.container}>
       <ScrollView style={styles.scrollView}>
-        {/* DEBUG Panel */}
-        <View style={{backgroundColor: '#fff3cd', padding: 12, margin: 8, borderRadius: 4, borderWidth: 1, borderColor: '#ffc107'}}>
-          <Text style={{fontSize: 10, color: '#333', marginBottom: 4}}>🔧 DEBUG INFO:</Text>
-          <Text style={{fontSize: 9, color: '#666', fontFamily: 'monospace'}}>i18n.language: {i18n.language}</Text>
-          <Text style={{fontSize: 9, color: '#666', fontFamily: 'monospace'}}>store.language: {language}</Text>
-          <Text style={{fontSize: 9, color: '#666', fontFamily: 'monospace'}}>changeKey: {languageChangeKey}</Text>
-          <Text style={{fontSize: 9, color: '#666', fontFamily: 'monospace'}}>t('settings'): {t('settings')}</Text>
-          <Text style={{fontSize: 9, color: '#666', fontFamily: 'monospace'}}>t('accountDetails'): {t('accountDetails')}</Text>
-        </View>
-
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton}>
@@ -115,18 +105,6 @@ export default function SettingsScreen() {
               value={fullName}
               onChangeText={(value) => handleFieldChange(setFullName, value)}
             />
-          </View>
-
-          <View style={styles.inputFieldWrapper}>
-            <TextInput
-              style={styles.input}
-              placeholder={t('emailLabel')}
-              placeholderTextColor="#999"
-              keyboardType="email-address"
-              value={email}
-              editable={false}
-            />
-            <Text style={styles.helperText}>{t('emailCannotBeChanged')}</Text>
           </View>
         </View>
 
@@ -158,82 +136,6 @@ export default function SettingsScreen() {
             <View style={styles.currencyInfoText}>
               <Text style={styles.currencyInfoTitle}>{t('currency')}</Text>
               <Text style={styles.currencyInfoDescription}>{t('currencyCannotBeChanged')}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Notification Settings */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('notificationSettings')}</Text>
-
-          <View style={styles.toggleRow}>
-            <Text style={styles.toggleLabel}>{t('emailNotifications')}</Text>
-            <TouchableOpacity
-              style={[styles.toggleButton, emailNotificationsEnabled && styles.toggleButtonActive]}
-              onPress={() => handleFieldChange(setEmailNotifications, !emailNotificationsEnabled)}
-            >
-              <View
-                style={[styles.toggleKnob, emailNotificationsEnabled && styles.toggleKnobActive]}
-              />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.toggleRow}>
-            <Text style={styles.toggleLabel}>{t('pushNotifications')}</Text>
-            <TouchableOpacity
-              style={[styles.toggleButton, pushNotificationsEnabled && styles.toggleButtonActive]}
-              onPress={() => handleFieldChange(setPushNotifications, !pushNotificationsEnabled)}
-            >
-              <View
-                style={[styles.toggleKnob, pushNotificationsEnabled && styles.toggleKnobActive]}
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <TouchableOpacity style={styles.upgradePlanButton}>
-          <Text style={styles.upgradePlanText}>{t('upgradePlan')}</Text>
-        </TouchableOpacity>
-
-        {/* App Preferences */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('appPreferences')}</Text>
-
-          <View style={styles.radioGroup}>
-            <Text style={styles.toggleLabel}>{t('theme')}</Text>
-            <View style={styles.radioRow}>
-              <View style={styles.radioOption}>
-                <View style={styles.radioOuterCircle}>
-                  <View style={styles.radioInnerCircle} />
-                </View>
-              </View>
-              <View style={styles.radioOption}>
-                <View style={styles.radioOuterCircle}>
-                  <View style={styles.radioInnerCircleInactive} />
-                </View>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.sliderRow}>
-            <Text style={styles.toggleLabel}>{t('fontSize')} ({fontSize}px)</Text>
-            <View style={styles.sliderControls}>
-              <TouchableOpacity 
-                style={styles.sliderButton} 
-                onPress={() => handleFieldChange(setFontSize, fontSize - 1)}
-              >
-                <Ionicons name="remove" size={16} color="#000" />
-              </TouchableOpacity>
-              <View style={styles.sliderTrack}>
-                <View style={[styles.sliderFill, { width: `${((fontSize - 10) / 14) * 100}%` }]} />
-                <View style={styles.sliderThumb} />
-              </View>
-              <TouchableOpacity 
-                style={styles.sliderButton} 
-                onPress={() => handleFieldChange(setFontSize, fontSize + 1)}
-              >
-                <Ionicons name="add" size={16} color="#000" />
-              </TouchableOpacity>
             </View>
           </View>
         </View>

@@ -266,19 +266,12 @@ export default function ReminderScreen() {
       // Combine mock reminders with stored expense reminders
       const allReminders = [...mockReminders, ...deserializedReminders];
       
-      // Schedule notifications for enabled reminders
-      for (const reminder of allReminders) {
-        if (reminder.is_enabled && !reminder.notificationId) {
-          if (reminder.type === 'recurring') {
-            const notificationId = await scheduleRecurringNotification(reminder as RecurringReminder);
-            reminder.notificationId = notificationId || undefined;
-          } else if (reminder.type === 'expense') {
-            const notificationId = await scheduleExpenseNotification(reminder as ExpenseReminder);
-            reminder.notificationId = notificationId || undefined;
-          }
-        }
-      }
-
+      // Only display reminders - do NOT re-schedule notifications on page load
+      // Notifications are scheduled only when:
+      // 1. A new reminder is created
+      // 2. A reminder is toggled on
+      // This prevents duplicate notifications from being triggered every time the page opens
+      
       setReminders(allReminders);
     } catch (error) {
       console.error('Error loading reminders:', error);

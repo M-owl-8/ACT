@@ -19,6 +19,7 @@ interface SettingsState {
   fontSize: number;
   currency: string;
   language: string;
+  currencySet: boolean; // Track if currency has been set on first launch
   
   // Privacy settings
   dataSharingEnabled: boolean;
@@ -56,6 +57,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   fontSize: 14,
   currency: 'USD',
   language: 'en',
+  currencySet: false,
   dataSharingEnabled: true,
   usageStatsEnabled: true,
   fullName: '',
@@ -83,7 +85,12 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
 
   setCurrency: async (currency) => {
-    set({ currency });
+    const state = get();
+    if (state.currencySet && state.currency !== currency) {
+      console.warn('❌ Currency cannot be changed after first selection');
+      return;
+    }
+    set({ currency, currencySet: true });
     await get().syncToBackend();
   },
 

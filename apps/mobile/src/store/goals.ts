@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import { api } from '../api/client';
-import { useAutoSave } from '../services/autoSaveService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface Goal {
   id: number;
@@ -26,6 +25,26 @@ interface GoalsStore {
   syncGoalsToBackend: () => Promise<void>;
 }
 
+const GOALS_STORAGE_KEY = 'GOALS_DATA';
+
+async function loadGoalsFromStorage(): Promise<Goal[]> {
+  try {
+    const data = await AsyncStorage.getItem(GOALS_STORAGE_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch (error) {
+    console.error('Error loading goals from storage:', error);
+    return [];
+  }
+}
+
+async function saveGoalsToStorage(goals: Goal[]): Promise<void> {
+  try {
+    await AsyncStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(goals));
+  } catch (error) {
+    console.error('Error saving goals to storage:', error);
+  }
+}
+
 export const useGoalsStore = create<GoalsStore>((set, get) => ({
   goals: [],
   loading: false,
@@ -33,26 +52,11 @@ export const useGoalsStore = create<GoalsStore>((set, get) => ({
   loadGoals: async () => {
     try {
       set({ loading: true });
-      const response = await api.get('/motivation/goals');
-      
-      if (Array.isArray(response.data)) {
-        set({ goals: response.data });
-        // Auto-save goals to local storage
-        await saveGoalsLocally(response.data);
-      } else {
-        console.warn('Goals response is not an array:', response.data);
-        set({ goals: [] });
-      }
+      const goals = await loadGoalsFromStorage();
+      set({ goals });
+      console.log('Goals loaded from local storage:', goals);
     } catch (error: any) {
       console.error('Error loading goals:', error);
-      console.error('Error response:', error.response?.data);
-      
-      // Check for session expiration
-      if (error.message?.includes('No refresh token available') || 
-          error.message?.includes('session expired')) {
-        console.error('🚨 Session has expired during goal loading');
-      }
-      
       set({ goals: [] });
     } finally {
       set({ loading: false });
@@ -61,37 +65,46 @@ export const useGoalsStore = create<GoalsStore>((set, get) => ({
 
   createGoal: async (goalData: any) => {
     try {
-      const response = await api.post('/motivation/goals', goalData);
-      const newGoal = response.data;
-      
-      // Update local state
       const currentGoals = get().goals;
+      
+      // Generate a new ID (use timestamp + random number)
+      const newId = Date.now() + Math.floor(Math.random() * 1000);
+      
+      const newGoal: Goal = {
+        id: newId,
+        kind: goalData.kind,
+        title: goalData.title,
+        description: goalData.description || null,
+        target_value: goalData.target_value,
+        current_value: 0,
+        status: goalData.status || 'active',
+        start_date: goalData.start_date,
+        end_date: goalData.end_date,
+        progress_percentage: 0,
+      };
+      
       const updatedGoals = [...currentGoals, newGoal];
       set({ goals: updatedGoals });
       
-      // Auto-save to local storage
-      await saveGoalsLocally(updatedGoals);
+      // Save to storage
+      await saveGoalsToStorage(updatedGoals);
       
       console.log('Goal created successfully:', newGoal);
       return newGoal;
     } catch (error: any) {
       console.error('Error creating goal:', error);
-      console.error('Error response:', error.response?.data);
       throw error;
     }
   },
 
   deleteGoal: async (goalId: number) => {
     try {
-      await api.delete(`/motivation/goals/${goalId}`);
-      
-      // Update local state
       const currentGoals = get().goals;
       const updatedGoals = currentGoals.filter(g => g.id !== goalId);
       set({ goals: updatedGoals });
       
-      // Auto-save to local storage
-      await saveGoalsLocally(updatedGoals);
+      // Save to storage
+      await saveGoalsToStorage(updatedGoals);
       
       console.log('Goal deleted successfully:', goalId);
       return true;
@@ -103,17 +116,14 @@ export const useGoalsStore = create<GoalsStore>((set, get) => ({
 
   completeGoal: async (goalId: number) => {
     try {
-      await api.post(`/motivation/goals/${goalId}/complete`);
-      
-      // Update local state
       const currentGoals = get().goals;
       const updatedGoals = currentGoals.map(g =>
         g.id === goalId ? { ...g, status: 'completed' } : g
       );
       set({ goals: updatedGoals });
       
-      // Auto-save to local storage
-      await saveGoalsLocally(updatedGoals);
+      // Save to storage
+      await saveGoalsToStorage(updatedGoals);
       
       console.log('Goal completed successfully:', goalId);
       return true;
@@ -125,23 +135,34 @@ export const useGoalsStore = create<GoalsStore>((set, get) => ({
 
   addSavings: async (goalId: number, amount: number) => {
     try {
-      const response = await api.post(`/motivation/goals/${goalId}/add-savings`, {
-        amount: amount,
+      const currentGoals = get().goals;
+      
+      const updatedGoals = currentGoals.map(g => {
+        if (g.id === goalId) {
+          const newCurrent = g.current_value + amount;
+          const progressPercentage = Math.min(
+            Math.round((newCurrent / g.target_value) * 100),
+            100
+          );
+          
+          return {
+            ...g,
+            current_value: newCurrent,
+            progress_percentage: progressPercentage,
+            status: newCurrent >= g.target_value ? 'completed' : g.status,
+          };
+        }
+        return g;
       });
       
-      const updatedGoal = response.data;
-      
-      // Update local state
-      const currentGoals = get().goals;
-      const updatedGoals = currentGoals.map(g =>
-        g.id === goalId ? updatedGoal : g
-      );
       set({ goals: updatedGoals });
       
-      // Auto-save to local storage
-      await saveGoalsLocally(updatedGoals);
+      // Save to storage
+      await saveGoalsToStorage(updatedGoals);
       
       console.log('Savings added successfully:', { goalId, amount });
+      
+      const updatedGoal = updatedGoals.find(g => g.id === goalId) || null;
       return updatedGoal;
     } catch (error) {
       console.error('Error adding savings:', error);
@@ -150,26 +171,7 @@ export const useGoalsStore = create<GoalsStore>((set, get) => ({
   },
 
   syncGoalsToBackend: async () => {
-    try {
-      // Reload goals from backend to ensure sync
-      const response = await api.get('/motivation/goals');
-      if (Array.isArray(response.data)) {
-        set({ goals: response.data });
-        await saveGoalsLocally(response.data);
-      }
-    } catch (error) {
-      console.error('Error syncing goals:', error);
-    }
+    // No-op for offline mode - goals are stored locally
+    console.log('Goals sync (offline mode - using local storage)');
   },
 }));
-
-// Helper function to save goals locally
-async function saveGoalsLocally(goals: Goal[]) {
-  try {
-    // Goals are saved to the database in the services layer
-    // This is a placeholder for potential local storage optimization
-    console.log(`✓ Goals saved locally: ${goals.length} items`);
-  } catch (error) {
-    console.error('Error saving goals locally:', error);
-  }
-}

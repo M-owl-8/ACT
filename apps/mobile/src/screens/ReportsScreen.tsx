@@ -12,10 +12,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { api } from '../api/client';
 import { ExpenseTypeColors } from '../constants/colors';
-import { useAuthStore } from '../store/auth';
+import { useSettingsStore } from '../store/settings';
 import { formatCurrency as formatCurrencyUtil } from '../utils/currencyFormatter';
+import { getEntryTotals, getEntries } from '../services/database';
 
 const { width } = Dimensions.get('window');
 
@@ -53,7 +53,7 @@ interface ReportData {
 
 export default function ReportsScreen() {
   const { t, i18n } = useTranslation();
-  const { user } = useAuthStore();
+  const { currency } = useSettingsStore();
   const [languageChangeKey, setLanguageChangeKey] = useState(0);
   
   const TABS: Array<{ key: ReportRange; label: string }> = [
@@ -85,47 +85,103 @@ export default function ReportsScreen() {
   const fetchReport = async () => {
     try {
       setLoading(true);
-      console.log(`Fetching report for range: ${activeTab}`);
-      const response = await api.get(`/reports/summary?range=${activeTab}`);
-      console.log('Report data received:', response.data);
+      console.log(`Generating report for range: ${activeTab}`);
       
-      if (response.data) {
-        setReportData(response.data);
-      } else {
-        console.warn('Report data is empty');
-        setReportData(null);
+      // Get date range based on active tab
+      const now = new Date();
+      let startDate = new Date();
+      
+      switch (activeTab) {
+        case 'day':
+          startDate.setDate(now.getDate() - 1);
+          break;
+        case 'week':
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case '15d':
+          startDate.setDate(now.getDate() - 15);
+          break;
+        case 'month':
+          startDate.setMonth(now.getMonth() - 1);
+          break;
+        case 'last3m':
+          startDate.setMonth(now.getMonth() - 3);
+          break;
       }
+      
+      // Get all entries in the date range
+      const entries = await getEntries();
+      const filteredEntries = (entries || []).filter(e => {
+        const entryDate = new Date(e.booked_at);
+        return entryDate >= startDate && entryDate <= now;
+      });
+      
+      // Calculate totals
+      let incomeTotal = 0;
+      let expenseTotal = 0;
+      const categoryTotals: Record<number, { name: string; icon: string; type: string; total: number; count: number }> = {};
+      const expenseByType = { mandatory: 0, neutral: 0, excess: 0 };
+      
+      filteredEntries.forEach(entry => {
+        if (entry.type === 'income') {
+          incomeTotal += entry.amount || 0;
+        } else {
+          expenseTotal += entry.amount || 0;
+          const typeKey = entry.expense_type as keyof typeof expenseByType;
+          if (typeKey && expenseByType.hasOwnProperty(typeKey)) {
+            expenseByType[typeKey] += entry.amount || 0;
+          }
+          
+          if (entry.category_id) {
+            if (!categoryTotals[entry.category_id]) {
+              categoryTotals[entry.category_id] = {
+                name: entry.category_name || 'Other',
+                icon: entry.category_icon || '📦',
+                type: entry.expense_type || 'neutral',
+                total: 0,
+                count: 0,
+              };
+            }
+            categoryTotals[entry.category_id].total += entry.amount || 0;
+            categoryTotals[entry.category_id].count += 1;
+          }
+        }
+      });
+      
+      const topCategories = Object.entries(categoryTotals)
+        .map(([id, data]) => ({
+          category_id: parseInt(id),
+          category_name: data.name,
+          category_icon: data.icon,
+          category_color: null,
+          expense_type: data.type,
+          total: data.total,
+          count: data.count,
+        }))
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 5);
+      
+      const reportData: ReportData = {
+        range: activeTab,
+        start_date: startDate.toISOString().split('T')[0],
+        end_date: now.toISOString().split('T')[0],
+        income_total: incomeTotal,
+        expense_total: expenseTotal,
+        net: incomeTotal - expenseTotal,
+        expense_by_type: expenseByType,
+        top_categories: topCategories,
+        excess_alert: {
+          excess_over_threshold: expenseByType.excess > (incomeTotal * 0.3),
+          excess_total: expenseByType.excess,
+          mandatory_total: expenseByType.mandatory,
+          threshold_value: incomeTotal * 0.3,
+          message: null,
+        },
+      };
+      
+      setReportData(reportData);
     } catch (error: any) {
-      console.error('Failed to fetch report:', error);
-      console.error('Error response:', error.response?.data);
-      
-      let errorMessage = t('failedToLoadReportData') || 'Failed to load report data. ';
-      
-      if (error.response) {
-        errorMessage += error.response.data?.detail || 
-                       error.response.data?.message || 
-                       `Server error: ${error.response.status}`;
-      } else if (error.request) {
-        errorMessage += t('networkErrorMessage');
-      } else {
-        errorMessage += error.message || t('unknownError') || 'Unknown error occurred';
-      }
-      
-      Alert.alert(
-        t('errorLoadingReport') || 'Error Loading Report',
-        errorMessage,
-        [
-          {
-            text: t('retry') || 'Retry',
-            onPress: () => fetchReport(),
-          },
-          {
-            text: t('cancel'),
-            style: 'cancel',
-          },
-        ]
-      );
-      
+      console.error('Failed to generate report:', error);
       setReportData(null);
     } finally {
       setLoading(false);
@@ -133,8 +189,7 @@ export default function ReportsScreen() {
   };
 
   const formatCurrency = (amount: number) => {
-    const currency = user?.currency || 'USD';
-    return formatCurrencyUtil(amount, currency, 2);
+    return formatCurrencyUtil(amount, currency || 'USD', 2);
   };
 
   const formatDate = (dateStr: string) => {

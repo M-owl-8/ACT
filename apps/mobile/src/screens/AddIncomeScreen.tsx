@@ -13,14 +13,14 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { createEntry } from "../api/entries";
-import { useAuthStore } from "../store/auth";
+import { createEntry } from "../services/database";
+import { useSettingsStore } from "../store/settings";
 import { formatCurrency } from "../utils/currencyFormatter";
 import { SAMURAI_COLORS, SAMURAI_PATTERNS } from "../theme/SAMURAI_COLORS";
 
 export default function AddIncomeScreen({ navigation, route }: any) {
   const { onSave } = route.params || {};
-  const { user } = useAuthStore();
+  const { currency } = useSettingsStore();
 
   const [source, setSource] = useState("");
   const [amount, setAmount] = useState("");
@@ -45,10 +45,10 @@ export default function AddIncomeScreen({ navigation, route }: any) {
     try {
       await createEntry({
         type: "income",
+        category_id: null,
         amount: amountNum,
-        note: source.trim() || null,
+        note: note.trim() || source.trim(),
         booked_at: date.toISOString(),
-        currency: user?.currency || "USD",
       });
 
       Alert.alert("Success", "Income added successfully", [
@@ -64,7 +64,7 @@ export default function AddIncomeScreen({ navigation, route }: any) {
       console.error("Failed to create income:", error);
       Alert.alert(
         "Error",
-        error.response?.data?.detail || "Failed to add income"
+        "Failed to add income"
       );
     } finally {
       setLoading(false);

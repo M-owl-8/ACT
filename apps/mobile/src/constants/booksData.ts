@@ -126,34 +126,6 @@ export const RECOMMENDED_BOOKS = [
     titleKey: 'book_millionaireNextDoor',
     isLibrary: false,
   },
-  {
-    id: 'recommended_15',
-    title: 'Early Retirement Extreme',
-    author: 'Jacob Lund Fisker',
-    titleKey: 'book_earlyRetirementExtreme',
-    isLibrary: false,
-  },
-  {
-    id: 'recommended_16',
-    title: 'The Smartest Money Book You\'ll Ever Read',
-    author: 'Daniel R. Solin',
-    titleKey: 'book_smartestMoneyBook',
-    isLibrary: false,
-  },
-  {
-    id: 'recommended_17',
-    title: 'Fooled by Randomness',
-    author: 'Nassim Nicholas Taleb',
-    titleKey: 'book_fooledRandomness',
-    isLibrary: false,
-  },
-  {
-    id: 'recommended_18',
-    title: 'The Behavioral Investor',
-    author: 'Daniel Crosby',
-    titleKey: 'book_behavioralInvestor',
-    isLibrary: false,
-  },
 ];
 
 export const ALL_BOOKS = [...LIBRARY_BOOKS, ...RECOMMENDED_BOOKS];

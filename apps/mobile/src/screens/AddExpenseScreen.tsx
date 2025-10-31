@@ -16,13 +16,15 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createEntry } from "../api/entries";
-import { getCategories, createCategory, Category, ExpenseType } from "../api/categories";
+import { getCategories, createEntry } from "../services/database";
+import { Category } from "../services/database";
 import { useAuthStore } from "../store/auth";
 import { useGoalsStore, Goal } from "../store/goals";
-import { api } from "../api/client";
+import { useSettingsStore } from "../store/settings";
 import { formatCurrency } from "../utils/currencyFormatter";
 import { SAMURAI_COLORS } from "../theme/SAMURAI_COLORS";
+
+export type ExpenseType = "mandatory" | "neutral" | "excess";
 
 const LAST_CATEGORY_KEY = "@last_expense_category";
 
@@ -106,30 +108,40 @@ export default function AddExpenseScreen({ navigation, route }: any) {
 
   const loadCategories = async () => {
     try {
-      const data = await getCategories({ type: "expense" });
+      // Load categories from local database instead of API
+      const data = await getCategories("expense");
 
       if (!data || data.length === 0) {
-        Alert.alert(
-          "No Categories",
-          "No expense categories found. Please create categories first.",
-          [{ text: "OK" }]
-        );
+        console.warn("No expense categories found in local database");
         setCategories([]);
         setCategorySections([]);
         setLoadingCategories(false);
         return;
       }
 
-      setCategories(data);
+      // Convert database categories to format expected by the UI
+      const formattedCategories: Category[] = data.map((cat: any) => ({
+        id: cat.id,
+        user_id: cat.user_id,
+        name: cat.name,
+        icon: cat.icon || "🛒",
+        color: cat.color || "#999",
+        expense_type: cat.expense_type || "mandatory",
+        type: "expense",
+        is_default: cat.is_default,
+        created_at: cat.created_at || new Date().toISOString(),
+      }));
+
+      setCategories(formattedCategories);
       
       // Organize categories into sections
-      const sections = organizeCategoriesBySections(data);
+      const sections = organizeCategoriesBySections(formattedCategories);
       setCategorySections(sections);
 
       // Load last used category
       const lastCategoryId = await AsyncStorage.getItem(LAST_CATEGORY_KEY);
       if (lastCategoryId) {
-        const lastCategory = data.find(
+        const lastCategory = formattedCategories.find(
           (cat) => cat.id === parseInt(lastCategoryId)
         );
         if (lastCategory) {
@@ -138,14 +150,11 @@ export default function AddExpenseScreen({ navigation, route }: any) {
       }
     } catch (error: any) {
       console.error("Failed to load categories:", error);
-      const errorMessage =
-        error.response?.data?.detail || error.message || "Failed to load categories";
       Alert.alert(
         "Error Loading Categories",
-        errorMessage + "\n\nPlease check your internet connection and try again.",
+        "Failed to load categories from local storage",
         [
-          { text: "Retry", onPress: () => loadCategories() },
-          { text: "Cancel", onPress: () => navigation.goBack() },
+          { text: "OK", onPress: () => navigation.goBack() },
         ]
       );
     } finally {
@@ -153,35 +162,19 @@ export default function AddExpenseScreen({ navigation, route }: any) {
     }
   };
 
-  const handleOthersCategory = async (expenseType: ExpenseType): Promise<Category | null> => {
-    try {
-      // Check if "Others" category already exists for this expense type
-      const existingOthers = categories.find(
-        cat => cat.name.toLowerCase() === "others" && cat.expense_type === expenseType
-      );
-      
-      if (existingOthers) {
-        return existingOthers;
-      }
-
-      // Create "Others" category if it doesn't exist
-      const newCategory = await createCategory({
-        name: "Others",
-        type: "expense",
-        expense_type: expenseType,
-        color: "#999",
-        icon: "🛒",
-      });
-
-      return newCategory;
-    } catch (error: any) {
-      console.error("Failed to handle Others category:", error);
-      Alert.alert(
-        "Error",
-        error.response?.data?.detail || "Failed to create Others category"
-      );
-      return null;
+  const handleOthersCategory = (expenseType: ExpenseType): Category | null => {
+    // Find or create "Others" category from local categories
+    const existingOthers = categories.find(
+      cat => cat.name.toLowerCase() === "others"
+    );
+    
+    if (existingOthers) {
+      return existingOthers;
     }
+
+    // If not found, return a temporary placeholder
+    // "Others" should already exist from database seeding
+    return null;
   };
 
   const handleSave = async () => {
@@ -211,13 +204,15 @@ export default function AddExpenseScreen({ navigation, route }: any) {
         setSelectedCategory(othersCategory);
       }
 
+      // Save expense to local database
+      const { currency } = useSettingsStore.getState();
       await createEntry({
-        type: "expense",
+        user_id: 0, // Offline mode - single user device
         category_id: categoryId,
         amount: amountNum,
-        note: note.trim() || null,
-        booked_at: date.toISOString(),
-        currency: user?.currency || "USD",
+        type: "expense",
+        description: note.trim() || undefined,
+        date: date.toISOString().split('T')[0], // YYYY-MM-DD format
       });
 
       // Save last used category
@@ -226,56 +221,16 @@ export default function AddExpenseScreen({ navigation, route }: any) {
         categoryId.toString()
       );
 
-      // Fetch updated goals to check if any failed due to this expense
-      try {
-        const goalsResponse = await api.get("/motivation/goals");
-        const updatedGoals: Goal[] = goalsResponse.data || [];
-        
-        // Update store with fresh goals
-        await loadGoalsFromStore();
-
-        // Check for newly failed goals
-        const failedGoals = updatedGoals.filter((goal: Goal) => goal.status === "failed");
-        
-        if (failedGoals.length > 0) {
-          const failedGoalNames = failedGoals.map((g: Goal) => `"${g.title}"`).join(", ");
-          Alert.alert(
-            "⚠️ Goal Failed",
-            `Your expense caused ${failedGoals.length > 1 ? "these goals" : "this goal"} to fail: ${failedGoalNames}`,
-            [
-              {
-                text: "OK",
-                onPress: () => {
-                  if (onSave) onSave();
-                  navigation.goBack();
-                },
-              },
-            ]
-          );
-        } else {
-          Alert.alert("Success", "Expense added successfully", [
-            {
-              text: "OK",
-              onPress: () => {
-                if (onSave) onSave();
-                navigation.goBack();
-              },
-            },
-          ]);
-        }
-      } catch (goalError) {
-        // If fetching goals fails, still show success but don't block
-        console.warn("Failed to fetch updated goals:", goalError);
-        Alert.alert("Success", "Expense added successfully", [
-          {
-            text: "OK",
-            onPress: () => {
-              if (onSave) onSave();
-              navigation.goBack();
-            },
+      // Show success message
+      Alert.alert("Success", "Expense added successfully", [
+        {
+          text: "OK",
+          onPress: () => {
+            if (onSave) onSave();
+            navigation.goBack();
           },
-        ]);
-      }
+        },
+      ]);
     } catch (error: any) {
       console.error("Failed to create expense:", error);
       Alert.alert(

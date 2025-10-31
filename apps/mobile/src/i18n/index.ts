@@ -1271,6 +1271,7 @@ const resources = {
       edit: 'Tahrirlash',
       delete: "O'chirish",
       back: 'Orqaga',
+      addNewEntry: 'Yangi yozuv qo\'shish',
       update: 'Yangilash',
       confirm: 'Tasdiqlash',
       yes: 'Ha',
@@ -1289,6 +1290,7 @@ const resources = {
       all: 'Hammasi',
       none: 'Yo\'q',
       total: 'Jami',
+      remainingBudget: 'Qolgan byudjet',
       
       // Settings Screen
       accountDetails: 'Hisob maʼlumotlari',
@@ -1646,6 +1648,7 @@ const resources = {
       edit: 'Editar',
       delete: 'Eliminar',
       back: 'Atrás',
+      addNewEntry: 'Agregar Nueva Entrada',
       add: 'Agregar',
       update: 'Actualizar',
       confirm: 'Confirmar',
@@ -1665,6 +1668,7 @@ const resources = {
       all: 'Todo',
       none: 'Ninguno',
       total: 'Total',
+      remainingBudget: 'Presupuesto Restante',
       
       // Settings Screen
       accountDetails: 'Detalles de la Cuenta',

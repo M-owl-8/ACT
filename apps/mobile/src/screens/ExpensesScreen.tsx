@@ -15,17 +15,21 @@ import { LineGraph } from "../components/LineGraph";
 import {
   getEntries,
   deleteEntry,
-  getExpenseTypeStats,
-  getEntryTotals,
   Entry,
-  ExpenseTypeStats,
   EntryTotals,
-} from "../api/entries";
-import { useAuthStore } from "../store/auth";
+} from "../services/database";
+import { useSettingsStore } from "../store/settings";
 import { formatCurrency } from "../utils/currencyFormatter";
+
+interface ExpenseTypeStats {
+  mandatory: number;
+  neutral: number;
+  excess: number;
+}
+
 export default function ExpensesScreen({ navigation }: any) {
   const { t, i18n } = useTranslation();
-  const { user } = useAuthStore();
+  const { currency } = useSettingsStore();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [stats, setStats] = useState<ExpenseTypeStats | null>(null);
   const [totals, setTotals] = useState<EntryTotals | null>(null);
@@ -65,27 +69,55 @@ export default function ExpensesScreen({ navigation }: any) {
       const monthRange = getThisMonthRange();
       const last10DaysRange = getLast10DaysRange();
 
-      // Load entries for last 10 days (expense only) - for graph
-      const entriesData = await getEntries({
-        type: "expense",
-        ...last10DaysRange,
-        limit: 1000,
+      // Load all entries for last 10 days (expenses only) - for graph
+      const allEntries = await getEntries();
+      const last10DaysStart = new Date(last10DaysRange.start_date);
+      const last10DaysEnd = new Date(last10DaysRange.end_date);
+      
+      const entriesData = allEntries.filter((entry: any) => {
+        const entryDate = new Date(entry.date);
+        return (
+          entry.type === "expense" &&
+          entryDate >= last10DaysStart &&
+          entryDate <= last10DaysEnd
+        );
       });
 
-      // Load stats for this month - for overview
-      const statsData = await getExpenseTypeStats(monthRange);
-
-      // Load totals for income
-      const totalsData = await getEntryTotals({
-        type: "income",
-        ...monthRange,
+      // Calculate stats for this month (expense types)
+      const monthStart = new Date(monthRange.start_date);
+      const monthEnd = new Date(monthRange.end_date);
+      
+      const monthExpenses = allEntries.filter((entry: any) => {
+        const entryDate = new Date(entry.date);
+        return (
+          entry.type === "expense" &&
+          entryDate >= monthStart &&
+          entryDate <= monthEnd
+        );
       });
+
+      const statsData: ExpenseTypeStats = {
+        mandatory: monthExpenses.reduce((sum, e: any) => e.expenseType === "mandatory" ? sum + e.amount : sum, 0),
+        neutral: monthExpenses.reduce((sum, e: any) => e.expenseType === "neutral" ? sum + e.amount : sum, 0),
+        excess: monthExpenses.reduce((sum, e: any) => e.expenseType === "excess" ? sum + e.amount : sum, 0),
+      };
+
+      // Calculate totals for this month (income + expenses)
+      const monthTransactions = allEntries.filter((entry: any) => {
+        const entryDate = new Date(entry.date);
+        return entryDate >= monthStart && entryDate <= monthEnd;
+      });
+
+      const totalsData: EntryTotals = {
+        income: monthTransactions.reduce((sum, e: any) => e.type === "income" ? sum + e.amount : sum, 0),
+        expenses: monthTransactions.reduce((sum, e: any) => e.type === "expense" ? sum + e.amount : sum, 0),
+      };
 
       setEntries(entriesData);
       setStats(statsData);
       setTotals(totalsData);
     } catch (error: any) {
-      const errorMsg = error.response?.data?.detail || error.message || t('failedToDeleteEntry');
+      const errorMsg = error.message || t('failedToDeleteEntry');
       console.error("Failed to load expense data:", error);
       setError(errorMsg);
       
@@ -206,16 +238,16 @@ export default function ExpensesScreen({ navigation }: any) {
         <View style={styles.statsContainer}>
           <View style={styles.statRow}>
             <Text style={styles.statLabel}>{t('totalIncome')}</Text>
-            <Text style={styles.statValue}>{formatCurrency(totals?.total || 0, user?.currency || 'USD')}</Text>
+            <Text style={styles.statValue}>{formatCurrency(totals?.income || 0, currency)}</Text>
           </View>
           <View style={styles.statRow}>
             <Text style={styles.statLabel}>{t('totalExpenses')}</Text>
-            <Text style={styles.statValue}>{formatCurrency(stats?.total || 0, user?.currency || 'USD')}</Text>
+            <Text style={styles.statValue}>{formatCurrency(totals?.expenses || 0, currency)}</Text>
           </View>
           <View style={styles.statRow}>
             <Text style={styles.statLabel}>{t('remainingBudget')}</Text>
             {(() => {
-              const remaining = (totals?.total || 0) - (stats?.total || 0);
+              const remaining = (totals?.income || 0) - (totals?.expenses || 0);
               let style = styles.remainingPositive; // green
               if (remaining < 0) {
                 style = styles.remainingNegative; // red
@@ -224,7 +256,7 @@ export default function ExpensesScreen({ navigation }: any) {
               }
               return (
                 <Text style={[styles.statValue, style]}>
-                  {formatCurrency(remaining, user?.currency || 'USD')}
+                  {formatCurrency(remaining, currency)}
                 </Text>
               );
             })()}
