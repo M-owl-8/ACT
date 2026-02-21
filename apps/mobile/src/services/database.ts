@@ -78,6 +78,7 @@ async function createTables(): Promise<void> {
       type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
       description TEXT,
       date DATE NOT NULL,
+      synced INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -245,6 +246,15 @@ export interface Entry {
   date: string;
   created_at: string;
   updated_at: string;
+  // Joined from categories
+  category_name?: string;
+  category_icon?: string;
+  expense_type?: 'mandatory' | 'neutral' | 'excess';
+}
+
+export interface EntryTotals {
+  total: number;
+  count: number;
 }
 
 export interface Book {
@@ -293,7 +303,7 @@ export async function createEntry(entry: Omit<Entry, 'id' | 'created_at' | 'upda
 }
 
 /**
- * Get entries with optional filters
+ * Get entries with optional filters (includes joined category info)
  */
 export async function getEntries(filters?: {
   user_id?: number;
@@ -303,34 +313,83 @@ export async function getEntries(filters?: {
   limit?: number;
 }): Promise<Entry[]> {
   const database = getDatabase();
-  let query = 'SELECT * FROM entries WHERE 1=1';
+  let query = `
+    SELECT e.id, e.user_id, e.category_id, e.amount, e.type, e.description, e.date,
+           e.created_at, e.updated_at,
+           c.name as category_name, c.icon as category_icon, c.expense_type
+    FROM entries e
+    LEFT JOIN categories c ON e.category_id = c.id
+    WHERE 1=1
+  `;
   const params: any[] = [];
-  
+
   if (filters?.user_id !== undefined) {
-    query += ' AND user_id = ?';
+    query += ' AND e.user_id = ?';
     params.push(filters.user_id);
   }
   if (filters?.type) {
-    query += ' AND type = ?';
+    query += ' AND e.type = ?';
     params.push(filters.type);
   }
   if (filters?.start_date) {
-    query += ' AND date >= ?';
+    query += ' AND e.date >= ?';
     params.push(filters.start_date);
   }
   if (filters?.end_date) {
-    query += ' AND date <= ?';
+    query += ' AND e.date <= ?';
     params.push(filters.end_date);
   }
-  
-  query += ' ORDER BY date DESC';
-  
+
+  query += ' ORDER BY e.date DESC';
+
   if (filters?.limit) {
     query += ' LIMIT ?';
     params.push(filters.limit);
   }
-  
+
   return await database.getAllAsync<Entry>(query, params);
+}
+
+/**
+ * Delete an entry by ID
+ */
+export async function deleteEntry(id: number): Promise<void> {
+  const database = getDatabase();
+  await database.runAsync('DELETE FROM entries WHERE id = ?', [id]);
+}
+
+/**
+ * Update an existing entry
+ */
+export async function updateEntry(
+  id: number,
+  updates: Partial<Pick<Entry, 'amount' | 'description' | 'date' | 'category_id'>>
+): Promise<Entry> {
+  const database = getDatabase();
+  const now = new Date().toISOString();
+
+  const keys = Object.keys(updates) as Array<keyof typeof updates>;
+  const fields = keys.map(k => `${k} = ?`);
+  const values: any[] = keys.map(k => updates[k]);
+  fields.push('updated_at = ?');
+  values.push(now, id);
+
+  await database.runAsync(
+    `UPDATE entries SET ${fields.join(', ')} WHERE id = ?`,
+    values
+  );
+
+  const updated = await database.getFirstAsync<Entry>(
+    `SELECT e.id, e.user_id, e.category_id, e.amount, e.type, e.description, e.date,
+            e.created_at, e.updated_at,
+            c.name as category_name, c.icon as category_icon, c.expense_type
+     FROM entries e
+     LEFT JOIN categories c ON e.category_id = c.id
+     WHERE e.id = ?`,
+    [id]
+  );
+
+  return updated!;
 }
 
 /**

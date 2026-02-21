@@ -23,9 +23,6 @@ export default function RegisterScreen({ navigation }: any) {
   const { setTokens, fetchProfile } = useAuthStore();
   const { theme } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedCurrency, setSelectedCurrency] = useState<string | null>(null);
-  const [showCurrencyWarning, setShowCurrencyWarning] = useState(false);
-  const [formData, setFormData] = useState<any>(null);
   const password = watch('password');
 
   // Listen for language changes and force re-render
@@ -53,26 +50,15 @@ export default function RegisterScreen({ navigation }: any) {
       return;
     }
 
-    // First, show currency selection - don't submit yet
-    setFormData(data);
-    setSelectedCurrency(null);
-    setShowCurrencyWarning(true);
-  };
-
-  const handleCurrencySelected = async (currency: string) => {
-    setSelectedCurrency(currency);
-    setShowCurrencyWarning(false);
-    
-    // Now submit with currency
+    // Submit registration with default currency (USD)
     setIsLoading(true);
     try {
-      console.log('📝 Attempting registration for:', formData.email);
-      console.log('💱 Currency selected:', currency);
+      console.log('📝 Attempting registration for:', data.email);
       const res = await API.post('/auth/register', {
-        email: formData.email,
-        password: formData.password,
-        recovery_keyword: formData.recovery_keyword,
-        currency: currency
+        email: data.email,
+        password: data.password,
+        recovery_keyword: data.recovery_keyword,
+        currency: 'USD'
       });
       console.log('✅ Registration successful, saving tokens...');
       await setTokens(res.data.access_token, res.data.refresh_token);
@@ -274,104 +260,6 @@ export default function RegisterScreen({ navigation }: any) {
           </View>
         </ThemedView>
       </ScrollView>
-
-      {/* Currency Selection Modal */}
-      <Modal
-        visible={showCurrencyWarning}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowCurrencyWarning(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            {/* Modal Header */}
-            <View style={styles.modalHeader}>
-              <Ionicons name="cash" size={28} color="#FFFFFF" />
-              <Text style={styles.modalTitle}>{t('selectCurrency')}</Text>
-            </View>
-
-            {/* Modal Description */}
-            <Text style={styles.modalDescription}>
-              {t('chooseCurrencyDescription')}
-            </Text>
-
-            {/* Warning Box */}
-            <View style={styles.warningBox}>
-              <View style={styles.warningHeader}>
-                <Ionicons name="warning" size={20} color="#FFB700" />
-                <Text style={styles.warningLabel}>{t('warningLabel')}</Text>
-              </View>
-              <Text style={styles.warningText}>
-                {t('currencyWarningMessage')}
-              </Text>
-            </View>
-
-            {/* Currency Options */}
-            <Text style={styles.currencyLabel}>{t('selectCurrency')}</Text>
-            <View style={styles.currencyGrid}>
-              {['USD', 'EUR', 'RUB', 'UZS'].map((currency) => (
-                <TouchableOpacity
-                  key={currency}
-                  style={[
-                    styles.currencyButton,
-                    selectedCurrency === currency && styles.currencyButtonSelected,
-                  ]}
-                  onPress={() => handleCurrencySelected(currency)}
-                  disabled={isLoading}
-                >
-                  <Ionicons
-                    name={selectedCurrency === currency ? 'checkmark-circle' : 'ellipse-outline'}
-                    size={24}
-                    color={selectedCurrency === currency ? '#4CAF50' : '#CCCCCC'}
-                  />
-                  <Text
-                    style={[
-                      styles.currencyButtonText,
-                      selectedCurrency === currency && styles.currencyButtonTextSelected,
-                    ]}
-                  >
-                    {currency}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Error message if no currency selected */}
-            {!selectedCurrency && (
-              <Text style={styles.selectCurrencyError}>
-                {t('pleaseSelectCurrency')}
-              </Text>
-            )}
-
-            {/* Confirmation Button */}
-            <TouchableOpacity
-              style={[
-                styles.confirmButton,
-                (!selectedCurrency || isLoading) && styles.confirmButtonDisabled,
-              ]}
-              onPress={() => selectedCurrency && handleCurrencySelected(selectedCurrency)}
-              disabled={!selectedCurrency || isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.confirmButtonText}>
-                  {t('confirmSelection')}
-                </Text>
-              )}
-            </TouchableOpacity>
-
-            {/* Cancel Button */}
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => setShowCurrencyWarning(false)}
-              disabled={isLoading}
-            >
-              <Text style={styles.cancelButtonText}>{t('cancel')}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </KeyboardAvoidingView>
   );
 }

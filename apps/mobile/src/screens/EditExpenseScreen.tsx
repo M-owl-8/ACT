@@ -12,25 +12,23 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { updateEntry, Entry } from "../api/entries";
-import { getCategories, Category, ExpenseType } from "../api/categories";
-import { useAuthStore } from "../store/auth";
-import { useGoalsStore, Goal } from "../store/goals";
-import { api } from "../api/client";
+import { updateEntry, getCategories, Entry, Category } from "../services/database";
+import { useGoalsStore } from "../store/goals";
 import { formatCurrency } from "../utils/currencyFormatter";
 import { SAMURAI_COLORS, SAMURAI_PATTERNS } from "../theme/SAMURAI_COLORS";
 
 const LAST_CATEGORY_KEY = "@last_expense_category";
 
+export type ExpenseType = 'mandatory' | 'neutral' | 'excess';
+
 export default function EditExpenseScreen({ navigation, route }: any) {
   const { entry, onSave } = route.params || {};
-  const { user } = useAuthStore();
   const { loadGoals: loadGoalsFromStore } = useGoalsStore();
 
   const [amount, setAmount] = useState(entry?.amount?.toString() || "");
-  const [note, setNote] = useState(entry?.note || "");
+  const [note, setNote] = useState(entry?.description || "");
   const [date, setDate] = useState(
-    entry?.booked_at ? new Date(entry.booked_at) : new Date()
+    entry?.date ? new Date(entry.date) : new Date()
   );
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -45,7 +43,7 @@ export default function EditExpenseScreen({ navigation, route }: any) {
 
   const loadCategories = async () => {
     try {
-      const data = await getCategories({ type: "expense" });
+      const data = await getCategories("expense");
       setCategories(data);
 
       // Set current category if exists
@@ -87,8 +85,8 @@ export default function EditExpenseScreen({ navigation, route }: any) {
       await updateEntry(entry.id, {
         category_id: selectedCategory.id,
         amount: amountNum,
-        note: note.trim() || null,
-        booked_at: date.toISOString(),
+        description: note.trim() || undefined,
+        date: date.toISOString().split('T')[0],
       });
 
       // Save last used category
@@ -97,56 +95,15 @@ export default function EditExpenseScreen({ navigation, route }: any) {
         selectedCategory.id.toString()
       );
 
-      // Fetch updated goals to check if any failed due to this update
-      try {
-        const goalsResponse = await api.get("/motivation/goals");
-        const updatedGoals: Goal[] = goalsResponse.data || [];
-        
-        // Update store with fresh goals
-        await loadGoalsFromStore();
-
-        // Check for newly failed goals
-        const failedGoals = updatedGoals.filter((goal: Goal) => goal.status === "failed");
-        
-        if (failedGoals.length > 0) {
-          const failedGoalNames = failedGoals.map((g: Goal) => `"${g.title}"`).join(", ");
-          Alert.alert(
-            "⚠️ Goal Failed",
-            `Your expense update caused ${failedGoals.length > 1 ? "these goals" : "this goal"} to fail: ${failedGoalNames}`,
-            [
-              {
-                text: "OK",
-                onPress: () => {
-                  if (onSave) onSave();
-                  navigation.goBack();
-                },
-              },
-            ]
-          );
-        } else {
-          Alert.alert("Success", "Expense updated successfully", [
-            {
-              text: "OK",
-              onPress: () => {
-                if (onSave) onSave();
-                navigation.goBack();
-              },
-            },
-          ]);
-        }
-      } catch (goalError) {
-        // If fetching goals fails, still show success but don't block
-        console.warn("Failed to fetch updated goals:", goalError);
-        Alert.alert("Success", "Expense updated successfully", [
-          {
-            text: "OK",
-            onPress: () => {
-              if (onSave) onSave();
-              navigation.goBack();
-            },
+      Alert.alert("Success", "Expense updated successfully", [
+        {
+          text: "OK",
+          onPress: () => {
+            if (onSave) onSave();
+            navigation.goBack();
           },
-        ]);
-      }
+        },
+      ]);
     } catch (error: any) {
       console.error("Failed to update expense:", error);
       Alert.alert(
@@ -192,7 +149,7 @@ export default function EditExpenseScreen({ navigation, route }: any) {
   };
 
   const groupedCategories = categories.reduce((acc, category) => {
-    const type = category.expense_type || "other";
+    const type = (category.expense_type as string) || "other";
     if (!acc[type]) acc[type] = [];
     acc[type].push(category);
     return acc;

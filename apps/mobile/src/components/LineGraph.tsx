@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Svg, { Line, Circle, G, Text as SvgText, Polyline } from "react-native-svg";
-import { Entry } from "../api/entries";
+import { Entry } from "../services/database";
 
 interface LineGraphProps {
   entries: Entry[];
@@ -37,9 +37,9 @@ export function LineGraph({
     // Aggregate expenses by day and type
     entries.forEach((entry) => {
       if (entry.type === "expense") {
-        const dateKey = entry.booked_at.split("T")[0];
+        const dateKey = entry.date.split("T")[0];
         if (dateKey in days) {
-          const expenseType = entry.category?.expense_type || "neutral";
+          const expenseType = entry.expense_type || "neutral";
           days[dateKey][expenseType as keyof typeof days[string]] += entry.amount;
         }
       }

@@ -5,30 +5,18 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Text,
-  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedView, ThemedText, ThemedCard, ThemedButton } from '../components/themed';
 import { useTheme } from '../theme';
-import { booksApi, ReadingSession } from '../api/books';
+import { getDatabase, Book } from '../services/database';
 
-interface Book {
-  id: number;
-  title: string;
-  author: string | null;
-  cover_url: string | null;
-  summary: string | null;
-  key_takeaways: string | null;
-  order_index: number;
-  user_progress: {
-    status: 'not_started' | 'in_progress' | 'done';
-    progress_percent: number;
-    started_at: string | null;
-    completed_at: string | null;
-  } | null;
+interface BookProgress {
+  status: 'not_started' | 'in_progress' | 'done';
+  progress_percent: number;
 }
 
 export default function BookDetailScreen() {
@@ -38,21 +26,35 @@ export default function BookDetailScreen() {
   const { theme } = useTheme();
   const { bookId } = route.params as { bookId: number };
   const [languageChangeKey, setLanguageChangeKey] = React.useState(0);
-  
+
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
-  const [sessions, setSessions] = useState<ReadingSession[]>([]);
-  const [loadingSessions, setLoadingSessions] = useState(false);
+  const [progress, setProgress] = useState<BookProgress>({
+    status: 'not_started',
+    progress_percent: 0,
+  });
+
+  const PROGRESS_KEY = `book_progress_${bookId}`;
 
   const loadBook = async () => {
     try {
-      const [data, sessionsData] = await Promise.all([
-        booksApi.getBook(bookId),
-        booksApi.getReadingSessions(bookId).catch(() => []),
-      ]);
+      const db = getDatabase();
+      const data = await db.getFirstAsync<Book>(
+        'SELECT * FROM books WHERE id = ?',
+        [bookId]
+      );
+      if (!data) {
+        Alert.alert(t('error'), t('failedToLoadBook'));
+        navigation.goBack();
+        return;
+      }
       setBook(data);
-      setSessions(sessionsData || []);
+
+      const savedProgress = await AsyncStorage.getItem(PROGRESS_KEY);
+      if (savedProgress) {
+        setProgress(JSON.parse(savedProgress));
+      }
     } catch (error) {
       console.error('Failed to load book:', error);
       Alert.alert(t('error'), t('failedToLoadBook'));
@@ -72,7 +74,6 @@ export default function BookDetailScreen() {
     }, [bookId])
   );
 
-  // Listen for language changes and force re-render
   React.useEffect(() => {
     const handleLanguageChange = () => {
       setLanguageChangeKey(prev => prev + 1);
@@ -83,19 +84,18 @@ export default function BookDetailScreen() {
     };
   }, [i18n]);
 
-  const updateProgress = async (status: 'not_started' | 'in_progress' | 'done', progress?: number) => {
-    if (!book) return;
-
+  const updateProgress = async (
+    status: 'not_started' | 'in_progress' | 'done',
+    progressPercent?: number
+  ) => {
     setUpdating(true);
     try {
-      const updateData: any = { status };
-      if (progress !== undefined) {
-        updateData.progress_percent = progress;
-      }
-
-      await booksApi.updateProgress(bookId, updateData);
-      await loadBook(); // Reload to get updated data
-      
+      const newProgress: BookProgress = {
+        status,
+        progress_percent: progressPercent !== undefined ? progressPercent : progress.progress_percent,
+      };
+      await AsyncStorage.setItem(PROGRESS_KEY, JSON.stringify(newProgress));
+      setProgress(newProgress);
       Alert.alert(t('success'), t('progressUpdated'));
     } catch (error) {
       console.error('Failed to update progress:', error);
@@ -121,7 +121,6 @@ export default function BookDetailScreen() {
   };
 
   const handleUpdateProgress = () => {
-    const currentProgress = book?.user_progress?.progress_percent || 0;
     Alert.prompt(
       t('updateProgress'),
       t('enterProgressPercent'),
@@ -130,10 +129,11 @@ export default function BookDetailScreen() {
         {
           text: t('update'),
           onPress: (value) => {
-            const progress = parseInt(value || '0', 10);
-            if (progress >= 0 && progress <= 100) {
-              const status = progress === 100 ? 'done' : progress > 0 ? 'in_progress' : 'not_started';
-              updateProgress(status, progress);
+            const newPercent = parseInt(value || '0', 10);
+            if (newPercent >= 0 && newPercent <= 100) {
+              const status =
+                newPercent === 100 ? 'done' : newPercent > 0 ? 'in_progress' : 'not_started';
+              updateProgress(status, newPercent);
             } else {
               Alert.alert(t('error'), t('invalidProgress'));
             }
@@ -141,70 +141,8 @@ export default function BookDetailScreen() {
         },
       ],
       'plain-text',
-      currentProgress.toString()
+      progress.progress_percent.toString()
     );
-  };
-
-  const handleAddReadingSession = () => {
-    Alert.prompt(
-      'Log Reading Session',
-      'How many pages did you read?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Next',
-          onPress: (pages) => {
-            if (pages && parseInt(pages) > 0) {
-              Alert.prompt(
-                'Time Spent',
-                'How many minutes did you spend reading?',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Add Session',
-                    onPress: async (minutes) => {
-                      if (minutes && parseInt(minutes) > 0) {
-                        try {
-                          setUpdating(true);
-                          await booksApi.addReadingSession(bookId, {
-                            pages_read: parseInt(pages),
-                            time_spent_minutes: parseInt(minutes),
-                          });
-                          Alert.alert('Success', 'Reading session logged!');
-                          loadBook();
-                        } catch (error) {
-                          Alert.alert(t('error'), 'Failed to log session');
-                        } finally {
-                          setUpdating(false);
-                        }
-                      }
-                    },
-                  },
-                ],
-                'plain-text'
-              );
-            }
-          },
-        },
-      ],
-      'plain-text'
-    );
-  };
-
-  const formatTime = (minutes: number) => {
-    if (minutes < 60) return `${minutes}m`;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    if (mins === 0) return `${hours}h`;
-    return `${hours}h ${mins}m`;
-  };
-
-  const getTotalTimeSpent = () => {
-    return sessions.reduce((total, session) => total + session.time_spent_minutes, 0);
-  };
-
-  const getTotalPagesRead = () => {
-    return sessions.reduce((total, session) => total + session.pages_read, 0);
   };
 
   if (loading || !book) {
@@ -217,8 +155,8 @@ export default function BookDetailScreen() {
     );
   }
 
-  const status = book.user_progress?.status || 'not_started';
-  const progress = book.user_progress?.progress_percent || 0;
+  const status = progress.status;
+  const progressPercent = progress.progress_percent;
 
   return (
     <ThemedView style={styles.container}>
@@ -248,7 +186,7 @@ export default function BookDetailScreen() {
               variant="h2"
               style={[styles.progressPercent, { color: theme.colors.accent }]}
             >
-              {progress}%
+              {progressPercent}%
             </ThemedText>
           </View>
 
@@ -257,7 +195,7 @@ export default function BookDetailScreen() {
               style={[
                 styles.progressFill,
                 {
-                  width: `${progress}%`,
+                  width: `${progressPercent}%` as any,
                   backgroundColor: theme.colors.accent,
                 },
               ]}
@@ -311,34 +249,14 @@ export default function BookDetailScreen() {
           </View>
         </ThemedCard>
 
-        {book.summary && (
+        {book.description && (
           <ThemedCard style={styles.section}>
             <ThemedText variant="h3" style={styles.sectionTitle}>
               {t('summary')}
             </ThemedText>
             <ThemedText variant="body" style={styles.sectionContent}>
-              {book.summary}
+              {book.description}
             </ThemedText>
-          </ThemedCard>
-        )}
-
-        {book.key_takeaways && (
-          <ThemedCard style={styles.section}>
-            <ThemedText variant="h3" style={styles.sectionTitle}>
-              {t('keyTakeaways')}
-            </ThemedText>
-            {JSON.parse(book.key_takeaways).map((takeaway: string, index: number) => (
-              <View key={index} style={styles.takeawayItem}>
-                <Ionicons
-                  name="checkmark-circle-outline"
-                  size={20}
-                  color={theme.colors.accent}
-                />
-                <ThemedText variant="body" style={styles.takeawayText}>
-                  {takeaway}
-                </ThemedText>
-              </View>
-            ))}
           </ThemedCard>
         )}
       </ScrollView>
@@ -432,15 +350,5 @@ const styles = StyleSheet.create({
   sectionContent: {
     lineHeight: 24,
     opacity: 0.8,
-  },
-  takeawayItem: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
-    alignItems: 'flex-start',
-  },
-  takeawayText: {
-    flex: 1,
-    lineHeight: 22,
   },
 });

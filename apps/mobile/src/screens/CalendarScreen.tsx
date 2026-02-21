@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { api } from '../api/client';
-import { useAuthStore } from '../store/auth';
+import { getEntries, Entry } from '../services/database';
+import { useSettingsStore } from '../store/settings';
 import { formatCurrency } from '../utils/currencyFormatter';
 
 const { width, height } = Dimensions.get('window');
@@ -33,7 +33,7 @@ interface Transaction {
 }
 
 export default function CalendarScreen() {
-  const { user } = useAuthStore();
+  const { currency } = useSettingsStore();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarDays, setCalendarDays] = useState<CalendarDay[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -97,9 +97,8 @@ export default function CalendarScreen() {
   const loadTransactions = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/entries');
-      // API returns array directly, not wrapped in object
-      setTransactions(Array.isArray(response.data) ? response.data : []);
+      const entries = await getEntries();
+      setTransactions(entries as unknown as Transaction[]);
     } catch (error) {
       console.error('Error loading transactions:', error);
     } finally {
@@ -268,7 +267,7 @@ export default function CalendarScreen() {
                     styles.amount,
                     transaction.type === 'income' ? styles.incomeAmount : styles.expenseAmount
                   ]}>
-                    {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount, user?.currency || 'USD', 2)}
+                    {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount, currency || 'USD', 2)}
                   </Text>
                 </View>
               ))

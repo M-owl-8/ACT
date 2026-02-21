@@ -11,18 +11,17 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { updateEntry, Entry } from "../api/entries";
-import { useAuthStore } from "../store/auth";
+import { updateEntry, Entry } from "../services/database";
+import { useSettingsStore } from "../store/settings";
 import { formatCurrency } from "../utils/currencyFormatter";
 import { SAMURAI_COLORS, SAMURAI_PATTERNS } from "../theme/SAMURAI_COLORS";
 
 export default function EditIncomeScreen({ navigation, route }: any) {
   const { entry, onSave } = route.params as { entry: Entry; onSave: () => void };
-  const { user } = useAuthStore();
 
   const [amount, setAmount] = useState(entry.amount.toString());
-  const [note, setNote] = useState(entry.note || "");
-  const [date, setDate] = useState(new Date(entry.booked_at));
+  const [note, setNote] = useState(entry.description || "");
+  const [date, setDate] = useState(new Date(entry.date));
   const [loading, setLoading] = useState(false);
 
   const handleSave = async () => {
@@ -37,8 +36,8 @@ export default function EditIncomeScreen({ navigation, route }: any) {
     try {
       await updateEntry(entry.id, {
         amount: amountNum,
-        note: note.trim() || null,
-        booked_at: date.toISOString(),
+        description: note.trim() || undefined,
+        date: date.toISOString().split('T')[0],
       });
 
       Alert.alert("Success", "Income updated successfully", [

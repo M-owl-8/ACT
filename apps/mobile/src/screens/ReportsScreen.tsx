@@ -112,7 +112,7 @@ export default function ReportsScreen() {
       // Get all entries in the date range
       const entries = await getEntries();
       const filteredEntries = (entries || []).filter(e => {
-        const entryDate = new Date(e.booked_at);
+        const entryDate = new Date(e.date);
         return entryDate >= startDate && entryDate <= now;
       });
       

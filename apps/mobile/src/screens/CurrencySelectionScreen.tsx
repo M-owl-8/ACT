@@ -15,17 +15,7 @@ import { SAMURAI_COLORS } from '../theme/SAMURAI_COLORS';
 
 const CURRENCIES = [
   { code: 'USD', symbol: '$', name: 'US Dollar' },
-  { code: 'EUR', symbol: '€', name: 'Euro' },
-  { code: 'GBP', symbol: '£', name: 'British Pound' },
-  { code: 'JPY', symbol: '¥', name: 'Japanese Yen' },
-  { code: 'RUB', symbol: '₽', name: 'Russian Ruble' },
-  { code: 'INR', symbol: '₹', name: 'Indian Rupee' },
-  { code: 'CNY', symbol: '¥', name: 'Chinese Yuan' },
-  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
-  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
-  { code: 'CHF', symbol: 'CHF', name: 'Swiss Franc' },
-  { code: 'AED', symbol: 'د.إ', name: 'UAE Dirham' },
-  { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar' },
+  { code: 'UZS', symbol: 'so\'m', name: 'Uzbekistani So\'m' },
 ];
 
 interface CurrencySelectionScreenProps {

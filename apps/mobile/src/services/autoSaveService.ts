@@ -175,16 +175,33 @@ export function useAutoSave<T extends Record<string, any>>(
  */
 export async function saveToSecureStorage(key: string, value: any): Promise<void> {
   try {
-    await SecureStore.setItemAsync(key, JSON.stringify(value));
+    // Validate the value can be serialized
+    const serialized = JSON.stringify(value);
+    if (!serialized) {
+      throw new Error('Failed to serialize value to JSON');
+    }
+    
+    await SecureStore.setItemAsync(key, serialized);
   } catch (error) {
     console.warn(`Failed to save ${key} to secure storage:`, error);
+    // Do not throw - let the caller continue
   }
 }
 
 export async function loadFromSecureStorage<T = any>(key: string, defaultValue?: T): Promise<T | null> {
   try {
     const value = await SecureStore.getItemAsync(key);
-    return value ? JSON.parse(value) : defaultValue || null;
+    if (!value) {
+      return defaultValue || null;
+    }
+    
+    try {
+      return JSON.parse(value) as T;
+    } catch (parseError) {
+      console.warn(`Failed to parse JSON for ${key}, corrupted data detected:`, parseError);
+      // Return default instead of crashing
+      return defaultValue || null;
+    }
   } catch (error) {
     console.warn(`Failed to load ${key} from secure storage:`, error);
     return defaultValue || null;

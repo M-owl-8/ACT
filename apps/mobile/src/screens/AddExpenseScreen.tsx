@@ -18,8 +18,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getCategories, createEntry } from "../services/database";
 import { Category } from "../services/database";
-import { useAuthStore } from "../store/auth";
-import { useGoalsStore, Goal } from "../store/goals";
+import { useGoalsStore } from "../store/goals";
 import { useSettingsStore } from "../store/settings";
 import { formatCurrency } from "../utils/currencyFormatter";
 import { SAMURAI_COLORS } from "../theme/SAMURAI_COLORS";
@@ -37,7 +36,6 @@ interface CategorySection {
 
 export default function AddExpenseScreen({ navigation, route }: any) {
   const { onSave } = route.params || {};
-  const { user } = useAuthStore();
   const { goals, loadGoals: loadGoalsFromStore } = useGoalsStore();
 
   const [amount, setAmount] = useState("");

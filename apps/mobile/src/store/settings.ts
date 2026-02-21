@@ -17,9 +17,7 @@ interface SettingsState {
   // Display preferences
   theme: 'light' | 'dark' | 'auto';
   fontSize: number;
-  currency: string;
   language: string;
-  currencySet: boolean; // Track if currency has been set on first launch
   
   // Privacy settings
   dataSharingEnabled: boolean;
@@ -34,7 +32,6 @@ interface SettingsState {
   setPushNotifications: (enabled: boolean) => Promise<void>;
   setTheme: (theme: 'light' | 'dark' | 'auto') => Promise<void>;
   setFontSize: (size: number) => Promise<void>;
-  setCurrency: (currency: string) => Promise<void>;
   setLanguage: (language: string) => Promise<void>;
   setDataSharing: (enabled: boolean) => Promise<void>;
   setUsageStats: (enabled: boolean) => Promise<void>;
@@ -55,9 +52,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   pushNotificationsEnabled: false,
   theme: 'light',
   fontSize: 14,
-  currency: 'USD',
   language: 'en',
-  currencySet: false,
   dataSharingEnabled: true,
   usageStatsEnabled: true,
   fullName: '',
@@ -81,16 +76,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   setFontSize: async (size) => {
     const clampedSize = Math.max(10, Math.min(24, size));
     set({ fontSize: clampedSize });
-    await get().syncToBackend();
-  },
-
-  setCurrency: async (currency) => {
-    const state = get();
-    if (state.currencySet && state.currency !== currency) {
-      console.warn('❌ Currency cannot be changed after first selection');
-      return;
-    }
-    set({ currency, currencySet: true });
     await get().syncToBackend();
   },
 
@@ -173,32 +158,42 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     try {
       const saved = await loadFromSecureStorage(SETTINGS_STORAGE_KEY);
       
-      if (saved && saved.language) {
-        // Only change language if it's different from current
-        if (i18n.language !== saved.language) {
-          console.log(`🌐 Loading and applying saved language to i18n: ${saved.language}`);
-          await i18n.changeLanguage(saved.language);
-          console.log(`✅ i18n language changed to: ${i18n.language}`);
-          
-          // Small delay to ensure language change event is processed
-          await new Promise(resolve => setTimeout(resolve, 100));
-        } else {
-          console.log(`✅ i18n already has correct language: ${i18n.language}`);
-        }
-        
-        // Update the store with all settings
-        set(saved);
-        console.log(`✅ Settings loaded from storage with language: ${saved.language}`);
-        console.log(`✅ i18n.language confirmed: ${i18n.language}`);
-      } else if (saved) {
-        // No language preference saved, use default
-        set(saved);
-        console.log('✅ Settings loaded from storage (no language preference)');
-      } else {
-        console.log('ℹ️ No saved settings found in storage');
+      if (!saved) {
+        console.log('ℹ️ No saved settings found in storage, using defaults');
+        return;
       }
+
+      // Validate and sanitize loaded settings
+      const cleanSettings = {
+        emailNotificationsEnabled: typeof saved.emailNotificationsEnabled === 'boolean' ? saved.emailNotificationsEnabled : true,
+        pushNotificationsEnabled: typeof saved.pushNotificationsEnabled === 'boolean' ? saved.pushNotificationsEnabled : false,
+        theme: ['light', 'dark', 'auto'].includes(saved.theme) ? saved.theme : 'light',
+        fontSize: typeof saved.fontSize === 'number' ? Math.max(10, Math.min(24, saved.fontSize)) : 14,
+        language: saved.language && typeof saved.language === 'string' ? saved.language : 'en',
+        dataSharingEnabled: typeof saved.dataSharingEnabled === 'boolean' ? saved.dataSharingEnabled : true,
+        usageStatsEnabled: typeof saved.usageStatsEnabled === 'boolean' ? saved.usageStatsEnabled : true,
+        fullName: typeof saved.fullName === 'string' ? saved.fullName : '',
+        email: typeof saved.email === 'string' ? saved.email : '',
+      };
+      
+      // Update store with sanitized data
+      set(cleanSettings);
+      
+      // Apply language to i18n if different from current
+      if (cleanSettings.language && i18n.language !== cleanSettings.language) {
+        try {
+          console.log(`🌐 Applying saved language to i18n: ${cleanSettings.language}`);
+          await i18n.changeLanguage(cleanSettings.language);
+          console.log(`✅ i18n language changed to: ${i18n.language}`);
+        } catch (langError) {
+          console.warn(`⚠️ Failed to change language to ${cleanSettings.language}:`, langError);
+        }
+      }
+      
+      console.log('✅ Settings loaded and validated from storage');
     } catch (error) {
       console.warn('❌ Failed to load settings:', error);
+      // Continue with defaults - do not crash
     }
   },
 
@@ -210,26 +205,29 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         push_notifications: state.pushNotificationsEnabled,
         theme: state.theme,
         font_size: state.fontSize,
-        currency: state.currency,
         language: state.language,
         data_sharing: state.dataSharingEnabled,
         usage_stats: state.usageStatsEnabled,
         auto_backup: true,
       };
 
-      // Save to local storage immediately
-      await saveToSecureStorage(SETTINGS_STORAGE_KEY, {
-        emailNotificationsEnabled: state.emailNotificationsEnabled,
-        pushNotificationsEnabled: state.pushNotificationsEnabled,
-        theme: state.theme,
-        fontSize: state.fontSize,
-        currency: state.currency,
-        language: state.language,
-        dataSharingEnabled: state.dataSharingEnabled,
-        usageStatsEnabled: state.usageStatsEnabled,
-        fullName: state.fullName,
-        email: state.email,
-      });
+      // Save to local storage immediately with proper error handling
+      try {
+        await saveToSecureStorage(SETTINGS_STORAGE_KEY, {
+          emailNotificationsEnabled: state.emailNotificationsEnabled,
+          pushNotificationsEnabled: state.pushNotificationsEnabled,
+          theme: state.theme,
+          fontSize: state.fontSize,
+          language: state.language,
+          dataSharingEnabled: state.dataSharingEnabled,
+          usageStatsEnabled: state.usageStatsEnabled,
+          fullName: state.fullName,
+          email: state.email,
+        });
+        console.log('✅ Settings saved to secure storage');
+      } catch (storageError) {
+        console.warn('⚠️ Failed to save settings locally:', storageError);
+      }
 
       // Sync to backend (fire and forget with error handling)
       try {

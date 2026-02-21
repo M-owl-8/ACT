@@ -4,6 +4,7 @@
  */
 
 import NetInfo from '@react-native-community/netinfo';
+import { getUnsavedChanges } from './autoSaveService';
 
 interface SyncListener {
   onOnline: () => Promise<void>;

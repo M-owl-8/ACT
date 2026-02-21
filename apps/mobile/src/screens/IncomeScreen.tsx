@@ -17,13 +17,13 @@ import {
   getEntryTotals,
   Entry,
   EntryTotals,
-} from "../api/entries";
-import { useAuthStore } from "../store/auth";
+} from "../services/database";
+import { useSettingsStore } from "../store/settings";
 import { formatCurrency } from "../utils/currencyFormatter";
 
 export default function IncomeScreen({ navigation }: any) {
   const { t, i18n } = useTranslation();
-  const { user } = useAuthStore();
+  const { currency } = useSettingsStore();
   const [languageChangeKey, setLanguageChangeKey] = useState(0);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [totals, setTotals] = useState<EntryTotals | null>(null);
@@ -63,14 +63,16 @@ export default function IncomeScreen({ navigation }: any) {
       // Load entries (income only)
       const entriesData = await getEntries({
         type: "income",
-        ...monthRange,
+        start_date: monthRange.start_date,
+        end_date: monthRange.end_date,
         limit: 100,
       });
 
       // Load totals for this month
       const totalsData = await getEntryTotals({
         type: "income",
-        ...monthRange,
+        start_date: monthRange.start_date,
+        end_date: monthRange.end_date,
       });
 
       setEntries(entriesData);
@@ -97,7 +99,7 @@ export default function IncomeScreen({ navigation }: any) {
   }, []);
 
   const handleDelete = (entry: Entry) => {
-    const formattedAmount = formatCurrency(entry.amount, user?.currency || 'USD');
+    const formattedAmount = formatCurrency(entry.amount, currency || 'USD');
     Alert.alert(
       t('delete'),
       `${t('confirmDelete')} ${formattedAmount}?`,
@@ -140,11 +142,11 @@ export default function IncomeScreen({ navigation }: any) {
     <View style={styles.entryItem}>
       <View style={styles.entryContent}>
         <Text style={styles.entrySource}>
-          {item.note || item.category?.name || "Income"}
+          {item.description || item.category_name || "Income"}
         </Text>
-        <Text style={styles.entryDate}>{formatDate(item.booked_at)}</Text>
+        <Text style={styles.entryDate}>{formatDate(item.date)}</Text>
       </View>
-      <Text style={styles.entryAmount}>{formatCurrency(item.amount, user?.currency || 'USD')}</Text>
+      <Text style={styles.entryAmount}>{formatCurrency(item.amount, currency || 'USD')}</Text>
     </View>
   );
 
@@ -216,7 +218,7 @@ export default function IncomeScreen({ navigation }: any) {
               <View style={styles.totalsHeader}>
                 <Text style={styles.totalsLabel}>{t('totalIncome')}</Text>
                 <Text style={styles.totalsAmount}>
-                  {formatCurrency(totals?.total || 0, user?.currency || 'USD')}
+                  {formatCurrency(totals?.total || 0, currency || 'USD')}
                 </Text>
               </View>
             )}

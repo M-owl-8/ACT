@@ -28,8 +28,8 @@ import SettingsScreen from '../screens/SettingsScreen';
 import BooksScreen from '../screens/BooksScreen';
 import BookDetailScreen from '../screens/BookDetailScreen';
 
-// Use standalone auth store
-import { useAuthStore } from '../store/authLocal';
+// Use offline auth store
+import { useAuthStore } from '../store/auth';
 import { useTheme } from '../theme';
 
 const Stack = createNativeStackNavigator();

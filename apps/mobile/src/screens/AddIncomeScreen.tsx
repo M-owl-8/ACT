@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { createEntry } from "../services/database";
+import { createEntry, getCategories } from "../services/database";
 import { useSettingsStore } from "../store/settings";
 import { formatCurrency } from "../utils/currencyFormatter";
 import { SAMURAI_COLORS, SAMURAI_PATTERNS } from "../theme/SAMURAI_COLORS";
@@ -43,12 +43,21 @@ export default function AddIncomeScreen({ navigation, route }: any) {
 
     setLoading(true);
     try {
+      const incomeCategories = await getCategories('income');
+      const defaultCategory = incomeCategories[0];
+      if (!defaultCategory) {
+        Alert.alert("Error", "No income categories found in database");
+        setLoading(false);
+        return;
+      }
+
       await createEntry({
         type: "income",
-        category_id: null,
+        user_id: 0,
+        category_id: defaultCategory.id,
         amount: amountNum,
-        note: note.trim() || source.trim(),
-        booked_at: date.toISOString(),
+        description: note.trim() || source.trim(),
+        date: date.toISOString().split('T')[0],
       });
 
       Alert.alert("Success", "Income added successfully", [

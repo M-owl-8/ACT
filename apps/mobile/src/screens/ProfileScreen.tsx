@@ -3,12 +3,13 @@ import { View, Text, Button, StyleSheet, TextInput, TouchableOpacity } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/auth';
-import { API } from '../api/client';
+import { useSettingsStore } from '../store/settings';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 
 export default function ProfileScreen() {
   const { t, i18n } = useTranslation();
-  const { user, logout, fetchProfile } = useAuthStore();
+  const { logout } = useAuthStore();
+  const { fullName, setFullName, email, language } = useSettingsStore();
   const [name, setName] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -27,11 +28,10 @@ export default function ProfileScreen() {
 
   const handleSaveName = async () => {
     if (!name.trim()) return;
-    
+
     setIsSaving(true);
     try {
-      await API.patch('/users/me', { name: name.trim() });
-      await fetchProfile();
+      await setFullName(name.trim());
       setIsEditing(false);
       setName('');
     } catch (error) {
@@ -58,14 +58,14 @@ export default function ProfileScreen() {
 
       <View style={styles.card}>
         <Text style={styles.label}>{t('email')}</Text>
-        <Text style={styles.value}>{user?.email}</Text>
+        <Text style={styles.value}>{email || t('notSet')}</Text>
       </View>
 
       <View style={styles.card}>
         <Text style={styles.label}>{t('name')}</Text>
-        {user?.name ? (
+        {fullName ? (
           <View>
-            <Text style={styles.value}>{user.name}</Text>
+            <Text style={styles.value}>{fullName}</Text>
             <TouchableOpacity 
               style={styles.editButton} 
               onPress={() => setIsEditing(true)}
@@ -115,14 +115,12 @@ export default function ProfileScreen() {
 
       <View style={styles.card}>
         <Text style={styles.label}>{t('accountType')}</Text>
-        <Text style={styles.value}>
-          {user?.is_admin ? '👑 ' + t('accountType') : '✨ ' + t('name')}
-        </Text>
+        <Text style={styles.value}>✨ Standard</Text>
       </View>
 
       <View style={styles.card}>
         <Text style={styles.label}>{t('language')}</Text>
-        <Text style={styles.value}>{user?.language?.toUpperCase() || 'EN'}</Text>
+        <Text style={styles.value}>{language?.toUpperCase() || 'EN'}</Text>
       </View>
 
       <TouchableOpacity style={styles.logoutButton} onPress={logout}>

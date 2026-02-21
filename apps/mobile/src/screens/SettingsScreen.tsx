@@ -11,12 +11,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '../store/auth';
 import { useSettingsStore } from '../store/settings';
 
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
-  const user = useAuthStore((state) => state.user);
   const [languageChangeKey, setLanguageChangeKey] = useState(0);
   
   // Load all settings from the store

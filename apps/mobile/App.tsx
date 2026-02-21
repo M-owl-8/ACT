@@ -7,7 +7,6 @@ import AppNavigator from "./src/navigation/AppNavigator";
 import { useAuthStore } from "./src/store/auth";
 import JapaneseNightBackdrop from "./src/components/JapaneseNightBackdrop";
 import { ThemeProvider } from "./src/theme";
-import CurrencySelectionScreen from "./src/screens/CurrencySelectionScreen";
 import { 
   useFonts,
   NotoSansJP_400Regular,
@@ -24,8 +23,9 @@ import { initializeNotifications } from "./src/services/notificationService";
 
 // Import auto-save services
 import { initDatabase } from "./src/services/database";
-import { initializeSyncService, cleanupSyncService } from "./src/services/syncService";
+import { initializeSyncService, cleanupSyncService, addSyncListener } from "./src/services/syncService";
 import { useSettingsStore } from "./src/store/settings";
+import { useEntriesStoreOffline } from "./src/store/entriesOffline";
 
 // Initialize Sentry at app startup
 initSentry();
@@ -33,11 +33,10 @@ initSentry();
 export default function App() {
   const { t, i18n } = useTranslation();
   const { initializeAuth, isLoading } = useAuthStore();
-  const { loadSettings, currencySet } = useSettingsStore();
+  const { loadSettings } = useSettingsStore();
   const [appInitialized, setAppInitialized] = React.useState(false);
   const [languageReady, setLanguageReady] = React.useState(false);
   const [appKey, setAppKey] = React.useState(0); // Force full app re-render on language change
-  const [showCurrencySelection, setShowCurrencySelection] = React.useState(!currencySet);
   
   // Load Noto Sans JP fonts
   const [fontsLoaded] = useFonts({
@@ -122,7 +121,7 @@ export default function App() {
         // Initialize auth on app start
         await initializeAuth();
         
-        // Load user settings from storage (including language)
+        // Load user settings from storage (including language and currencySet)
         await loadSettings();
         
         console.log(`✅ App initialization complete. Current language: ${i18n.language}`);
@@ -130,7 +129,12 @@ export default function App() {
         
         // Initialize sync service for offline support
         await initializeSyncService();
-        
+
+        // Register entries sync listener - syncs to backend when network restores
+        addSyncListener('entries', () =>
+          useEntriesStoreOffline.getState().syncToBackend()
+        );
+
         // Initialize notifications
         await initializeNotifications();
       } catch (error) {
@@ -165,17 +169,6 @@ export default function App() {
         <JapaneseNightBackdrop intensity={0.85} vignetteOpacity={0.3} />
         <ActivityIndicator size="large" color="#EF5350" style={styles.centerIndicator} />
       </View>
-    );
-  }
-
-  // Show currency selection screen on first app launch
-  if (showCurrencySelection) {
-    return (
-      <ThemeProvider key={`app-theme-${appKey}`}>
-        <CurrencySelectionScreen 
-          onComplete={() => setShowCurrencySelection(false)}
-        />
-      </ThemeProvider>
     );
   }
 
